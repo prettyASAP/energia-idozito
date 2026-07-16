@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Energia Időzítő — Mikor a legolcsóbb az áram?</title>
+  <meta name="description" content="Tudd meg percek alatt, mikor érdemes bekapcsolni a mosógépet, bojlert vagy EV töltőt. Okos áramár-időzítő valós piaci adatokból — ingyen, regisztráció nélkül." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Energia Időzítő — Mikor a legolcsóbb az áram?" />
+  <meta property="og:description" content="Valós tőzsdei adatokból megmondjuk, mikor érdemes bekapcsolni a mosógépet. Átlag 15 000 Ft/év megtakarítás — ingyen, regisztráció nélkül." />
+  <meta property="og:image" content="/static/social-preview.png" />
+  <meta property="og:url" content="https://energia.app" />
+  <meta property="og:locale" content="hu_HU" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Energia Időzítő — Mikor a legolcsóbb az áram?" />
+  <meta name="twitter:description" content="Valós piaci adatokból: mikor érdemes bekapcsolni a mosógépet, bojlert, EV töltőt. Ingyen, regisztráció nélkül." />
+  <meta name="twitter:image" content="/static/social-preview.png" />
+
+  <link rel="stylesheet" href="/static/css/style.css?v=12" />
+</head>
+<body>
+
+<!-- ONBOARDING MODAL -->
+<div class="onboarding-overlay hidden" id="onboardingOverlay">
+  <div class="onboarding-sheet">
+    <div class="onboarding-progress">
+      <div class="progress-dot active" id="prog0"></div>
+      <div class="progress-dot" id="prog1"></div>
+      <div class="progress-dot" id="prog2"></div>
+    </div>
+
+    <!-- Lépés 1: Eszközválasztó -->
+    <div class="onboarding-step active" id="step0">
+      <div class="onboarding-title">Üdvözlünk!</div>
+      <div class="onboarding-desc">Melyik energiaigényes eszközeid vannak otthon? (Több is választható)</div>
+      <div class="device-chips" id="deviceChips"></div>
+      <button class="btn-primary" data-action="onboarding-next" data-step="1">Tovább →</button>
+      <button class="btn-skip" data-action="skip-onboarding">Kihagyom</button>
+    </div>
+
+    <!-- Lépés 2: Tarifa + Rugalmasság -->
+    <div class="onboarding-step" id="step1">
+      <div class="onboarding-title">Milyen áramtarifád van?</div>
+      <div class="onboarding-desc">Ez határozza meg, mennyit spórolhatsz az időzítéssel.</div>
+      <div class="device-chips" id="tariffChips">
+        <div class="device-chip selected" data-tariff="rezsi" data-action="select-tariff">
+          <span class="chip-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L1 4.5V9C1 11.5 3.5 13 7 13C10.5 13 13 11.5 13 9V4.5L7 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </span>
+          <span>Rezsivédett (egységár)</span>
+        </div>
+        <div class="device-chip" data-tariff="htnt" data-action="select-tariff">
+          <span class="chip-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 4V7L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span>Kétmérős HT/NT</span>
+        </div>
+        <div class="device-chip" data-tariff="piaci" data-action="select-tariff">
+          <span class="chip-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1,10 4,6 7,8 10,4 13,2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span>Piaci (tőzsdei)</span>
+        </div>
+      </div>
+      <div class="onboarding-sub-title">Mennyire rugalmas?</div>
+      <div class="device-chips">
+        <div class="device-chip selected" data-flex="magas" data-action="select-flex">
+          <span class="chip-icon">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9L10 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span>Előre tervezem</span>
+        </div>
+        <div class="device-chip" data-flex="kozepes" data-action="select-flex">
+          <span>Néha igen</span>
+        </div>
+        <div class="device-chip" data-flex="alacsony" data-action="select-flex">
+          <span class="chip-icon">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span>Nehézkes</span>
+        </div>
+      </div>
+      <button class="btn-primary" data-action="onboarding-next" data-step="2">Számítsd ki →</button>
+      <button class="btn-skip" data-action="onboarding-back" data-step="0">← Vissza</button>
+    </div>
+
+    <!-- Lépés 3: Megtakarítás potenciál -->
+    <div class="onboarding-step" id="step2">
+      <div class="onboarding-title">A te megtakarítási potenciálod</div>
+      <div class="onboarding-desc">Ha okosan időzíted a kiválasztott eszközeidet:</div>
+      <div class="saving-highlight">
+        <div class="saving-amount" id="onboardingSaving">0 Ft</div>
+        <span class="tariff-source">Forrás: MEKH 2024 szabályozott tarifa</span>
+        <div class="saving-label">becsült megtakarítás évente</div>
+      </div>
+      <div id="onboardingSavingDesc" class="saving-desc"></div>
+      <button class="btn-primary" data-action="finish-onboarding">Mutasd az optimális időablakokat</button>
+      <button class="btn-share" data-action="share-app" id="shareBtn">Megmutatom ismerőseimnek →</button>
+    </div>
+  </div>
+</div>
+
+<!-- COACH MARKS OVERLAY -->
+<div class="coach-overlay hidden" id="coachOverlay">
+  <div class="coach-spotlight" id="coachSpotlight"></div>
+  <div class="coach-bubble" id="coachBubble">
+    <div class="coach-step-row">
+      <span class="coach-step-label" id="coachStepLabel">1 / 4</span>
+      <button class="coach-btn-skip" data-action="coach-skip">Kihagyom</button>
+    </div>
+    <div class="coach-icon" id="coachIcon"></div>
+    <div class="coach-title" id="coachTitle"></div>
+    <div class="coach-text" id="coachText"></div>
+    <button class="coach-btn-next" data-action="coach-next" id="coachNextBtn">Következő →</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo">
+    <span class="logo-icon"></span>
+    <span>Energia Időzítő</span>
+  </div>
+  <div class="header-badges">
+    <span class="badge-pill badge-source" id="sourceBadge" style="display:none"></span>
+  </div>
+</header>
+
+<!-- FŐ TARTALOM -->
+<main class="app-main">
+
+  <!-- HERO -->
+  <section class="hero-section" id="heroSection">
+    <div class="hero-left">
+      <div class="status-chip" id="statusChip">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusChipLabel">Betöltés...</span>
+      </div>
+      <h1 class="hero-title" id="heroTitle">Árak betöltése...</h1>
+      <p class="hero-subtitle" id="heroSubtitle">Az aktuális piaci ár alapján megmondjuk, mikor érdemes bekapcsolni.</p>
+      <div class="hero-countdown hidden" id="heroCountdown">
+        <span class="countdown-label" id="countdownLabel">Olcsóbb ár</span>
+        <span class="countdown-time" id="countdownTime">—:—:—</span>
+        <span class="countdown-suffix">múlva</span>
+      </div>
+      <div class="hero-saving-hint" id="heroSavingHint" style="display:none"></div>
+      <button class="btn-hero-cta" id="heroCta" data-action="open-onboarding" style="display:none">
+        Számítsd ki, te mennyit spórolhatsz →
+      </button>
+      <button class="btn-advisor-cta" data-action="open-advisor">
+        Kérd a személyes energiatervedet →
+      </button>
+    </div>
+    <div class="hero-right">
+      <div class="price-display">
+        <span class="price-value" id="currentPrice">—</span>
+        <span class="price-unit">Ft/kWh</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESZKÖZKÁRTYÁK -->
+  <section id="deviceSection">
+    <div class="section-header-row">
+      <div>
+        <h2 class="section-title">Mikor kapcsoljam be?</h2>
+        <p class="section-subtitle">A következő 24 óra árai alapján — zöld = most érdemes, sárga = várj.</p>
+      </div>
+      <button class="tour-btn" data-action="start-tour" id="tourBtn" title="Vezess végig az oldalon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v5M8 5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Hogyan működik?
+      </button>
+    </div>
+    <div class="error-state" id="errorState" style="display:none">
+      <div class="error-title">Nem sikerült betölteni az adatokat</div>
+      <div class="error-desc">Ellenőrizd az internetkapcsolatod, majd próbáld újra.</div>
+      <button class="btn-retry" data-action="retry-load">Újra próbálom</button>
+    </div>
+    <div class="device-grid" id="deviceGrid">
+      <div class="device-card skeleton-device loading-pulse"></div>
+      <div class="device-card skeleton-device loading-pulse"></div>
+      <div class="device-card skeleton-device loading-pulse"></div>
+      <div class="device-card skeleton-device loading-pulse"></div>
+      <div class="device-card skeleton-device loading-pulse"></div>
+      <div class="device-card skeleton-device loading-pulse"></div>
+    </div>
+  </section>
+
+  <!-- DEMO-MODE BANNER — JS állítja display:flex-re, ha szükséges -->
+  <div id="demo-mode-banner" style="display:none"></div>
+
+  <!-- MEGTAKARÍTÁS KPI -->
+  <section class="card" id="kpiSection">
+    <h2 class="section-title">Mennyit spórolhatsz?</h2>
+    <p class="section-subtitle" id="savingSubtitle">A kiválasztott eszközeid alapján becsült éves megtakarítás.</p>
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card kpi-primary skeleton-kpi-primary loading-pulse"></div>
+    </div>
+    <div class="kpi-details-toggle" id="kpiDetailsToggle" style="display:none">
+      <button class="btn-details-toggle" data-action="toggle-kpi-details" id="kpiDetailsBtn">
+        Részletek szakértőknek ▾
+      </button>
+      <div class="kpi-details-panel" id="kpiDetailsPanel" style="display:none">
+        <div class="kpi-grid" id="kpiGridDetails"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HT/NT KALKULÁTOR -->
+  <section class="card htnt-card" id="htntSection">
+    <h2 class="section-title">Van HT/NT mérőm?</h2>
+    <p class="section-subtitle">
+      A kétmérős (HT/NT) rendszer az egyik legjobb módszer az áramszámla csökkentésére.
+    </p>
+    <div class="htnt-toggle-row">
+      <button class="htnt-btn active" id="htntYesBtn" data-action="set-htnt" data-mode="yes">Igen, van HT/NT mérőm</button>
+      <button class="htnt-btn" id="htntNoBtn" data-action="set-htnt" data-mode="no">Nincs, vagy nem tudom</button>
+    </div>
+    <div class="htnt-content visible" id="htntYesContent">
+      <div class="htnt-calc-row">
+        <div class="htnt-input-group">
+          <label>Havi áramfogyasztás (kWh)</label>
+          <input class="htnt-input" type="number" id="htntKwh" value="200" min="10" max="5000" oninput="calcHtNt()" />
+        </div>
+        <div class="htnt-input-group">
+          <label>Ebből éjszakára áttehető (%)</label>
+          <input class="htnt-input" type="number" id="htntPct" value="40" min="0" max="80" oninput="calcHtNt()" />
+        </div>
+      </div>
+      <div class="htnt-result" id="htntResult"></div>
+      <a class="htnt-mekh-link" href="https://www.mekh.hu" target="_blank" rel="noopener">
+        MEKH — Magyar Energetikai és Közmű-szabályozási Hivatal ↗
+      </a>
+    </div>
+    <div class="htnt-content" id="htntNoContent">
+      <div class="htnt-no-meter-info">
+        <h4>Kérd a HT/NT mérőt az elosztódtól!</h4>
+        <p>
+          A kétmérős tarifa (HT/NT) <strong>ingyenesen igényelhető</strong> a hálózati elosztódtól (E.ON, NKM, Elmű-Émász stb.).
+          A csere általában <strong>1–3 hónapon belül</strong> elvégezhető.
+        </p>
+        <p>
+          Az NT-sáv ára tipikusan <strong>30–40%-kal olcsóbb</strong> a nappalinál — bojlerre, mosógépre, EV töltésre ideális.
+          Éves szinten akár <strong>40 000–80 000 Ft</strong> megtakarítás is elérhető.
+        </p>
+        <a class="htnt-mekh-link" href="https://www.mekh.hu/tajekoztato-a-hazatartas-tarifakrol" target="_blank" rel="noopener">
+          Részletes tájékoztató a MEKH oldalán ↗
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- KLÍMA HŰTÉSI TERV -->
+  <section class="card" id="coolingPlanSection">
+    <div class="section-header-row">
+      <div>
+        <h2 class="section-title">Klíma hűtési terv</h2>
+        <p class="section-subtitle">Mikor érdemes előhűteni a lakást, hogy a drága csúcsban ne kelljen a klímát járatni?</p>
+      </div>
+    </div>
+
+    <div class="cooling-controls">
+      <div class="cooling-ctrl-group">
+        <label class="cooling-ctrl-label">Város</label>
+        <select class="cooling-select" id="coolingCitySelect">
+          <option value="budapest">Budapest</option>
+          <option value="debrecen">Debrecen</option>
+          <option value="pecs">Pécs</option>
+          <option value="miskolc">Miskolc</option>
+          <option value="gyor">Győr</option>
+          <option value="szeged">Szeged</option>
+          <option value="nyiregyhaza">Nyíregyháza</option>
+          <option value="kecskemet">Kecskemét</option>
+          <option value="szekesfehervar">Székesfehérvár</option>
+          <option value="szombathely">Szombathely</option>
+          <option value="szolnok">Szolnok</option>
+          <option value="tatabanya">Tatabánya</option>
+          <option value="eger">Eger</option>
+          <option value="veszprem">Veszprém</option>
+          <option value="zalaegerszeg">Zalaegerszeg</option>
+          <option value="sopron">Sopron</option>
+          <option value="bekescsaba">Békéscsaba</option>
+          <option value="kaposvar">Kaposvár</option>
+        </select>
+      </div>
+      <div class="cooling-ctrl-group">
+        <label class="cooling-ctrl-label">Klíma teljesítménye</label>
+        <select class="cooling-select" id="coolingAcPower">
+          <option value="1.5">1,5 kW (kis szoba)</option>
+          <option value="2.0" selected>2,0 kW (átlagos)</option>
+          <option value="2.5">2,5 kW (nagy szoba)</option>
+          <option value="3.5">3,5 kW (nappali)</option>
+          <option value="5.0">5,0 kW (nagy tér)</option>
+        </select>
+      </div>
+      <button class="cooling-load-btn" data-action="load-cooling-plan">Terv mutatása</button>
+    </div>
+
+    <div class="cooling-result hidden" id="coolingResult">
+      <div class="cooling-summary-row" id="coolingSummaryRow"></div>
+      <div class="cooling-tip" id="coolingTip"></div>
+      <div class="cooling-timeline-wrap">
+        <div class="cooling-timeline" id="coolingTimeline"></div>
+      </div>
+      <div class="cooling-legend">
+        <span class="cl-item cl-precool">Előhűtés</span>
+        <span class="cl-item cl-run">Futtasd</span>
+        <span class="cl-item cl-coast">Hőtartalékon</span>
+        <span class="cl-item cl-off">Kikapcs.</span>
+      </div>
+      <p class="cooling-source">Időjárás: Open-Meteo (nyílt forrású) · Ár: ENTSO-E előrejelzés</p>
+    </div>
+
+    <div class="cooling-loading hidden" id="coolingLoading">
+      <div class="loading-spinner"></div>
+      <span>Időjárás és árak betöltése...</span>
+    </div>
+  </section>
+
+  <!-- NAPELEM ÖNFOGYASZTÁSI TERV -->
+  <section class="card" id="solarPlanSection">
+    <div class="section-header-row">
+      <div>
+        <h2 class="section-title">Napelem önfogyasztási terv</h2>
+        <p class="section-subtitle">Mikor érdemes a mosógépet, mosogatót, EV-töltést futtatni, hogy a legtöbb napelem-áramot felhasználd?</p>
+      </div>
+    </div>
+
+    <div class="cooling-controls">
+      <div class="cooling-ctrl-group">
+        <label class="cooling-ctrl-label">Város</label>
+        <select class="cooling-select" id="solarCitySelect">
+          <option value="budapest">Budapest</option>
+          <option value="debrecen">Debrecen</option>
+          <option value="pecs" selected>Pécs</option>
+          <option value="miskolc">Miskolc</option>
+          <option value="gyor">Győr</option>
+          <option value="szeged">Szeged</option>
+          <option value="nyiregyhaza">Nyíregyháza</option>
+          <option value="kecskemet">Kecskemét</option>
+          <option value="szekesfehervar">Székesfehérvár</option>
+          <option value="szombathely">Szombathely</option>
+          <option value="sopron">Sopron</option>
+          <option value="bekescsaba">Békéscsaba</option>
+          <option value="zalaegerszeg">Zalaegerszeg</option>
+          <option value="veszprem">Veszprém</option>
+          <option value="eger">Eger</option>
+        </select>
+      </div>
+      <div class="cooling-ctrl-group">
+        <label class="cooling-ctrl-label">Napelemes rendszer mérete</label>
+        <select class="cooling-select" id="solarKwpSelect">
+          <option value="2">2 kWp (alap, ~15 panel)</option>
+          <option value="3">3 kWp (~22 panel)</option>
+          <option value="4" selected>4 kWp (~28 panel)</option>
+          <option value="6">6 kWp (~42 panel)</option>
+          <option value="10">10 kWp (nagy ház)</option>
+        </select>
+      </div>
+      <button class="cooling-load-btn" data-action="load-solar-plan">Terv mutatása</button>
+    </div>
+
+    <div class="solar-result hidden" id="solarResult">
+      <div class="cooling-summary-row" id="solarSummaryRow"></div>
+      <div class="cooling-tip" id="solarTip"></div>
+
+      <!-- Legjobb ablakok nagy fogyasztóknak -->
+      <div class="solar-windows-wrap" id="solarWindowsWrap"></div>
+
+      <!-- 48h timeline -->
+      <div class="cooling-timeline-wrap">
+        <div class="cooling-timeline" id="solarTimeline"></div>
+      </div>
+      <div class="cooling-legend">
+        <span class="cl-item cl-solar-peak">Napelem csúcs</span>
+        <span class="cl-item cl-solar-mild">Részleges</span>
+        <span class="cl-item cl-cheap-grid">Olcsó háló</span>
+        <span class="cl-item cl-avoid">Kerüld!</span>
+        <span class="cl-item cl-night">Éjszaka</span>
+      </div>
+      <p class="cooling-source">Sugárzás: Open-Meteo (nyílt forrású) · Ár: ENTSO-E előrejelzés</p>
+    </div>
+
+    <div class="cooling-loading hidden" id="solarLoading">
+      <div class="loading-spinner"></div>
+      <span>Sugárzás és árak betöltése...</span>
+    </div>
+  </section>
+
+  <!-- 24 ÓRÁS HŐTÉRKÉP -->
+  <section class="card heatmap-section">
+    <h2 class="section-title">Mai árak óránként</h2>
+    <p class="section-subtitle">Az ár az aktuális piaci adatok alapján. Koppints egy cellára a részletekhez.</p>
+    <div class="heatmap-scroll">
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+    </div>
+    <div class="heatmap-legend">
+      <span class="hl-item hl-cheap">Olcsó</span>
+      <span class="hl-item hl-normal">Átlagos</span>
+      <span class="hl-item hl-expensive">Drága</span>
+    </div>
+  </section>
+
+  <!-- HETI NAPTÁR -->
+  <section class="card">
+    <h2 class="section-title">Heti áttekintő</h2>
+    <p class="section-subtitle">Melyik nap a legolcsóbb az áram?</p>
+    <div class="weekly-calendar" id="weeklyCalendar"></div>
+  </section>
+
+  <!-- KÖZÖSSÉGI WIDGET -->
+  <section class="card community-card">
+    <h2 class="section-title">Együttes hatás</h2>
+    <p class="section-subtitle">
+      Ha sok háztartás okosan időzíti az áramfogyasztást, az óriási különbséget jelent a hálózatnak és a környezetnek.
+    </p>
+    <div class="community-slider-wrap">
+      <label>Háztartások száma: <strong id="communityHhLabel">100 000</strong></label>
+      <input class="community-slider" type="range" id="communitySlider"
+        min="1000" max="1000000" step="1000" value="100000" oninput="updateCommunityWidget()" />
+      <div class="community-slider-label">
+        <span>1 000</span>
+        <span>1 000 000</span>
+      </div>
+    </div>
+    <div class="community-stats">
+      <div class="comm-stat">
+        <div class="comm-stat-value money" id="commMoney">—</div>
+        <div class="comm-stat-label">Együttes éves megtakarítás</div>
+      </div>
+      <div class="comm-stat">
+        <div class="comm-stat-value co2" id="commCo2">—</div>
+        <div class="comm-stat-label">CO₂ megtakarítás (tonna/év)</div>
+      </div>
+    </div>
+    <div class="comm-comparison" id="commComparison"></div>
+  </section>
+
+  <!-- EDUKATÍV BLOKKOK -->
+  <section>
+    <h2 class="section-title">Miért éri meg okosan időzíteni?</h2>
+    <div class="edu-grid">
+      <div class="edu-card">
+        <div class="edu-icon"></div>
+        <div class="edu-body">
+          <div class="edu-title">Az áram ára óránként változik</div>
+          <div class="edu-text">A magyarországi villamosenergia-tőzsdén (HUPX) az ár óránként más. A csúcsidős ár akár 3–4-szorosa lehet az éjszakainak.</div>
+        </div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-icon"></div>
+        <div class="edu-body">
+          <div class="edu-title">Éjszaka általában olcsóbb</div>
+          <div class="edu-text">22:00–06:00 között a kereslet alacsony, így az ár tipikusan 40–60%-kal olcsóbb. Mosógép, bojler, EV töltő ideálisan éjszakára időzíthető.</div>
+        </div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-icon"></div>
+        <div class="edu-body">
+          <div class="edu-title">Napközben napenergia juttatja le az árat</div>
+          <div class="edu-text">Nyáron délben a napenergia bőséges — ez leviszi az árat. Légkondit ilyenkor érdemes felvenni és „tározni" a hűtést.</div>
+        </div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-icon"></div>
+        <div class="edu-body">
+          <div class="edu-title">Olcsó ár = több megújuló</div>
+          <div class="edu-text">Amikor az ár alacsony, rendszerint bőség van nap- vagy szélenergiából. Ilyenkor a fogyasztás „zöldebb" — és közben spórolsz is.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DÍJÖSSZETÉTEL -->
+  <section class="card">
+    <h2 class="section-title">Miből áll az áramszámlád?</h2>
+    <p class="section-subtitle">
+      Az időzítéssel <strong>csak az energia-ár</strong> befolyásolható —
+      a hálózathasználat, a megújuló-pótdíj és az adók mindig fizetendők.
+    </p>
+    <div id="priceBreakdown"></div>
+  </section>
+
+  <!-- SZAKÉRTŐI NÉZET -->
+  <section>
+    <button class="expert-toggle-btn" id="expertToggleBtn" data-action="toggle-expert">
+      <span>Részletes árgrafikon</span>
+      <span class="expert-chevron" id="expertChevron">▼</span>
+    </button>
+    <div class="expert-view" id="expertView">
+      <h2 class="section-title" style="margin-bottom:4px">Historikus + előrejelzett árak</h2>
+      <div id="modelAccuracyBadge"></div>
+      <p class="chart-subtitle" id="forecastSubtitle">Betöltés...</p>
+      <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+      </div>
+      <div class="chart-legend">
+        <span class="leg-item"><span class="leg-dot" style="background:#3fb95088"></span>Olcsó</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#58a6ff88"></span>Átlagos</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#f8514988"></span>Drága</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#e3b34188;border:1px dashed #e3b341"></span>Előrejelzés</span>
+      </div>
+      <div id="negativeNotice" style="margin-top:12px"></div>
+
+      <h2 class="section-title" style="margin-top:24px;margin-bottom:4px">Óránkénti átlagprofil</h2>
+      <p class="section-subtitle">Melyik óra a legolcsóbb historikusan?</p>
+      <div class="chart-container-sm">
+        <canvas id="hourlyChart"></canvas>
+      </div>
+
+      <h2 class="section-title" style="margin-top:24px;margin-bottom:4px">Historikus napi összesítő</h2>
+      <div style="overflow-x:auto;margin-top:8px" id="dailyTableWrap"></div>
+    </div>
+  </section>
+
+  <!-- ADATFORRÁSOK -->
+  <section class="card sources-section">
+    <h2 class="section-title">Adatforrások</h2>
+    <div class="sources-list">
+      <div class="source-item">
+        <span class="source-icon"></span>
+        <div class="source-text">
+          <strong>ENTSO-E Transparency Platform</strong> — Európai villamosenergia-piac day-ahead árak.<br />
+          <a href="https://transparency.entsoe.eu" target="_blank" rel="noopener">transparency.entsoe.eu</a>
+        </div>
+      </div>
+      <div class="source-item">
+        <span class="source-icon"></span>
+        <div class="source-text">
+          <strong>Európai Központi Bank (EKB)</strong> — EUR/HUF napi árfolyam.<br />
+          <a href="https://www.ecb.europa.eu/stats/eurofxref/" target="_blank" rel="noopener">ecb.europa.eu/stats/eurofxref</a>
+        </div>
+      </div>
+      <div class="source-item">
+        <span class="source-icon"></span>
+        <div class="source-text">
+          <strong>MEKH</strong> — Magyar Energetikai és Közmű-szabályozási Hivatal.<br />
+          <a href="https://www.mekh.hu" target="_blank" rel="noopener">mekh.hu</a>
+        </div>
+      </div>
+      <div class="source-item">
+        <span class="source-icon"></span>
+        <div class="source-text">
+          <strong>MAVIR</strong> — Magyar Villamosenergia-ipari Átviteli Rendszerirányító Zrt.<br />
+          <a href="https://www.mavir.hu" target="_blank" rel="noopener">mavir.hu</a>
+        </div>
+      </div>
+      <div class="source-item">
+        <span class="source-icon"></span>
+        <div class="source-text">
+          Az alkalmazás tájékoztató jellegű. A tényleges fogyasztói árat a villamosenergia-kereskedő és a hálózathasználati díjak is befolyásolják.
+          CO₂-adat: <a href="https://www.eea.europa.eu" target="_blank" rel="noopener">EEA</a> / ENTSO-E (~250 g/kWh, 2023).
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ENERGIA TANÁCSADÓ WIZARD -->
+<div class="adv-overlay hidden" id="advOverlay">
+  <div class="adv-sheet">
+
+    <div class="adv-header">
+      <div class="adv-progress-track"><div class="adv-progress-fill" id="advProgressFill"></div></div>
+      <div class="adv-step-label" id="advStepLabel">1 / 4</div>
+      <button class="adv-close" data-action="advisor-close">×</button>
+    </div>
+
+    <!-- LÉPÉS 1: Otthon -->
+    <div class="adv-step" id="advStep0">
+      <div class="adv-step-title">Milyen az otthonod?</div>
+      <div class="adv-step-sub">A legjobb ajánláshoz pár kérdés kell.</div>
+
+      <div class="adv-group-label">Ingatlan típusa</div>
+      <div class="adv-option-grid" data-key="homeType">
+        <div class="adv-option" data-val="haz"><span>Ház</span></div>
+        <div class="adv-option" data-val="lakas_tegla"><span>Téglaházi lakás</span></div>
+        <div class="adv-option" data-val="lakas_panel"><span>Panellakás</span></div>
+      </div>
+
+      <div class="adv-group-label">Alapterület</div>
+      <div class="adv-option-grid" data-key="homeSize">
+        <div class="adv-option" data-val="small">alatt 60 m²</div>
+        <div class="adv-option" data-val="medium">60–100 m²</div>
+        <div class="adv-option" data-val="large">100–150 m²</div>
+        <div class="adv-option" data-val="xlarge">150 m² felett</div>
+      </div>
+
+      <div class="adv-group-label">Fő fűtés</div>
+      <div class="adv-option-grid" data-key="heating">
+        <div class="adv-option" data-val="gaz"><span>Gázkazán</span></div>
+        <div class="adv-option" data-val="hoszivattyu"><span>Hőszivattyú</span></div>
+        <div class="adv-option" data-val="elektromos"><span>Elektromos</span></div>
+        <div class="adv-option" data-val="tavfutes"><span>Távfűtés</span></div>
+      </div>
+    </div>
+
+    <!-- LÉPÉS 2: Eszközök -->
+    <div class="adv-step hidden" id="advStep1">
+      <div class="adv-step-title">Milyen eszközeid vannak?</div>
+      <div class="adv-step-sub">Jelöld be, ami megvan — ezekre adunk személyre szabott tanácsot.</div>
+      <div class="adv-device-grid" id="advDeviceGrid">
+        <label class="adv-device-item"><input type="checkbox" value="mosogep"><span class="adv-dev-icon"></span><span>Mosógép</span></label>
+        <label class="adv-device-item"><input type="checkbox" value="mosogatogep"><span class="adv-dev-icon"></span><span>Mosogatógép</span></label>
+        <label class="adv-device-item"><input type="checkbox" value="bojler"><span class="adv-dev-icon"></span><span>Bojler</span></label>
+        <label class="adv-device-item"><input type="checkbox" value="klima"><span class="adv-dev-icon"></span><span>Klíma</span></label>
+        <label class="adv-device-item"><input type="checkbox" value="hoszivattyu_eszkoz"><span class="adv-dev-icon"></span><span>Hőszivattyú</span></label>
+        <label class="adv-device-item"><input type="checkbox" value="ev"><span class="adv-dev-icon"></span><span>Elektromos autó</span></label>
+        <label class="adv-device-item"><input type="checkbox" value="napelemek"><span class="adv-dev-icon"></span><span>Napelem</span></label>
+        <label class="adv-device-item"><input type="checkbox" value="szarito"><span class="adv-dev-icon"></span><span>Szárítógép</span></label>
+      </div>
+    </div>
+
+    <!-- LÉPÉS 3: Számla & tarifa -->
+    <div class="adv-step hidden" id="advStep2">
+      <div class="adv-step-title">A jelenlegi helyzeted</div>
+      <div class="adv-step-sub">Becsült adatok is elegendők — nem kell a pontos érték.</div>
+
+      <div class="adv-group-label">Havi villanyszámla (Ft)</div>
+      <div class="adv-bill-row">
+        <input class="adv-bill-input" type="number" id="advMonthlyBill" min="2000" max="100000" step="1000" value="15000" />
+        <span class="adv-bill-unit">Ft / hó</span>
+      </div>
+      <div class="adv-bill-hint">Átlag háztartás: 10 000–20 000 Ft/hó</div>
+
+      <div class="adv-group-label">Jelenlegi tarifa</div>
+      <div class="adv-option-grid" data-key="tariff">
+        <div class="adv-option" data-val="rezsi"><span>Rezsivédett (46 Ft/kWh)</span></div>
+        <div class="adv-option" data-val="htnt"><span>HT/NT kétmérős</span></div>
+        <div class="adv-option" data-val="piaci"><span>Piaci / NKTP</span></div>
+      </div>
+    </div>
+
+    <!-- LÉPÉS 4: Célok & lehetőségek -->
+    <div class="adv-step hidden" id="advStep3">
+      <div class="adv-step-title">Célok és lehetőségek</div>
+      <div class="adv-step-sub">Ezek alapján rangsoroljuk az ajánlásokat.</div>
+
+      <div class="adv-group-label">Mennyit tudnál befektetni megtakarítás érdekében?</div>
+      <div class="adv-option-grid" data-key="budget">
+        <div class="adv-option" data-val="0">Semmit<span>csak ingyenes lépések</span></div>
+        <div class="adv-option" data-val="100000">~100 ezer Ft<span>kisebb eszközök</span></div>
+        <div class="adv-option" data-val="500000">~500 ezer Ft<span>közepes projekt</span></div>
+        <div class="adv-option" data-val="5000000">Bármennyit<span>napelem, hőszivattyú</span></div>
+      </div>
+
+      <div class="adv-group-label">Mi a legfontosabb számodra?</div>
+      <div class="adv-option-grid" data-key="priority">
+        <div class="adv-option" data-val="megtakaritas"><span>Minél több spórolás</span></div>
+        <div class="adv-option" data-val="gyors"><span>Azonnali eredmény</span></div>
+        <div class="adv-option" data-val="kornyezet"><span>Környezetbarát</span></div>
+        <div class="adv-option" data-val="kenyelem"><span>Kényelem, automatizálás</span></div>
+      </div>
+    </div>
+
+    <!-- LÉPÉS 5: Eredmények -->
+    <div class="adv-step hidden" id="advStep4">
+      <div class="adv-step-title">A te személyes energiaterved</div>
+      <div class="adv-results-summary" id="advResultsSummary"></div>
+      <div class="adv-results-list" id="advResultsList"></div>
+    </div>
+
+    <div class="adv-footer">
+      <button class="adv-btn-back" id="advBtnBack" data-action="advisor-back">← Vissza</button>
+      <button class="adv-btn-next" id="advBtnNext" data-action="advisor-next">Következő →</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="/static/js/app.js?v=11"></script>
+</body>
+</html>

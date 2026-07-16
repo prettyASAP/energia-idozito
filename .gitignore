@@ -1,0 +1,17 @@
+# Python virtualenv
+backend/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Env fájlok (API kulcsok!)
+backend/.env
+.env
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
