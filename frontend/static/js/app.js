@@ -1,148 +1,111 @@
-/* =====================================================================
-   Energia Időzítő — app.js v12
-   4-tab mobile-first app, Industry design system
-   ===================================================================== */
 'use strict';
+
+// ── Device definitions (IDs match design exactly) ──────────────────────
+const MAIN_DEV = [
+  { id: 'mosogep',     name: 'Mosógép',     kwh: 1.0, dur: 2, annual: 6000,
+    icon: 'M5 3h14v18H5z M8 6h.01 M11 6h.01 M12 14m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0' },
+  { id: 'mosogatogep', name: 'Mosogatógép', kwh: 1.2, dur: 2, annual: 5000,
+    icon: 'M5 3h14v18H5z M5 8h14 M12 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0' },
+  { id: 'bojler',      name: 'Bojler',       kwh: 8,   dur: 3, annual: 18000,
+    icon: 'M7 2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2H7a2 2 0 0 1 -2 -2V4a2 2 0 0 1 2 -2z M9 20v2 M15 20v2 M9 9c1 -1 2 -1 3 0s2 1 3 0' },
+  { id: 'klima',       name: 'Klíma',        kwh: 2.5, dur: 4, annual: 9000,
+    icon: 'M3 5h18v6H3z M6 8h.01 M17 8h.01 M7 14c0 2 -1 2 -1 4 M12 14c0 2 -1 2 -1 4 M17 14c0 2 -1 2 -1 4' },
+  { id: 'ev',          name: 'EV töltő',     kwh: 11,  dur: 4, annual: 30000,
+    icon: 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8' },
+  { id: 'szarito',     name: 'Szárítógép',   kwh: 2.5, dur: 2, annual: 7000,
+    icon: 'M5 3h14v18H5z M12 13m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 13m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0' },
+];
+
+const EXTRA_DEV = [
+  { id: 'hoszivattyu', name: 'Hőszivattyú', annual: 15000,
+    icon: 'M12 3v18 M5 8l7 -5 7 5 M8 21v-6h8v6' },
+  { id: 'napelemek',   name: 'Napelem',      annual: 12000,
+    icon: 'M4 6h16l2 9H2z M12 15v6 M8 21h8 M8 9h.01 M12 9h.01 M16 9h.01' },
+];
+
+const ALL_DEV = [...MAIN_DEV, ...EXTRA_DEV];
 
 // ── State ──────────────────────────────────────────────────────────────
 const S = {
   tab: 'ma',
   planTab: 'klima',
-  prices: [],          // 48h price array: {timestamp, price_huf_kwh, is_forecast}
+  prices: [],
   selHour: null,
   // Onboarding
-  obsOpen: false, obsStep: 1,
-  obsDevices: [], obsTariff: 'rezsi', obsFlex: 'elore',
+  obsStep: 0,
+  obsDevices: ['mosogep', 'bojler', 'klima'],
+  obsTariff: 'rezsi',
+  obsFlex: 'magas',
+  obsDone: false,
   // Advisor
-  advOpen: false, advStep: 1,
-  advHome: 'haz', advArea: 'm60', advHeat: 'gaz',
-  advDevices: [], advBill: 15000, advTariff: 'rezsi',
-  advBudget: 'barmennyi', advPriority: 'sporolas',
-  // Savings
+  advStep: 1,
+  adv: {
+    homeType: 'haz', homeSize: 'medium', heating: 'gaz',
+    devices: ['mosogep', 'klima'], bill: 15000, tariff: 'rezsi',
+    budget: 100000, priority: 'megtakaritas'
+  },
   savedAmt: 0,
 };
-
-// ── Device definitions ─────────────────────────────────────────────────
-const DEVICES = [
-  { id: 'mosogep',       label: 'Mosógép',       kwh: 1.0, hours: 2, annualSave: 6000,
-    icon: 'M5 3h14v18H5z M8 6h.01 M11 6h.01 M12 14m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0' },
-  { id: 'mosogatogep',   label: 'Mosogatógép',   kwh: 1.2, hours: 2, annualSave: 5000,
-    icon: 'M5 3h14v18H5z M5 8h14 M12 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0' },
-  { id: 'bojler',        label: 'Bojler',         kwh: 8.0, hours: 3, annualSave: 18000,
-    icon: 'M7 2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2H7a2 2 0 0 1 -2 -2V4a2 2 0 0 1 2 -2z M9 20v2 M15 20v2 M9 9c1 -1 2 -1 3 0s2 1 3 0' },
-  { id: 'legkondicionalo', label: 'Klíma',        kwh: 2.5, hours: 4, annualSave: 9000,
-    icon: 'M3 5h18v6H3z M6 8h.01 M17 8h.01 M7 14c0 2 -1 2 -1 4 M12 14c0 2 -1 2 -1 4 M17 14c0 2 -1 2 -1 4' },
-  { id: 'ev_tolto',      label: 'EV töltő',       kwh: 11.0, hours: 4, annualSave: 30000,
-    icon: 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8' },
-  { id: 'szarito',       label: 'Szárítógép',     kwh: 2.5, hours: 2, annualSave: 7000,
-    icon: 'M5 3h14v18H5z M12 13m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 13m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0' },
-  { id: 'hoszivattyu',   label: 'Hőszivattyú',    kwh: 3.0, hours: 6, annualSave: 15000,
-    icon: 'M12 3v18 M5 8l7 -5 7 5 M8 21v-6h8v6' },
-  { id: 'napelem',       label: 'Napelem',         kwh: 0,   hours: 0, annualSave: 12000,
-    icon: 'M4 6h16l2 9H2z M12 15v6 M8 21h8 M8 9h.01 M12 9h.01 M16 9h.01' },
-];
-
-// Main 6 devices shown on Ma tab
-const MAIN_DEVICES = DEVICES.slice(0, 6);
-
-// ── Advisor actions ────────────────────────────────────────────────────
-const ADVISOR_RECS = [
-  { id: 'ev',          label: 'EV töltési ablak',    costLabel: 'Ingyenes', save: 30000,
-    desc: 'Éjszakai töltéssel HT/NT áron tölts — akár 30 000 Ft/év megtakarítás.',
-    cond: (d) => d.includes('ev_tolto'), prio: ['sporolas','gyors'] },
-  { id: 'bojler',      label: 'Bojler időzítő',       costLabel: '~5 000 Ft', save: 18000,
-    desc: 'Sonoff / Shelly okos relével éjszaka NT áron melegítsd.', cost: 5000,
-    cond: (d) => d.includes('bojler'), prio: ['sporolas','kenyelem'] },
-  { id: 'htnt',        label: 'HT/NT mérő csere',    costLabel: 'Ingyenes', save: 20000,
-    desc: 'Kérd az elosztótól ingyen — HT 54,27 / NT 36,18 Ft/kWh tarifán azonnal spórolsz.',
-    cond: (d, t) => t !== 'htnt', prio: ['sporolas','gyors'] },
-  { id: 'mosogep',     label: 'Mosógép időzítő',      costLabel: 'Ingyenes', save: 6000,
-    desc: 'Indítsd a napi legolcsóbb sávban — 22-6h között.', cost: 0,
-    cond: (d) => d.includes('mosogep'), prio: ['sporolas','gyors'] },
-  { id: 'mosogatogep', label: 'Mosogatógép ablak',    costLabel: 'Ingyenes', save: 5000,
-    desc: 'Késleltetett indítással az olcsó éjszakai ablakba tereld.', cost: 0,
-    cond: (d) => d.includes('mosogatogep'), prio: ['sporolas','gyors'] },
-  { id: 'szarito',     label: 'Szárítógép ablak',     costLabel: 'Ingyenes', save: 7000,
-    desc: 'A nap legolcsóbb 2 órájában futtasd.',
-    cond: (d) => d.includes('szarito'), prio: ['sporolas','kornyezet'] },
-  { id: 'smart_plug',  label: 'Okos dugó',             costLabel: '~8 000 Ft', save: 4000,
-    desc: 'Shelly Plug S — mérés + automatizálás bármely eszközre.', cost: 8000,
-    cond: () => true, prio: ['kenyelem','gyors'] },
-  { id: 'led',         label: 'LED váltás',             costLabel: '~25 000 Ft', save: 12000,
-    desc: 'Izzók cseréje LED-re: 2-3 éves megtérülés.', cost: 25000,
-    cond: () => true, prio: ['sporolas','kornyezet'] },
-  { id: 'thermostat',  label: 'Okos termosztát',       costLabel: '~30 000 Ft', save: 15000,
-    desc: 'Tado / Honeywell — 15-20% fűtési megtakarítás automatikusan.', cost: 30000,
-    cond: (d, t, h) => h === 'gaz' || h === 'tavfutes', prio: ['kenyelem','sporolas'] },
-  { id: 'insulation',  label: 'Hőszigetelés',           costLabel: '~1,5 M Ft', save: 50000,
-    desc: 'Fal- és tetőszigetelés: 15-20 éves megtérülés, CO₂ csökkentés.', cost: 1500000,
-    cond: (d, t, h, home) => home === 'haz', prio: ['kornyezet','sporolas'] },
-  { id: 'solar',       label: 'Napelem rendszer',       costLabel: '~3,5 M Ft', save: 80000,
-    desc: '5 kWp rendszer: ~8-10 éves megtérülés, 5000 kWh/év termelés.', cost: 3500000,
-    cond: (d, t, h, home) => home === 'haz', prio: ['kornyezet','sporolas'] },
-  { id: 'heat_pump',   label: 'Hőszivattyú',            costLabel: '~4 M Ft', save: 120000,
-    desc: 'Gáz helyett hőszivattyú: 3× hatékonyabb, 8-12 éves megtérülés.', cost: 4000000,
-    cond: (d, t, h) => h === 'gaz', prio: ['kornyezet','sporolas'] },
-  { id: 'battery',     label: 'Akkumulátor tároló',     costLabel: '~2,5 M Ft', save: 40000,
-    desc: '10 kWh home battery: napelem önfogyasztás +30%.', cost: 2500000,
-    cond: (d) => d.includes('napelem'), prio: ['kornyezet','kenyelem'] },
-];
 
 // ── Helpers ────────────────────────────────────────────────────────────
 const el = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('hu-HU');
+const fmt1 = n => n.toFixed(1).replace('.', ',');
 
-function svgIcon(path, size = 20) {
+function svgIcon(path, size = 19) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
 }
 
-function percentile(arr, p) {
-  const sorted = [...arr].sort((a, b) => a - b);
-  const idx = Math.floor(sorted.length * p / 100);
-  return sorted[Math.min(idx, sorted.length - 1)];
+// Price level using sorted indices (design: sorted[7] and sorted[16])
+function level(p, sorted24) {
+  return p <= sorted24[7] ? 'olcso' : p >= sorted24[16] ? 'draga' : 'atlagos';
 }
 
-function priceLevel(price, p33, p67) {
-  if (price <= p33) return 'cheap';
-  if (price <= p67) return 'avg';
-  return 'exp';
+function sortedArr(arr) {
+  return [...arr].sort((a, b) => a - b);
 }
 
-function levelColors(lvl) {
-  if (lvl === 'cheap') return { bg: 'oklch(0.62 0.13 155)', text: '#fff' };
-  if (lvl === 'exp')   return { bg: 'oklch(0.58 0.17 25)',  text: '#fff' };
-  return { bg: '#b5d9fd', text: '#1d2d3d' };
-}
-
-function hhmm(ts) {
-  const d = new Date(ts);
-  return `${String(d.getHours()).padStart(2,'0')}:00`;
-}
-
-// Best sliding window: find cheapest N-hour block in next 24h
-function bestWindow(prices, hours) {
+// Extract 48-element array from S.prices: [0..23]=today, [24..47]=tomorrow
+function getPrArr() {
   const now = new Date();
-  const next24 = prices.filter(p => {
-    const ts = new Date(p.timestamp);
-    return ts >= now && ts < new Date(now.getTime() + 24 * 3600000);
-  });
-  if (next24.length < hours) return null;
-  let best = null, bestAvg = Infinity;
-  for (let i = 0; i <= next24.length - hours; i++) {
-    const window = next24.slice(i, i + hours);
-    const avg = window.reduce((s, p) => s + p.price_huf_kwh, 0) / hours;
-    if (avg < bestAvg) { bestAvg = avg; best = { start: new Date(window[0].timestamp), avg }; }
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const pr = [];
+  for (let i = 0; i < 48; i++) {
+    const slot = new Date(dayStart.getTime() + i * 3600000);
+    const found = S.prices.find(p => {
+      const pd = new Date(p.timestamp);
+      return pd.getFullYear() === slot.getFullYear() &&
+             pd.getMonth() === slot.getMonth() &&
+             pd.getDate() === slot.getDate() &&
+             pd.getHours() === slot.getHours();
+    });
+    pr.push(found ? found.price_huf_kwh : null);
   }
-  return best;
+  return pr;
 }
 
-function countUp(el, target, ms = 900) {
+// Index-based best window (from design: slides from `from` over 24h)
+function bestWindow(pr, from, dur) {
+  let best = from, bestAvg = 1e9;
+  const limit = Math.min(from + 24 - dur + 1, pr.length - dur + 1);
+  for (let s = from; s < limit; s++) {
+    const slice = pr.slice(s, s + dur);
+    if (slice.some(x => x == null)) continue;
+    const avg = slice.reduce((a, b) => a + b, 0) / dur;
+    if (avg < bestAvg) { bestAvg = avg; best = s; }
+  }
+  return { start: best, avg: bestAvg < 1e9 ? bestAvg : (pr[from] || 30) };
+}
+
+function tariffMult(t) { return t === 'htnt' ? 1.0 : t === 'piaci' ? 1.3 : 0.45; }
+function flexMult(f) { return f === 'kozepes' ? 0.7 : f === 'alacsony' ? 0.4 : 1.0; }
+
+function countUp(elem, target, ms = 900) {
   const start = performance.now();
-  const from = 0;
   function step(now) {
     const t = Math.min(1, (now - start) / ms);
-    const eased = 1 - Math.pow(1 - t, 3);
-    el.textContent = fmt(Math.round(from + (target - from) * eased));
+    const e = 1 - Math.pow(1 - t, 3);
+    elem.textContent = fmt(Math.round(target * e));
     if (t < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
@@ -150,132 +113,104 @@ function countUp(el, target, ms = 900) {
 
 // ── Tab switching ──────────────────────────────────────────────────────
 function setTab(tab) {
-  ['ma','arak','sporolas','tervek'].forEach(t => {
+  ['ma', 'arak', 'sporolas', 'tervek'].forEach(t => {
     el(`tab-${t}`).classList.toggle('active', t === tab);
     el(`tbtn-${t}`).classList.toggle('active', t === tab);
   });
   S.tab = tab;
-  if (tab === 'arak' && S.prices.length) {
-    renderHeatmap();
-    renderBarChart();
-  }
-  if (tab === 'sporolas') {
-    updateKpi(S.savedAmt);
-    updateHtnt();
-  }
+  if (tab === 'arak' && S.prices.length) { renderHeatmap(); renderBarChart(); }
+  if (tab === 'sporolas') { updateKpi(S.savedAmt); updateHtnt(); }
   if (tab === 'tervek') renderPlan();
 }
 
 // ── Hero ───────────────────────────────────────────────────────────────
-function renderHero(prices) {
-  const now = new Date();
-  const curH = now.getHours();
-  const todayStr = now.toISOString().slice(0, 10);
+function renderHero() {
+  const pr = getPrArr();
+  const nowH = new Date().getHours();
+  const todayRaw = pr.slice(0, 24);
+  const todayFilled = todayRaw.map(x => x ?? 30);
+  const sorted = sortedArr(todayFilled);
+  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
 
-  const todayPrices = prices.filter(p => new Date(p.timestamp).toISOString().slice(0, 10) === todayStr);
-  const cur = todayPrices.find(p => new Date(p.timestamp).getHours() === curH);
-  const prev = todayPrices.find(p => new Date(p.timestamp).getHours() === curH - 1);
-
-  if (!cur) return;
-
-  const vals = todayPrices.map(p => p.price_huf_kwh);
-  const p33 = percentile(vals, 33);
-  const p67 = percentile(vals, 67);
-  const lvl = priceLevel(cur.price_huf_kwh, p33, p67);
-  const { text: levelText, bg: levelBg } = levelColors(lvl);
+  const cur = todayFilled[nowH];
+  const prev = todayFilled[(nowH - 1 + 24) % 24];
+  const lvl = level(cur, sorted);
+  const avg24 = todayFilled.reduce((a, b) => a + b, 0) / 24;
 
   // Status pill
+  const statusMap = {
+    olcso:   ['Most olcsó', 'var(--good-500)', '#fff'],
+    atlagos: ['Átlagos ár', '#d6ebff', '#2c455d'],
+    draga:   ['Most drága', 'var(--bad-500)', '#fff'],
+  };
+  const [statusLabel, statusBg, statusFg] = statusMap[lvl];
   const pillEl = el('heroStatusPill');
-  const labels = { cheap: 'Most olcsó', avg: 'Átlagos ár', exp: 'Most drága' };
-  pillEl.textContent = labels[lvl];
-  pillEl.style.background = levelBg;
-  pillEl.style.color = levelText;
+  pillEl.textContent = statusLabel;
+  pillEl.style.background = statusBg;
+  pillEl.style.color = statusFg;
   pillEl.style.border = 'none';
 
-  // Price (count-up animation)
+  // Price count-up
   const priceEl = el('heroPrice');
-  priceEl.style.color = lvl === 'cheap' ? 'oklch(0.85 0.1 155)' : lvl === 'exp' ? 'oklch(0.83 0.09 25)' : '#d6ebff';
-  let displayed = 0;
-  const target = cur.price_huf_kwh;
-  const startTime = performance.now();
-  function animPrice(now) {
-    const t = Math.min(1, (now - startTime) / 900);
-    const eased = 1 - Math.pow(1 - t, 3);
-    const val = (displayed + (target - displayed) * eased).toFixed(1);
-    priceEl.textContent = val.replace('.', ',');
+  const priceColor = lvl === 'olcso' ? 'var(--good-300)' : lvl === 'draga' ? 'var(--bad-300)' : '#d6ebff';
+  priceEl.style.color = priceColor;
+  const startT = performance.now();
+  (function animPrice(now) {
+    const t = Math.min(1, (now - startT) / 900);
+    const e = 1 - Math.pow(1 - t, 3);
+    priceEl.textContent = fmt1(cur * e);
     if (t < 1) requestAnimationFrame(animPrice);
-  }
-  requestAnimationFrame(animPrice);
+  })(performance.now());
 
   // Trend
+  const deltaPct = ((cur - prev) / prev) * 100;
   const trendEl = el('heroTrend');
-  if (prev) {
-    const diff = ((cur.price_huf_kwh - prev.price_huf_kwh) / prev.price_huf_kwh * 100).toFixed(1);
-    const up = diff > 0;
-    trendEl.textContent = `${up ? '▲' : '▼'} ${Math.abs(parseFloat(diff)).toFixed(1).replace('.', ',')}%`;
-    trendEl.style.color = up ? 'oklch(0.83 0.09 25)' : 'oklch(0.85 0.1 155)';
-  }
+  trendEl.textContent = `${deltaPct >= 0 ? '▲' : '▼'} ${deltaPct >= 0 ? '+' : '−'}${Math.abs(deltaPct).toFixed(1).replace('.', ',')}%`;
+  trendEl.style.color = deltaPct >= 0 ? 'var(--good-300)' : 'var(--bad-300)';
 
-  // Sub text
-  const maxP = Math.max(...vals).toFixed(1);
-  const minP = Math.min(...vals).toFixed(1);
-  const nextCheap = prices.find(p => {
-    const ts = new Date(p.timestamp);
-    return ts > now && priceLevel(p.price_huf_kwh, p33, p67) === 'cheap';
-  });
-  let sub = `Mai napi min. ${minP.replace('.', ',')} · max. ${maxP.replace('.', ',')} Ft/kWh`;
-  if (nextCheap) {
-    sub += ` · Következő olcsó sáv: ${hhmm(nextCheap.timestamp)}`;
+  // Sub
+  let nextCheap = 0;
+  for (let h = nowH + 1; h < 48; h++) {
+    const p = pr[h];
+    if (p != null && p < cur * 0.85) { nextCheap = h - nowH; break; }
   }
-  el('heroSub').textContent = sub;
+  el('heroSub').textContent = lvl === 'olcso'
+    ? 'A mai nap egyik legolcsóbb órájában vagyunk. Mosógép, bojler, EV töltés — most éri meg.'
+    : nextCheap
+    ? `Kb. ${nextCheap} óra múlva jön jelentősen olcsóbb sáv. Addig az alábbi ajánlásokat kövesd.`
+    : 'Az aktuális piaci ár alapján megmondjuk, mikor érdemes bekapcsolni.';
+
+  renderDeviceGrid(pr, sorted, nowH, avg24);
 }
 
 // ── Device grid ────────────────────────────────────────────────────────
-function renderDeviceGrid(prices) {
+function renderDeviceGrid(pr, sorted, nowH, avg24) {
   const grid = el('deviceGrid');
-  if (!grid || !prices.length) return;
+  if (!grid) return;
 
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const todayPrices = prices.filter(p => new Date(p.timestamp).toISOString().slice(0, 10) === todayStr);
-  const vals = todayPrices.map(p => p.price_huf_kwh);
-  const p33 = percentile(vals, 33);
-  const p67 = percentile(vals, 67);
-  const curH = now.getHours();
-  const curP = todayPrices.find(p => new Date(p.timestamp).getHours() === curH);
+  grid.innerHTML = MAIN_DEV.map((d, i) => {
+    const w = bestWindow(pr, nowH, d.dur);
+    const nowOk = level(pr[nowH] ?? 30, sorted) === 'olcso' || w.start === nowH;
+    const savePerRun = Math.max(0, (avg24 - w.avg) * d.kwh);
+    const winStr = `${String(w.start % 24).padStart(2, '0')}:00–${String((w.start + d.dur) % 24).padStart(2, '0')}:00`;
+    const waitH = w.start - nowH;
+    const tag = nowOk ? 'Indítsd most' : `Várj ${waitH} ó`;
+    const tagBg = nowOk ? 'var(--good-500)' : 'var(--color-accent-200)';
+    const tagFg = nowOk ? '#fff' : 'var(--color-accent-800)';
+    const cardStyle = nowOk ? 'background:var(--good-100);border-color:oklch(0.62 0.13 155)' : '';
+    const iconBg = nowOk ? 'var(--good-500)' : 'var(--color-accent-500)';
 
-  grid.innerHTML = MAIN_DEVICES.map((dev, i) => {
-    const win = bestWindow(prices, dev.hours);
-    let isNow = false, waitH = 0, winStr = '—';
-    if (win) {
-      const diffMs = win.start.getTime() - now.getTime();
-      const diffH = Math.round(diffMs / 3600000);
-      isNow = diffH <= 0;
-      waitH = Math.max(0, diffH);
-      winStr = `${hhmm(win.start.toISOString())}–${String((win.start.getHours() + dev.hours) % 24).padStart(2,'0')}:00`;
-    }
-
-    const savePerRun = win ? (curP ? ((curP.price_huf_kwh - win.avg) * dev.kwh).toFixed(0) : null) : null;
-    const cardBg = isNow ? 'background:oklch(0.95 0.05 155);border-color:oklch(0.85 0.1 155)' : '';
-    const iconBg = isNow ? 'oklch(0.62 0.13 155)' : 'var(--color-accent-200)';
-    const iconColor = isNow ? '#fff' : 'var(--color-accent-800)';
-    const pillBg = isNow ? 'oklch(0.62 0.13 155)' : 'var(--color-accent-200)';
-    const pillTxt = isNow ? '#fff' : 'var(--color-accent-800)';
-    const pillLabel = isNow ? 'Indítsd most' : (waitH > 0 ? `Várj ${waitH} ó` : 'Ma');
-
-    return `<div class="device-card" style="${cardBg};animation-delay:${i * 60}ms">
+    return `<div class="device-card" style="${cardStyle};animation-delay:${i * 60}ms">
       <div class="device-card-top">
-        <div class="device-icon" style="background:${iconBg};color:${iconColor}">
-          ${svgIcon(dev.icon, 18)}
-        </div>
-        <span class="tag" style="font-size:10px;background:${pillBg};color:${pillTxt};border:none">${pillLabel}</span>
+        <div class="device-icon" style="background:${iconBg};color:#fff">${svgIcon(d.icon)}</div>
+        <span class="tag" style="font-size:9.5px;background:${tagBg};color:${tagFg};border:none;letter-spacing:.05em;text-transform:uppercase;font-family:var(--font-heading);white-space:nowrap;padding:2px 7px">${tag}</span>
       </div>
-      <div class="device-name">${dev.label}</div>
+      <div class="device-name">${d.name}</div>
       <div class="device-window">
-        <span class="text-muted" style="font-size:11px">Legjobb ablak</span>
+        <span class="text-muted">Legjobb ablak</span>
         <strong>${winStr}</strong>
       </div>
-      ${savePerRun && savePerRun > 0 ? `<div class="device-save">~${savePerRun} Ft / futtatás · ${fmt(dev.annualSave)} Ft / év</div>` : `<div class="device-save">${fmt(dev.annualSave)} Ft / év becsült</div>`}
+      <div class="device-save">~${fmt(savePerRun)} Ft / futtatás · ${fmt(d.annual)} Ft / év</div>
     </div>`;
   }).join('');
 }
@@ -285,98 +220,87 @@ function renderHeatmap() {
   const grid = el('heatmapGrid');
   if (!grid) return;
 
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const curH = now.getHours();
+  const pr = getPrArr();
+  const nowH = new Date().getHours();
+  const today = pr.slice(0, 24).map(x => x ?? 30);
+  const sorted = sortedArr(today);
+  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
 
-  const todayPrices = S.prices.filter(p =>
-    new Date(p.timestamp).toISOString().slice(0, 10) === todayStr
-  );
+  const lvlColors = {
+    olcso:   ['var(--good-500)', '#fff'],
+    atlagos: ['var(--color-accent-200)', 'var(--color-accent-900)'],
+    draga:   ['var(--bad-500)', '#fff'],
+  };
 
-  // Fill missing hours with forecast
-  const allHours = [];
-  for (let h = 0; h < 24; h++) {
-    const found = todayPrices.find(p => new Date(p.timestamp).getHours() === h);
-    if (found) allHours.push(found);
-    else allHours.push({ timestamp: null, price_huf_kwh: null, is_forecast: true });
-  }
-
-  const vals = allHours.filter(p => p.price_huf_kwh !== null).map(p => p.price_huf_kwh);
-  const p33 = percentile(vals, 33);
-  const p67 = percentile(vals, 67);
-
-  grid.innerHTML = allHours.map((p, h) => {
-    if (!p.price_huf_kwh) {
-      return `<div class="hm-cell" style="background:var(--color-neutral-200)">
-        <span class="hm-hour" style="color:var(--color-neutral-600)">${String(h).padStart(2,'0')}</span>
-      </div>`;
-    }
-    const lvl = priceLevel(p.price_huf_kwh, p33, p67);
-    const { bg, text } = levelColors(lvl);
-    const isCur = h === curH;
-    const outline = isCur ? `box-shadow:0 0 0 2px var(--color-text) inset` : '';
-    const opacity = p.is_forecast ? 'opacity:.65' : '';
-    return `<div class="hm-cell" style="background:${bg};color:${text};${outline};${opacity}"
-      onclick="selectHour(${h},${p.price_huf_kwh},'${lvl}')">
-      <span class="hm-hour">${String(h).padStart(2,'0')}</span>
-      <span class="hm-price">${p.price_huf_kwh.toFixed(1)}</span>
+  grid.innerHTML = today.map((p, h) => {
+    const lvl = level(p, sorted);
+    const [bg, fg] = lvlColors[lvl];
+    const isSel = S.selHour === h;
+    const isCur = h === nowH;
+    const outline = isSel
+      ? 'outline:2px solid var(--color-accent-900);outline-offset:-2px'
+      : isCur ? 'outline:2px dashed var(--color-accent-900);outline-offset:-2px' : '';
+    return `<div class="hm-cell" style="background:${bg};color:${fg};${outline};animation-delay:${h * 15}ms" onclick="selectHour(${h},${p},'${lvl}')">
+      <span class="hm-hour">${h}</span>
+      <span class="hm-price">${fmt1(p)}</span>
     </div>`;
   }).join('');
+
+  updateHeatDetail(today, sorted, nowH);
+}
+
+function updateHeatDetail(today, sorted, nowH) {
+  const lvlNames = { olcso: 'olcsó', atlagos: 'átlagos', draga: 'drága' };
+  const detEl = el('heatmapDetail');
+  if (!detEl) return;
+  if (S.selHour == null) {
+    const cur = today[nowH];
+    detEl.textContent = `Most (${nowH}:00): ${fmt1(cur)} Ft/kWh · ${lvlNames[level(cur, sorted)]}`;
+  } else {
+    const p = today[S.selHour];
+    detEl.textContent = `${S.selHour}:00–${S.selHour + 1}:00 · ${fmt1(p)} Ft/kWh · ${lvlNames[level(p, sorted)]}`;
+  }
 }
 
 function selectHour(h, price, lvl) {
-  S.selHour = h;
-  const labels = { cheap: 'olcsó', avg: 'átlagos', exp: 'drága' };
-  el('heatmapDetail').textContent = `${String(h).padStart(2,'0')}:00–${String(h+1).padStart(2,'0')}:00 · ${price.toFixed(1).replace('.',',')} Ft/kWh · ${labels[lvl]}`;
+  S.selHour = S.selHour === h ? null : h;
+  renderHeatmap();
 }
 
 // ── Bar chart ──────────────────────────────────────────────────────────
 function renderBarChart() {
   const svg = el('barChart');
-  if (!svg || !S.prices.length) return;
+  if (!svg) return;
 
-  const now = new Date();
-  const next48 = S.prices
-    .filter(p => {
-      const ts = new Date(p.timestamp);
-      return ts >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) &&
-             ts < new Date(now.getTime() + 48 * 3600000);
-    })
-    .slice(0, 48);
+  const pr = getPrArr();
+  const filled = pr.map(x => x ?? 30);
+  const maxP = Math.max(...filled);
+  const sorted = sortedArr(filled.slice(0, 24));
+  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
 
-  if (!next48.length) return;
+  const H = 140;
+  svg.setAttribute('viewBox', '0 0 480 170');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '170');
 
-  const vals = next48.map(p => p.price_huf_kwh);
-  const maxV = Math.max(...vals);
-  const p33 = percentile(vals, 33);
-  const p67 = percentile(vals, 67);
+  const lvlFill = {
+    olcso:   'var(--good-500)',
+    atlagos: 'var(--color-accent-300)',
+    draga:   'var(--bad-500)',
+  };
 
-  const W = svg.parentElement.offsetWidth || 340;
-  const H = 120;
-  const barW = Math.max(2, Math.floor((W - 8) / next48.length) - 1);
-  const nowH = now.getHours();
-
-  svg.setAttribute('viewBox', `0 0 ${W} ${H + 20}`);
-
-  const bars = next48.map((p, i) => {
-    const ts = new Date(p.timestamp);
-    const h = ts.getHours();
-    const isToday = ts.toISOString().slice(0, 10) === now.toISOString().slice(0, 10);
-    const lvl = priceLevel(p.price_huf_kwh, p33, p67);
-    const { bg } = levelColors(lvl);
-    const barH = Math.max(2, Math.round((p.price_huf_kwh / maxV) * H));
-    const x = 4 + i * (barW + 1);
-    const y = H - barH;
-    const opacity = !isToday ? 0.45 : 1;
-    const isCur = isToday && h === nowH;
-    const delay = i * 12;
-    const label = (h % 6 === 0) ? `<text x="${x + barW/2}" y="${H + 14}" text-anchor="middle" font-size="9" fill="currentColor" opacity=".5">${String(h).padStart(2,'0')}</text>` : '';
-    return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="2" fill="${bg}" opacity="${opacity}"
-      style="animation-delay:${delay}ms" ${isCur ? 'stroke="var(--color-text)" stroke-width="1"' : ''}/>
-      ${label}`;
+  svg.innerHTML = filled.map((p, i) => {
+    const h = i % 24;
+    const lvl = level(p, sorted);
+    const barH = Math.max(2, (p / maxP) * H);
+    const x = i * 10;
+    const y = 155 - barH;
+    const op = i >= 24 ? 0.45 : 1;
+    const tick = h % 6 === 0
+      ? `<text x="${x}" y="168" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">${h}h</text>`
+      : '';
+    return `<rect x="${x}" y="${y}" width="8" height="${barH}" fill="${lvlFill[lvl]}" opacity="${op}" style="transform-box:fill-box;transform-origin:bottom;animation:growBar .5s ease both;animation-delay:${i * 12}ms"/>${tick}`;
   }).join('');
-
-  svg.innerHTML = bars;
 }
 
 // ── KPI (Spórolás) ─────────────────────────────────────────────────────
@@ -389,8 +313,7 @@ function updateKpi(amt) {
   const pctEl = el('ringPct');
   if (ringEl) {
     const pct = Math.min(1, amt / 180000);
-    const offset = 232 * (1 - pct);
-    ringEl.style.strokeDashoffset = offset;
+    ringEl.style.strokeDashoffset = 232 * (1 - pct);
     if (pctEl) pctEl.textContent = Math.round(pct * 100) + '%';
   }
 
@@ -398,9 +321,13 @@ function updateKpi(amt) {
   if (monthEl) countUp(monthEl, Math.round(amt / 12));
 
   const co2El = el('kpiCo2');
-  if (co2El) {
-    const co2 = Math.round(amt / 500);
-    countUp(co2El, co2);
+  if (co2El) countUp(co2El, Math.round((amt / 46) * 0.25));
+
+  const subEl = el('kpiSubtitle');
+  if (subEl) {
+    subEl.textContent = S.obsDone
+      ? `A megadott ${S.obsDevices.length} eszközöd és tarifád alapján.`
+      : 'Tipikus háztartás becslése — pontosítsd a saját eszközeiddel.';
   }
 }
 
@@ -408,12 +335,11 @@ function updateKpi(amt) {
 function updateHtnt() {
   const kwh = parseFloat(el('htntKwh')?.value) || 0;
   const pct = parseFloat(el('htntPct')?.value) || 0;
-  const transferred = kwh * (pct / 100);
-  const saving = transferred * (54.27 - 36.18) * 12;
+  const saving = kwh * (pct / 100) * (42 - 26) * 12;
   const resEl = el('htntResult');
   const noteEl = el('htntNote');
   if (resEl) resEl.textContent = `${fmt(saving)} Ft / év`;
-  if (noteEl) noteEl.innerHTML = `≈ ${fmt(saving / 12)} Ft / hó · <a href="https://mekh.hu" target="_blank" rel="noopener">MEKH</a> HT 54,27 / NT 36,18 Ft/kWh`;
+  if (noteEl) noteEl.textContent = `havi ${fmt(saving / 12)} Ft — ha a fogyasztás ${pct}%-a éjszakára kerül`;
 }
 
 // ── Plan tab ───────────────────────────────────────────────────────────
@@ -428,129 +354,69 @@ function renderPlan() {
   const container = el('planContent');
   if (!container) return;
 
-  const now = new Date();
-  const curH = now.getHours();
+  const pr = getPrArr();
+  const nowH = new Date().getHours();
+  const today = pr.slice(0, 24).map(x => x ?? 30);
+  const sorted = sortedArr(today);
+  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
 
-  if (S.planTab === 'klima') {
-    renderKlimaPlan(container, curH);
-  } else {
-    renderNapelemPlan(container, curH);
-  }
-}
-
-function klimaPhase(h) {
-  // Simple heuristic: precool cheap hours, run moderate, coast hot hours, off night
-  if (S.prices.length) {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const todayP = S.prices.filter(p => new Date(p.timestamp).toISOString().slice(0, 10) === todayStr);
-    const vals = todayP.map(p => p.price_huf_kwh);
-    const p33 = percentile(vals, 33);
-    const p67 = percentile(vals, 67);
-    const ph = todayP.find(p => new Date(p.timestamp).getHours() === h);
-    if (ph) {
-      const lvl = priceLevel(ph.price_huf_kwh, p33, p67);
-      if (lvl === 'cheap') return 'precool';
-      if (lvl === 'avg') return 'run';
-      return 'coast';
+  const isKlima = S.planTab === 'klima';
+  const planBlocks = [];
+  for (let h = 0; h < 24; h++) {
+    const l = level(today[h], sorted);
+    let phase, bg;
+    if (isKlima) {
+      if (l === 'draga')           { phase = 'Hőtartalékon';    bg = 'var(--color-neutral-800)'; }
+      else if (h >= 10 && h <= 15) { phase = 'Előhűtés';        bg = 'var(--color-accent-500)'; }
+      else if (l === 'olcso')      { phase = 'Futtathatod';      bg = 'var(--color-accent-200)'; }
+      else                         { phase = 'Hagyd kikapcsolva'; bg = 'var(--color-neutral-200)'; }
+    } else {
+      if (h >= 10 && h <= 15)      { phase = 'Napelem csúcs';       bg = 'var(--color-accent-500)'; }
+      else if (h >= 8 && h <= 17)  { phase = 'Részleges termelés';  bg = 'var(--color-accent-200)'; }
+      else if (l === 'draga')      { phase = 'Kerüld!';             bg = 'var(--bad-500)'; }
+      else if (l === 'olcso')      { phase = 'Olcsó hálózat';       bg = 'var(--color-accent-100)'; }
+      else                         { phase = 'Semleges';             bg = 'var(--color-neutral-200)'; }
     }
-  }
-  if (h >= 22 || h < 6) return 'off';
-  if (h >= 6 && h < 10) return 'precool';
-  if (h >= 10 && h < 16) return 'run';
-  if (h >= 16 && h < 20) return 'coast';
-  return 'off';
-}
-
-function napelemPhase(h) {
-  if (h >= 10 && h <= 14) return 'peak';
-  if ((h >= 8 && h < 10) || (h > 14 && h <= 17)) return 'mild';
-  if (S.prices.length) {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const todayP = S.prices.filter(p => new Date(p.timestamp).toISOString().slice(0, 10) === todayStr);
-    const vals = todayP.map(p => p.price_huf_kwh);
-    const p33 = percentile(vals, 33);
-    const ph = todayP.find(p => new Date(p.timestamp).getHours() === h);
-    if (ph && ph.price_huf_kwh <= p33) return 'cheap';
-    const p67 = percentile(vals, 67);
-    if (ph && ph.price_huf_kwh > p67) return 'exp';
-  }
-  return 'neutral';
-}
-
-const KLIMA_PHASES = {
-  precool: { label: 'Előhűtés', desc: 'Hűtsd le a lakást a csúcsidő előtt.', color: 'var(--color-accent-500)' },
-  run:     { label: 'Futtathatod', desc: 'Átlagos ár — normál üzem.', color: 'var(--color-accent-200)' },
-  coast:   { label: 'Hőtartalékon', desc: 'Kapcsold ki — a lakás hőtartaléka viszi.', color: 'var(--color-neutral-800)' },
-  off:     { label: 'Hagyd kikapcsolva', desc: 'Nincs teendő — hűvös éjszakai órák.', color: 'var(--color-neutral-200)' },
-};
-
-const NAPELEM_PHASES = {
-  peak:    { label: 'Napelem csúcs', desc: 'Futtasd a nagy fogyasztókat most.', color: 'var(--color-accent-500)' },
-  mild:    { label: 'Részleges termelés', desc: 'Közepes napelemes hozam.', color: 'var(--color-accent-200)' },
-  cheap:   { label: 'Olcsó hálózat', desc: 'Érdemes bekapcsolni — kedvező ár.', color: 'var(--color-accent-100)' },
-  exp:     { label: 'Kerüld!', desc: 'Drága hálózati ár — kapcsolj ki mindent.', color: 'oklch(0.58 0.17 25)' },
-  neutral: { label: 'Semleges', desc: 'Normál fogyasztás.', color: 'var(--color-neutral-300)' },
-};
-
-function renderKlimaPlan(container, curH) {
-  const phases = [];
-  for (let h = 0; h < 24; h++) phases.push({ h, phase: klimaPhase(h) });
-
-  // Group consecutive same phases
-  const groups = [];
-  let cur = null;
-  for (const { h, phase } of phases) {
-    if (cur && cur.phase === phase) { cur.end = h + 1; }
-    else { cur = { phase, start: h, end: h + 1 }; groups.push(cur); }
+    planBlocks.push({ phase, bg });
   }
 
-  const cfg = KLIMA_PHASES;
-  const rows = groups.map(g => {
-    const c = cfg[g.phase];
-    const isCur = curH >= g.start && curH < g.end;
-    return `<div class="plan-row" ${isCur ? 'style="background:color-mix(in srgb,var(--color-accent) 6%,transparent);border-radius:8px"' : ''}>
-      <div class="plan-bar" style="background:${c.color}"></div>
+  const planRows = [];
+  planBlocks.forEach((b, h) => {
+    const last = planRows[planRows.length - 1];
+    if (last && last.phase === b.phase) last.end = h + 1;
+    else planRows.push({ phase: b.phase, bg: b.bg, start: h, end: h + 1 });
+  });
+
+  const phaseDescs = {
+    'Előhűtés':         'Hűtsd 1–2 fokkal a komfort alá — olcsó a déli áram.',
+    'Futtathatod':      'Olcsó sáv — mehet a klíma, ha kell.',
+    'Hőtartalékon':     'Kapcsold ki — a lakás hőtartaléka viszi.',
+    'Hagyd kikapcsolva':'Nincs teendő — hűvös éjszakai órák.',
+    'Napelem csúcs':    'Futtasd a nagy fogyasztókat: mosógép, EV.',
+    'Részleges termelés':'Kisebb gépek mehetnek napelemről.',
+    'Olcsó hálózat':    'Éjszakai olcsó áram — EV-töltésre ideális.',
+    'Kerüld!':          'Drága hálózati áram — halaszd későbbre.',
+    'Semleges':         'Nincs teendő.',
+  };
+
+  const tip = isKlima
+    ? 'Tipp: 11:00–15:00 között hűts 1–2 fokkal a komfort alá, 17:00–21:00 között kapcsold ki — a falak hőtárolása kitart.'
+    : 'Tipp: mosógépet, mosogatót 11:00–15:00 közé, EV töltést éjszakára vagy délre időzíts.';
+
+  const rows = planRows.map((r, i) => {
+    const isCur = nowH >= r.start && nowH < r.end;
+    const timeStr = `${String(r.start).padStart(2, '0')}:00–${String(r.end % 24).padStart(2, '0')}:00`;
+    return `<div class="plan-row" style="animation-delay:${i * 50}ms${isCur ? ';background:color-mix(in srgb,var(--color-accent) 6%,transparent);border-radius:8px' : ''}">
+      <div class="plan-bar" style="background:${r.bg}"></div>
       <div class="plan-info">
-        <div class="plan-phase">${c.label}</div>
-        <div class="plan-desc">${c.desc}</div>
+        <div class="plan-phase">${r.phase}</div>
+        <div class="plan-desc">${phaseDescs[r.phase] || ''}</div>
       </div>
-      <div class="plan-time">${String(g.start).padStart(2,'0')}–${String(g.end % 24).padStart(2,'0')}</div>
+      <div class="plan-time">${timeStr}</div>
     </div>`;
   }).join('');
 
-  container.innerHTML = `<div class="plan-card">${rows}
-    <p class="plan-tip text-muted">Tipp: az előhűtéses stratégiával akár 30% klímaenergiát spórolhatsz csúcsnapokon.</p>
-  </div>`;
-}
-
-function renderNapelemPlan(container, curH) {
-  const phases = [];
-  for (let h = 0; h < 24; h++) phases.push({ h, phase: napelemPhase(h) });
-
-  const groups = [];
-  let cur = null;
-  for (const { h, phase } of phases) {
-    if (cur && cur.phase === phase) { cur.end = h + 1; }
-    else { cur = { phase, start: h, end: h + 1 }; groups.push(cur); }
-  }
-
-  const cfg = NAPELEM_PHASES;
-  const rows = groups.map(g => {
-    const c = cfg[g.phase];
-    const isCur = curH >= g.start && curH < g.end;
-    return `<div class="plan-row" ${isCur ? 'style="background:color-mix(in srgb,var(--color-accent) 6%,transparent);border-radius:8px"' : ''}>
-      <div class="plan-bar" style="background:${c.color}"></div>
-      <div class="plan-info">
-        <div class="plan-phase">${c.label}</div>
-        <div class="plan-desc">${c.desc}</div>
-      </div>
-      <div class="plan-time">${String(g.start).padStart(2,'0')}–${String(g.end % 24).padStart(2,'0')}</div>
-    </div>`;
-  }).join('');
-
-  container.innerHTML = `<div class="plan-card">${rows}
-    <p class="plan-tip text-muted">Tipp: 10–14h között futtasd a mosógépet, mosogatógépet — a napelem csúcsteljesítményén ingyen megy.</p>
-  </div>`;
+  container.innerHTML = `<div class="plan-card">${rows}<p class="plan-tip text-muted">${tip}</p></div>`;
 }
 
 // ── Sheet utilities ────────────────────────────────────────────────────
@@ -563,14 +429,14 @@ function overlayClose(e, id) {
 
 // ── Onboarding sheet ───────────────────────────────────────────────────
 function openOnboarding() {
-  S.obsStep = 1;
-  S.obsDevices = [];
+  S.obsStep = 0;
+  S.obsDevices = ['mosogep', 'bojler', 'klima'];
   S.obsTariff = 'rezsi';
-  S.obsFlex = 'elore';
+  S.obsFlex = 'magas';
   buildObsDeviceGrid();
   buildObsTariffGrid();
   buildObsFlexGrid();
-  showObsStep(1);
+  showObsStep(0);
   el('onboardingOverlay').classList.remove('hidden');
 }
 
@@ -578,57 +444,60 @@ function closeOnboarding() {
   el('onboardingOverlay').classList.add('hidden');
 }
 
-function obsNext(step) {
-  if (step === 2) {
+function obsNext(currentStep) {
+  if (currentStep === 1) {
     const amt = calcOnboardingSavings();
     S.savedAmt = amt;
     el('obsResultAmt').textContent = fmt(amt);
-    const tariffLabels = { rezsi: 'Rezsivédett tarifán', htnt: 'HT/NT tarifán', piaci: 'Piaci tarifán' };
-    const flexLabels = { elore: 'előre tervező', nha: 'néha rugalmas', nehez: 'nehézkes' };
-    el('obsResultDesc').textContent = `${tariffLabels[S.obsTariff]}, ${flexLabels[S.obsFlex] || ''} háztartásra becsült éves megtakarítás a kiválasztott eszközök okos időzítésével.`;
+    const descs = {
+      rezsi: 'Rezsivédett tarifán az egységár miatt kisebb a mozgástér — de a HT/NT váltás így is sokat hozhat.',
+      htnt:  'A HT/NT méréseddel az éjszakai időzítés közvetlenül a számládon jelentkezik.',
+      piaci: 'Piaci tarifán az órás árkülönbség teljes egészében a te megtakarításod.',
+    };
+    el('obsResultDesc').textContent = descs[S.obsTariff] || '';
     updateKpi(amt);
   }
-  showObsStep(step + 1);
+  showObsStep(currentStep + 1);
 }
 
-function obsBack(step) { showObsStep(step - 1); }
+function obsBack(currentStep) { showObsStep(currentStep - 1); }
 
 function showObsStep(step) {
-  [1, 2, 3].forEach(s => el(`obs${s}`).style.display = s === step ? '' : 'none');
+  [0, 1, 2].forEach(s => el(`obs${s + 1}`).style.display = s === step ? '' : 'none');
   S.obsStep = step;
 }
 
 function obsDone() {
+  S.obsDone = true;
   closeOnboarding();
   setTab('ma');
 }
 
 function calcOnboardingSavings() {
-  const tariffMult = { rezsi: 0.45, htnt: 1.0, piaci: 1.3 }[S.obsTariff] || 1;
-  const flexMult = { elore: 1.0, nha: 0.7, nehez: 0.4 }[S.obsFlex] || 1;
-  const total = S.obsDevices.reduce((sum, id) => {
-    const d = DEVICES.find(d => d.id === id);
-    return sum + (d ? d.annualSave : 0);
-  }, 0);
-  return Math.round(total * tariffMult * flexMult);
+  return Math.round(
+    S.obsDevices.reduce((sum, id) => {
+      const d = ALL_DEV.find(d => d.id === id);
+      return sum + (d ? d.annual : 0);
+    }, 0) * tariffMult(S.obsTariff) * flexMult(S.obsFlex)
+  );
 }
 
 function buildObsDeviceGrid() {
   const grid = el('obsDeviceGrid');
-  grid.innerHTML = DEVICES.map(d => {
+  grid.innerHTML = ALL_DEV.map(d => {
     const sel = S.obsDevices.includes(d.id);
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="toggleObs('${d.id}')"
-      style="flex-direction:column;align-items:flex-start;padding:10px 12px;min-height:52px">
-      <strong style="font-size:13px">${d.label}</strong>
+    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="toggleObs('${d.id}')" style="display:flex;align-items:center;gap:8px">
+      ${svgIcon(d.icon, 17)}
+      <span>${d.name}</span>
     </button>`;
   }).join('');
 }
 
 function buildObsTariffGrid() {
   const opts = [
-    { id: 'rezsi', label: 'Rezsivédett' },
-    { id: 'htnt',  label: 'HT / NT' },
-    { id: 'piaci', label: 'Piaci' },
+    { id: 'rezsi', label: 'Rezsivédett (egységár)' },
+    { id: 'htnt',  label: 'Kétmérős HT/NT' },
+    { id: 'piaci', label: 'Piaci (tőzsdei)' },
   ];
   el('obsTariffGrid').innerHTML = opts.map(o => {
     const sel = S.obsTariff === o.id;
@@ -638,10 +507,9 @@ function buildObsTariffGrid() {
 
 function buildObsFlexGrid() {
   const opts = [
-    { id: 'elore', label: 'Előre tervezem' },
-    { id: 'nha',   label: 'Néha igen' },
-    { id: 'nehez', label: 'Nehézkes' },
-    { id: 'auto',  label: 'Automatizálom' },
+    { id: 'magas',    label: 'Előre tervezem' },
+    { id: 'kozepes',  label: 'Néha igen' },
+    { id: 'alacsony', label: 'Nehézkes' },
   ];
   el('obsFlexGrid').innerHTML = opts.map(o => {
     const sel = S.obsFlex === o.id;
@@ -649,10 +517,10 @@ function buildObsFlexGrid() {
   }).join('');
 }
 
-
 function toggleObs(id) {
-  if (S.obsDevices.includes(id)) S.obsDevices = S.obsDevices.filter(x => x !== id);
-  else S.obsDevices.push(id);
+  S.obsDevices = S.obsDevices.includes(id)
+    ? S.obsDevices.filter(x => x !== id)
+    : [...S.obsDevices, id];
   buildObsDeviceGrid();
 }
 
@@ -662,7 +530,7 @@ function setObsFlex(v) { S.obsFlex = v; buildObsFlexGrid(); }
 // ── Advisor sheet ──────────────────────────────────────────────────────
 function openAdvisor() {
   S.advStep = 1;
-  S.advDevices = [];
+  S.adv.devices = [];
   buildAdvStep1();
   buildAdvStep2();
   buildAdvStep3Tariff();
@@ -674,12 +542,7 @@ function openAdvisor() {
 function closeAdvisor() { el('advisorOverlay').classList.add('hidden'); }
 
 function advNext(step) {
-  if (step === 3) {
-    S.advBill = parseInt(el('advBill')?.value) || 15000;
-  }
-  if (step === 4) {
-    buildAdvResults();
-  }
+  if (step === 4) buildAdvResults();
   showAdvStep(step + 1);
 }
 
@@ -693,108 +556,181 @@ function showAdvStep(step) {
 }
 
 function buildAdvStep1() {
-  const homes = [{ id: 'haz', label: 'Ház' }, { id: 'tegla', label: 'Tégla lakás' }, { id: 'panel', label: 'Panel lakás' }];
+  const a = S.adv;
+  const homes = [
+    { id: 'haz',         label: 'Ház' },
+    { id: 'lakas_tegla', label: 'Téglaházi lakás' },
+    { id: 'lakas_panel', label: 'Panellakás' },
+  ];
   el('advHomeGrid').innerHTML = homes.map(o => {
-    const sel = S.advHome === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('advHome','${o.id}')">${o.label}</button>`;
+    const sel = a.homeType === o.id;
+    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('homeType','${o.id}')">${o.label}</button>`;
   }).join('');
 
-  const areas = [{ id: 'm40', label: 'max 40 m²' }, { id: 'm60', label: '40–80 m²' }, { id: 'm100', label: '80–120 m²' }, { id: 'm100p', label: '120 m² felett' }];
-  el('advAreaGrid').innerHTML = areas.map(o => {
-    const sel = S.advArea === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('advArea','${o.id}')">${o.label}</button>`;
+  const sizes = [
+    { id: 'small',  label: '60 m² alatt' },
+    { id: 'medium', label: '60–100 m²' },
+    { id: 'large',  label: '100–150 m²' },
+    { id: 'xlarge', label: '150 m² felett' },
+  ];
+  el('advAreaGrid').innerHTML = sizes.map(o => {
+    const sel = a.homeSize === o.id;
+    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('homeSize','${o.id}')">${o.label}</button>`;
   }).join('');
 
-  const heats = [{ id: 'gaz', label: 'Gáz' }, { id: 'hoszivattyu', label: 'Hőszivattyú' }, { id: 'elektromos', label: 'Elektromos' }, { id: 'tavfutes', label: 'Távfűtés' }];
+  const heats = [
+    { id: 'gaz',         label: 'Gázkazán' },
+    { id: 'hoszivattyu', label: 'Hőszivattyú' },
+    { id: 'elektromos',  label: 'Elektromos' },
+    { id: 'tavfutes',    label: 'Távfűtés' },
+  ];
   el('advHeatGrid').innerHTML = heats.map(o => {
-    const sel = S.advHeat === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('advHeat','${o.id}')">${o.label}</button>`;
+    const sel = a.heating === o.id;
+    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('heating','${o.id}')">${o.label}</button>`;
   }).join('');
 }
 
 function buildAdvStep2() {
-  el('advDeviceGrid').innerHTML = DEVICES.map(d => {
-    const sel = S.advDevices.includes(d.id);
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="toggleAdv('${d.id}')">${d.label}</button>`;
+  const a = S.adv;
+  el('advDeviceGrid').innerHTML = ALL_DEV.map(d => {
+    const sel = a.devices.includes(d.id);
+    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="toggleAdv('${d.id}')" style="display:flex;align-items:center;gap:8px">
+      ${svgIcon(d.icon, 17)}
+      <span>${d.name}</span>
+    </button>`;
   }).join('');
 }
 
 function buildAdvStep3Tariff() {
-  const opts = [{ id: 'rezsi', label: 'Rezsivédett' }, { id: 'htnt', label: 'HT / NT' }, { id: 'piaci', label: 'Piaci' }];
+  const opts = [
+    { id: 'rezsi', label: 'Rezsivédett' },
+    { id: 'htnt',  label: 'HT/NT kétmérős' },
+    { id: 'piaci', label: 'Piaci / NKTP' },
+  ];
   const grid = el('advTariffGrid');
   if (!grid) return;
   grid.innerHTML = opts.map(o => {
-    const sel = S.advTariff === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('advTariff','${o.id}')">${o.label}</button>`;
+    const sel = S.adv.tariff === o.id;
+    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('tariff','${o.id}')">${o.label}</button>`;
   }).join('');
 }
 
 function buildAdvStep4() {
+  const a = S.adv;
   const budgets = [
-    { id: 'zero',      label: '0 Ft',       sub: 'Csak ingyenes megoldások' },
-    { id: 'k100',      label: '~100 000 Ft', sub: 'Kis beruházás' },
-    { id: 'k500',      label: '~500 000 Ft', sub: 'Közepes beruházás' },
-    { id: 'barmennyi', label: 'Bármennyi',   sub: 'Maximális megtakarítás' },
+    { val: 0,       label: 'Semmit',       sub: 'csak ingyenes lépések' },
+    { val: 100000,  label: '~100 ezer Ft', sub: 'kisebb eszközök' },
+    { val: 500000,  label: '~500 ezer Ft', sub: 'közepes projekt' },
+    { val: 5000000, label: 'Bármennyit',   sub: 'napelem, hőszivattyú' },
   ];
   el('advBudgetGrid').innerHTML = budgets.map(o => {
-    const sel = S.advBudget === o.id;
-    return `<button class="chip-btn budget-chip ${sel ? 'sel' : ''}" onclick="setAdv('advBudget','${o.id}')">
+    const sel = a.budget === o.val;
+    return `<button class="chip-btn budget-chip ${sel ? 'sel' : ''}" onclick="setAdv('budget',${o.val})">
       <strong>${o.label}</strong><span class="sub">${o.sub}</span>
     </button>`;
   }).join('');
 
-  const prios = [{ id: 'sporolas', label: 'Spórolás' }, { id: 'gyors', label: 'Gyors megtérülés' }, { id: 'kornyezet', label: 'Környezet' }, { id: 'kenyelem', label: 'Kényelem' }];
+  const prios = [
+    { id: 'megtakaritas', label: 'Minél több spórolás' },
+    { id: 'gyors',        label: 'Azonnali eredmény' },
+    { id: 'kornyezet',    label: 'Környezetbarát' },
+    { id: 'kenyelem',     label: 'Kényelem, automatizálás' },
+  ];
   el('advPriorityGrid').innerHTML = prios.map(o => {
-    const sel = S.advPriority === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('advPriority','${o.id}')">${o.label}</button>`;
+    const sel = a.priority === o.id;
+    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('priority','${o.id}')">${o.label}</button>`;
   }).join('');
 }
 
 function buildAdvResults() {
-  const budgetMax = { zero: 0, k100: 100000, k500: 500000, barmennyi: Infinity }[S.advBudget] ?? Infinity;
+  const a = S.adv;
+  const has = id => a.devices.includes(id);
+  const billMult = Math.min(2.5, Math.max(0.5, a.bill / 15000));
+  const devSave = a.devices.reduce((s, id) => {
+    const d = ALL_DEV.find(d => d.id === id);
+    return s + (d ? d.annual : 0);
+  }, 0) * tariffMult(a.tariff) * billMult;
 
-  const recs = ADVISOR_RECS
-    .filter(r => {
-      const costOk = (r.cost ?? 0) <= budgetMax;
-      const condOk = r.cond(S.advDevices, S.advTariff, S.advHeat, S.advHome);
-      return costOk && condOk;
-    })
-    .sort((a, b) => {
-      const pa = b.prio.includes(S.advPriority) ? 1 : 0;
-      const pb = a.prio.includes(S.advPriority) ? 1 : 0;
-      if (pa !== pb) return pb - pa;
-      return b.save - a.save;
-    })
-    .slice(0, 5);
+  const cands = [
+    { t: 'Eszközök időzítése olcsó órákra',
+      d: 'A mosást, bojlert, töltést told az éjszakai és déli olcsó sávokba — ehhez csak ez az app kell.',
+      cost: 0, save: Math.max(devSave, 5000), eco: 1, fast: 1 },
+    { t: 'HT/NT kétmérős tarifa igénylése',
+      d: 'Ingyenesen igényelhető az elosztódtól; az éjszakai sáv 30–40%-kal olcsóbb.',
+      cost: 0, save: 45000 * billMult,
+      ok: a.tariff !== 'htnt' && (has('bojler') || has('ev') || has('hoszivattyu')), fast: 1 },
+    { t: 'Eco programok + teli gép',
+      d: 'A mosó- és mosogatógép eco programja futtatásonként 20–40% energiát spórol.',
+      cost: 0, save: 8000, ok: has('mosogep') || has('mosogatogep'), eco: 1, fast: 1 },
+    { t: 'Okoskonnektorok időzítéssel',
+      d: 'Okosdugalj automatikusan a legolcsóbb órában indítja a gépeket.',
+      cost: 25000, save: 12000, ok: a.devices.length >= 2, comfort: 1, fast: 1 },
+    { t: 'Bojler időzítő beépítése',
+      d: 'A bojler csak éjszaka fűtsön — az egyik legnagyobb egyedi tétel.',
+      cost: 15000, save: 18000 * billMult, ok: has('bojler') },
+    { t: 'Okos termosztát a gázkazánhoz',
+      d: 'Ütemezett, helyiségenkénti fűtés — 10–15% megtakarítás.',
+      cost: 60000, save: 25000, ok: a.heating === 'gaz', comfort: 1 },
+    { t: 'Inverteres klímára csere',
+      d: 'Régi klíma cseréje 30–50%-kal kevesebb áramot fogyaszt.',
+      cost: 350000, save: 20000, ok: has('klima') },
+    { t: 'Napelem rendszer (~4 kWp)',
+      d: 'Önfogyasztásra optimalizálva 8–10 év megtérülés, utána évtizedekig termel.',
+      cost: 3500000, save: 180000, ok: !has('napelemek') && a.homeType === 'haz', eco: 1 },
+    { t: 'Hőszivattyú a gáz kiváltására',
+      d: 'Hosszú távon a legnagyobb megtakarítás — és a legzöldebb fűtés.',
+      cost: 4500000, save: 250000,
+      ok: ['gaz', 'elektromos'].includes(a.heating) && a.homeType === 'haz', eco: 1, comfort: 1 },
+  ].filter(c => (c.ok ?? true) && c.cost <= a.budget);
+
+  const p = a.priority;
+  cands.sort((x, y) =>
+    p === 'megtakaritas' ? y.save - x.save :
+    p === 'gyors'        ? (x.cost - y.cost) || ((y.fast || 0) - (x.fast || 0)) :
+    p === 'kornyezet'    ? ((y.eco || 0) - (x.eco || 0)) || (y.save - x.save) :
+                           ((y.comfort || 0) - (x.comfort || 0)) || (y.save - x.save)
+  );
+  const recs = cands.slice(0, 5);
 
   const totalSave = recs.reduce((s, r) => s + r.save, 0);
-  el('advSummary').textContent = `${recs.length} személyre szabott ajánlás, összesen ~${fmt(totalSave)} Ft/év becsült megtakarítás.`;
+  el('advSummary').textContent = recs.length
+    ? `${recs.length} ajánlás a válaszaid alapján — együtt akár ${fmt(totalSave)} Ft megtakarítás évente.`
+    : 'Nincs a szűrőfeltételeidnek megfelelő ajánlás.';
 
-  el('advRecsList').innerHTML = recs.map((r, i) => `
-    <div class="rec-card">
+  el('advRecsList').innerHTML = recs.map((r, i) => {
+    const costTag = r.cost === 0
+      ? 'Ingyenes'
+      : r.cost < 1e6
+      ? `~${fmt(Math.round(r.cost / 1000))}e Ft`
+      : `~${(r.cost / 1e6).toFixed(1).replace('.', ',')} M Ft`;
+    return `<div class="rec-card">
       <div class="rec-card-top">
-        <strong>${i + 1}. ${r.label}</strong>
-        <span class="tag tag-acc" style="font-size:10px;white-space:nowrap">${r.costLabel}</span>
+        <strong>${i + 1}. ${r.t}</strong>
+        <span class="tag tag-acc" style="white-space:nowrap;font-size:10px">${costTag}</span>
       </div>
-      <p class="rec-desc">${r.desc}</p>
-      <div class="rec-save">~${fmt(r.save)} Ft / év megtakarítás</div>
-    </div>`).join('');
+      <p class="rec-desc">${r.d}</p>
+      <div class="rec-save">~${fmt(Math.round(r.save))} Ft megtakarítás / év</div>
+    </div>`;
+  }).join('');
 }
 
 function setAdv(key, val) {
-  S[key] = val;
-  if (key === 'advHome' || key === 'advArea' || key === 'advHeat') buildAdvStep1();
-  if (key === 'advTariff') buildAdvStep3Tariff();
-  if (key === 'advBudget' || key === 'advPriority') buildAdvStep4();
+  S.adv[key] = val;
+  if (['homeType', 'homeSize', 'heating'].includes(key)) buildAdvStep1();
+  if (key === 'tariff') buildAdvStep3Tariff();
+  if (key === 'budget' || key === 'priority') buildAdvStep4();
 }
 
 function toggleAdv(id) {
-  if (S.advDevices.includes(id)) S.advDevices = S.advDevices.filter(x => x !== id);
-  else S.advDevices.push(id);
+  S.adv.devices = S.adv.devices.includes(id)
+    ? S.adv.devices.filter(x => x !== id)
+    : [...S.adv.devices, id];
   buildAdvStep2();
 }
 
 // ── Data loading ───────────────────────────────────────────────────────
+const BASE_H = [20,18,17,16,17,19,26,34,38,34,28,24,22,21,22,26,33,44,55,58,48,36,28,23];
+
 async function loadPrices() {
   try {
     const res = await fetch('/api/forecast?history_days=7&forecast_days=2');
@@ -803,21 +739,20 @@ async function loadPrices() {
     S.prices = data.prices || [];
     return S.prices;
   } catch (e) {
-    // Fallback: generate demo prices
-    const base = new Date();
-    base.setMinutes(0, 0, 0);
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     S.prices = [];
-    for (let i = -2; i < 46; i++) {
-      const ts = new Date(base.getTime() + i * 3600000);
-      // Sinusoidal pattern with noise
-      const h = ts.getHours();
-      const peak = h >= 17 && h <= 21;
-      const night = h >= 22 || h < 6;
-      let p = 35 + 15 * Math.sin((h / 24) * Math.PI * 2 - 1) + (Math.random() - 0.5) * 8;
-      if (peak) p += 15;
-      if (night) p -= 10;
-      p = Math.max(10, p);
-      S.prices.push({ timestamp: ts.toISOString(), price_huf_kwh: parseFloat(p.toFixed(2)), is_forecast: i >= 0 });
+    for (let d = 0; d < 2; d++) {
+      for (let h = 0; h < 24; h++) {
+        const ts = new Date(dayStart.getTime() + (d * 24 + h) * 3600000);
+        let p = BASE_H[h] * (d ? 1.06 : 1);
+        p += Math.sin((h + d * 7) * 2.1) * 1.4;
+        S.prices.push({
+          timestamp: ts.toISOString(),
+          price_huf_kwh: Math.max(10, parseFloat(p.toFixed(2))),
+          is_forecast: d > 0 || h > now.getHours(),
+        });
+      }
     }
     return S.prices;
   }
@@ -825,38 +760,26 @@ async function loadPrices() {
 
 // ── Boot ───────────────────────────────────────────────────────────────
 async function init() {
-  // HT/NT calculator live update
   ['htntKwh', 'htntPct'].forEach(id => {
     const inp = el(id);
     if (inp) inp.addEventListener('input', updateHtnt);
   });
 
-  // Advisor step 3 tariff grid (rendered lazily when sheet opens)
-  document.getElementById('adv3')?.addEventListener('animationstart', buildAdvStep3Tariff);
+  await loadPrices();
 
-  const prices = await loadPrices();
+  if (S.prices.length) renderHero();
 
-  if (prices.length) {
-    renderHero(prices);
-    renderDeviceGrid(prices);
-  }
-
-  // Default savings estimate (all devices, htnt tariff, moderate flex)
-  const defaultSave = DEVICES.slice(0, 6).reduce((s, d) => s + d.annualSave, 0) * 0.7;
-  S.savedAmt = defaultSave;
-
+  // Default savings from design's initial onboarding state
+  const defaultSave = calcOnboardingSavings();
+  updateKpi(defaultSave);
   updateHtnt();
   renderPlan();
 
-  // Re-render every minute to update current hour
   setInterval(async () => {
-    const fresh = await loadPrices();
-    if (fresh.length) {
-      renderHero(fresh);
-      renderDeviceGrid(fresh);
-      if (S.tab === 'arak') { renderHeatmap(); renderBarChart(); }
-      if (S.tab === 'tervek') renderPlan();
-    }
+    await loadPrices();
+    if (S.prices.length) renderHero();
+    if (S.tab === 'arak') { renderHeatmap(); renderBarChart(); }
+    if (S.tab === 'tervek') renderPlan();
   }, 60000);
 }
 

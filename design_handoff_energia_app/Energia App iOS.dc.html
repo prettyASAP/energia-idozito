@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="_ds/industry-a8e6c072-597e-4a69-bc99-18aa5bcccf1c/styles.css">
+  <script src="_ds/industry-a8e6c072-597e-4a69-bc99-18aa5bcccf1c/_ds_bundle.js"></script>
+  <style>
+    body { margin: 0; background: var(--color-neutral-200); }
+    a { color: var(--color-accent-700); }
+    a:hover { color: var(--color-accent-800); }
+    input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, #b5d9fd 55%, transparent); } 50% { box-shadow: 0 0 0 6px transparent; } }
+    @keyframes growBar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    @keyframes ringIn { from { stroke-dashoffset: 232; } }
+    button { transition: transform .12s ease, filter .12s ease; }
+    button:active { transform: scale(.96); }
+    section { animation: fadeUp .4s ease both; }
+    section:nth-of-type(2) { animation-delay: .08s; }
+    .blueprint > .corner { display: none; }
+    .blueprint, .card { border-radius: 16px; }
+    button, .btn { border-radius: 12px; }
+    .tag { border-radius: 999px; }
+    .input { border-radius: 10px; }
+    .seg { border-radius: 10px; overflow: hidden; }
+    .theme-dark {
+      --color-bg: #141619; --color-surface: #1e2126; --color-text: #e8e9eb;
+      --color-divider: color-mix(in srgb, #e8e9eb 14%, transparent);
+      --color-accent-100: #1d2d3d; --color-accent-200: #2c455d;
+      --color-accent-500: #749dc4; --color-accent-700: #94bce3; --color-accent-800: #b5d9fd;
+      --color-neutral-100: #26282b; --color-neutral-200: #35383c;
+      --color-neutral-600: #98989b; --color-neutral-800: #d4d4d7;
+      --good-100: oklch(0.3 0.05 155); --good-700: oklch(0.8 0.11 155);
+      --bad-100: oklch(0.3 0.05 25); --bad-700: oklch(0.78 0.1 25);
+    }
+    :root {
+      --good-100: oklch(0.95 0.05 155); --good-300: oklch(0.85 0.1 155);
+      --good-500: oklch(0.62 0.13 155); --good-700: oklch(0.47 0.12 155);
+      --bad-100: oklch(0.95 0.04 25); --bad-300: oklch(0.83 0.09 25);
+      --bad-500: oklch(0.58 0.17 25); --bad-700: oklch(0.46 0.15 25);
+
+    }
+  </style>
+</helmet>
+<div style="min-height:100vh;display:grid;place-items:center;padding:32px 16px;font-family:var(--font-body)">
+  <div style="position:relative">
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ isDark }}" hint-size="402px,874px">
+    <div class="{{ themeClass }}" style="height:100%;display:flex;flex-direction:column;position:relative;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+
+      <div style="position:absolute;top:0;left:0;right:0;z-index:20;padding:64px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-divider);background:color-mix(in srgb, var(--color-bg) 72%, transparent);backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%)">
+        <span style="display:flex;align-items:center;gap:8px;font-family:var(--font-heading);font-weight:600;font-size:19px">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8"></path></svg>
+          Energia Időzítő
+        </span>
+        <span class="tag tag-outline" style="font-size:10px">ENTSO-E · élő</span>
+      </div>
+
+      <div style="position:absolute;inset:0;overflow-y:auto;padding:128px 14px 0;display:flex;flex-direction:column;gap:26px">
+
+        <sc-if value="{{ tabIsMa }}" hint-placeholder-val="{{ true }}">
+          <section class="blueprint elev-md" style="padding:16px;display:flex;flex-direction:column;gap:12px;background-color:var(--color-accent-900);background-image:linear-gradient(color-mix(in srgb, #b5d9fd 6%, transparent) 1px, transparent 1px),linear-gradient(90deg, color-mix(in srgb, #b5d9fd 6%, transparent) 1px, transparent 1px),radial-gradient(130% 100% at 88% -12%, color-mix(in srgb, #749dc4 38%, transparent), transparent 62%);background-size:22px 22px, 22px 22px, 100% 100%;color:#f5f5f8;border-color:#2c455d;animation:fadeUp .4s ease both">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="tag" style="background:{{ statusBg }};color:{{ statusFg }};font-family:var(--font-heading);letter-spacing:.08em;text-transform:uppercase;font-size:11px;padding:4px 10px">{{ statusLabel }}</span>
+              <span style="display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:var(--font-heading);opacity:.7"><i style="width:7px;height:7px;border-radius:50%;background:var(--color-accent-300);display:inline-block;animation:pulse 2.2s ease-in-out infinite"></i>Élő ár</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:9px">
+              <span style="font-family:var(--font-heading);font-weight:600;font-size:62px;line-height:.9;color:{{ priceColor }}">{{ currentPrice }}</span>
+              <span style="font-family:var(--font-heading);font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.7">Ft / kWh</span>
+              <span style="font-family:var(--font-heading);font-weight:600;font-size:15px;color:{{ trendColor }};margin-left:auto">{{ trendLabel }}</span>
+            </div>
+            <p style="margin:0;font-size:13px;opacity:.85;text-wrap:pretty;border-top:1px solid color-mix(in srgb, var(--color-neutral-100) 22%, transparent);padding-top:10px">{{ heroSub }}</p>
+          </section>
+
+          <section>
+            <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:2px">Ajánlás</div>
+            <h2 style="font-size:22px;margin:0 0 12px">Mikor kapcsoljam be?</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <sc-for list="{{ deviceCards }}" as="d" hint-placeholder-count="6">
+                <div class="blueprint elev-sm" style="padding:12px 11px;display:flex;flex-direction:column;gap:7px;background:{{ d.cardBg }};animation:fadeUp .45s ease both;animation-delay:{{ d.delay }}">
+                  <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+                    <span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:{{ d.iconBg }};color:{{ d.iconFg }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ d.icon }}"></path></svg></span>
+                    <span class="tag" style="background:{{ d.tagBg }};color:{{ d.tagFg }};font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;font-family:var(--font-heading);white-space:nowrap;padding:2px 7px">{{ d.tag }}</span>
+                  </div>
+                  <div style="font-family:var(--font-heading);font-weight:600;font-size:16px">{{ d.name }}</div>
+                  <div style="font-size:11px;display:flex;flex-direction:column">
+                    <span class="text-muted">Legjobb ablak</span>
+                    <strong style="font-size:14px;color:var(--color-accent-700)">{{ d.win }}</strong>
+                  </div>
+                  <div style="font-size:10.5px;border-top:1px solid var(--color-divider);padding-top:6px;font-weight:500;color:var(--good-700)">{{ d.save }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+
+          <button class="btn btn-primary blueprint btn-block" style="min-height:48px" onClick="{{ openOnb }}">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            Mennyit spórolhatok? →
+          </button>
+        </sc-if>
+
+        <sc-if value="{{ tabIsArak }}" hint-placeholder-val="{{ false }}">
+          <section>
+            <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:2px">Árak</div>
+            <h2 style="font-size:22px;margin:0 0 4px">Mai árak óránként</h2>
+            <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Koppints egy cellára a részletekhez.</p>
+            <div class="blueprint elev-sm" style="padding:12px;background:var(--color-surface)">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px">
+                <sc-for list="{{ heatCells }}" as="c" hint-placeholder-count="24">
+                  <div onClick="{{ c.onClick }}" style="aspect-ratio:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};outline:{{ c.outline }};outline-offset:-2px;border-radius:9px;animation:fadeUp .3s ease both;animation-delay:{{ c.delay }};transition:filter .15s ease" style-hover="filter:brightness(1.08)">
+                    <span style="font-family:var(--font-heading);font-weight:600;font-size:13px">{{ c.label }}</span>
+                    <span style="font-size:9px;opacity:.75">{{ c.price }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:10px;font-size:12.5px;font-weight:500">{{ heatDetail }}</div>
+              <div style="display:flex;gap:12px;font-size:10.5px;margin-top:8px" class="text-muted">
+                <span style="display:flex;align-items:center;gap:5px"><i style="width:9px;height:9px;background:var(--good-500);display:inline-block"></i>Olcsó</span>
+                <span style="display:flex;align-items:center;gap:5px"><i style="width:9px;height:9px;background:var(--color-accent-200);display:inline-block"></i>Átlagos</span>
+                <span style="display:flex;align-items:center;gap:5px"><i style="width:9px;height:9px;background:var(--bad-500);display:inline-block"></i>Drága</span>
+              </div>
+            </div>
+          </section>
+          <section>
+            <h2 style="font-size:22px;margin:0 0 4px">48 órás grafikon</h2>
+            <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Ma + holnap (előrejelzés halványan). Forrás: ENTSO-E day-ahead.</p>
+            <div class="blueprint elev-sm" style="padding:14px 12px;background:var(--color-surface)">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <svg viewBox="0 0 480 170" style="width:100%;display:block">
+                <sc-for list="{{ chartBars }}" as="r" hint-placeholder-count="48">
+                  <rect x="{{ r.x }}" y="{{ r.y }}" width="8" height="{{ r.h }}" fill="{{ r.fill }}" opacity="{{ r.op }}" style="transform-box:fill-box;transform-origin:bottom;animation:growBar .5s ease both;animation-delay:{{ r.delay }}"></rect>
+                </sc-for>
+                <sc-for list="{{ chartTicks }}" as="t" hint-placeholder-count="8">
+                  <text x="{{ t.x }}" y="168" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">{{ t.label }}</text>
+                </sc-for>
+              </svg>
+            </div>
+            <p class="text-muted" style="font-size:10.5px;line-height:1.6;margin:12px 0 0">
+              Források: <a href="https://transparency.entsoe.eu" target="_blank" rel="noopener">ENTSO-E</a> · <a href="https://www.ecb.europa.eu/stats/eurofxref/" target="_blank" rel="noopener">EKB</a> · <a href="https://www.mekh.hu" target="_blank" rel="noopener">MEKH</a> · <a href="https://www.mavir.hu" target="_blank" rel="noopener">MAVIR</a>. Tájékoztató jellegű adatok.
+            </p>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ tabIsSporolas }}" hint-placeholder-val="{{ false }}">
+          <section>
+            <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:2px">Megtakarítás</div>
+            <h2 style="font-size:22px;margin:0 0 4px">Mennyit spórolhatsz?</h2>
+            <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">{{ kpiSubtitle }}</p>
+            <div class="blueprint" style="padding:18px 16px;background:var(--color-accent-900);color:#f5f5f8;display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div>
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:40px;line-height:1;color:var(--good-300)">{{ kpiYear }}</div>
+                <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);opacity:.75;margin-top:5px">Ft / év becsült megtakarítás</div>
+              </div>
+              <div style="position:relative;width:88px;height:88px;flex:none">
+                <svg width="88" height="88" viewBox="0 0 88 88" style="display:block">
+                  <circle cx="44" cy="44" r="37" fill="none" stroke="color-mix(in srgb, #b5d9fd 18%, transparent)" stroke-width="6"></circle>
+                  <circle cx="44" cy="44" r="37" fill="none" stroke="var(--good-300)" stroke-width="6" stroke-dasharray="232" stroke-dashoffset="{{ ringOffset }}" transform="rotate(-90 44 44)" style="animation:ringIn 1s ease both"></circle>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0px;text-align:center">
+                  <span style="font-family:var(--font-heading);font-weight:600;font-size:19px;line-height:1;color:var(--good-300)">{{ ringPct }}</span>
+                  <span style="font-size:9px;color:color-mix(in srgb, #f5f5f8 72%, transparent)">a számládból</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+              <div class="blueprint elev-sm" style="padding:14px;background:var(--color-accent-100)">
+                <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:26px;color:var(--good-700)">{{ kpiMonth }}</div>
+                <div class="text-muted" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading)">Ft / hó</div>
+              </div>
+              <div class="blueprint elev-sm" style="padding:14px;background:var(--color-accent-100)">
+                <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:26px;color:var(--good-700)">{{ kpiCo2 }}</div>
+                <div class="text-muted" style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading)">kg CO₂ / év</div>
+              </div>
+            </div>
+            <button class="btn btn-primary blueprint btn-block" style="min-height:48px;margin-top:12px" onClick="{{ openOnb }}">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              Pontosítom a saját eszközeimmel →
+            </button>
+          </section>
+          <section>
+            <h2 style="font-size:22px;margin:0 0 4px">HT/NT kalkulátor</h2>
+            <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Az éjszakai (NT) sáv 30–40%-kal olcsóbb.</p>
+            <div class="blueprint elev-sm" style="padding:16px 14px;display:flex;flex-direction:column;gap:14px;background:var(--color-surface)">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div class="field">
+                <label>Havi fogyasztás (kWh)</label>
+                <input class="input" type="number" min="10" max="5000" style="min-height:44px" value="{{ htntKwh }}" onChange="{{ onHtntKwh }}">
+              </div>
+              <div class="field">
+                <label>Ebből éjszakára áttehető (%)</label>
+                <input class="input" type="number" min="0" max="80" style="min-height:44px" value="{{ htntPct }}" onChange="{{ onHtntPct }}">
+              </div>
+              <div style="border-top:1px solid var(--color-divider);padding-top:12px">
+                <span style="font-family:var(--font-heading);font-weight:600;font-size:26px;color:var(--good-700)">{{ htntYear }} Ft / év</span>
+                <div class="text-muted" style="font-size:12px;margin-top:2px">{{ htntNote }}</div>
+              </div>
+              <p class="text-muted" style="font-size:10.5px;margin:0">A mérő ingyenesen igényelhető az elosztódtól, csere 1–3 hónap. <a href="https://www.mekh.hu" target="_blank" rel="noopener">MEKH ↗</a></p>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ tabIsTervek }}" hint-placeholder-val="{{ false }}">
+          <section>
+            <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:2px">Napi terv</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+              <h2 style="font-size:22px;margin:0">{{ planTitle }}</h2>
+              <div class="seg">
+                <label class="seg-opt" style="min-height:40px"><input type="radio" name="plan" checked="{{ planIsKlima }}" onChange="{{ setPlanKlima }}">Klíma</label>
+                <label class="seg-opt" style="min-height:40px"><input type="radio" name="plan" checked="{{ planIsSolar }}" onChange="{{ setPlanSolar }}">Napelem</label>
+              </div>
+            </div>
+            <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">{{ planSub }}</p>
+            <div class="blueprint elev-sm" style="padding:14px 12px;background:var(--color-surface)">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ planRows }}" as="r" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--color-divider);animation:fadeUp .35s ease both;animation-delay:{{ r.delay }}">
+                    <span style="width:12px;height:38px;border-radius:5px;background:{{ r.bg }};flex:none"></span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-family:var(--font-heading);font-weight:600;font-size:15px">{{ r.phase }}</div>
+                      <div class="text-muted" style="font-size:11.5px">{{ r.desc }}</div>
+                    </div>
+                    <strong style="font-family:var(--font-heading);font-size:15px;color:var(--color-accent-700);white-space:nowrap">{{ r.time }}</strong>
+                  </div>
+                </sc-for>
+              </div>
+              <p style="font-size:12.5px;margin:12px 0 0;padding-top:2px">{{ planTip }}</p>
+            </div>
+          </section>
+          <section>
+            <h2 style="font-size:22px;margin:0 0 4px">Személyes energiaterv</h2>
+            <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">4 kérdés — rangsorolt ajánlások az otthonodra szabva.</p>
+            <button class="btn btn-primary blueprint btn-block" style="min-height:48px" onClick="{{ openAdv }}">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              Kérem a tervemet →
+            </button>
+          </section>
+        </sc-if>
+
+        <div style="height:104px;flex:none"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--color-divider);background:color-mix(in srgb, var(--color-bg) 76%, transparent);backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);padding:6px 6px 30px;position:absolute;bottom:0;left:0;right:0;z-index:20">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onClick }}" style="min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;font:inherit;color:{{ t.color }};border-top:2px solid {{ t.bar }};margin-top:-7px;padding-top:8px">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.icon }}"></path></svg>
+            <span style="font-size:10px;font-family:var(--font-heading);font-weight:600;letter-spacing:.06em;text-transform:uppercase">{{ t.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ onbOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:40;display:flex;align-items:flex-end;background:color-mix(in srgb, var(--color-neutral-900) 50%, transparent);animation:fadeIn .25s ease both">
+          <div class="blueprint" style="width:100%;max-height:82%;overflow-y:auto;background:var(--color-bg);border-radius:22px 22px 0 0;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px;animation:slideUp .5s cubic-bezier(.32,1.2,.42,1) both">
+            <i class="corner tl"></i><i class="corner tr"></i>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="text-muted" style="font-size:11px;font-family:var(--font-heading);letter-spacing:.1em;text-transform:uppercase">{{ onbStepLabel }}</span>
+              <button class="btn btn-icon btn-ghost" onClick="{{ closeOnb }}" aria-label="Bezárás">✕</button>
+            </div>
+            <sc-if value="{{ onbIs0 }}" hint-placeholder-val="{{ true }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">Melyik eszközeid vannak otthon?</div>
+              <p class="text-muted" style="font-size:13px;margin:0">Több is választható — ezekre becsüljük a megtakarítást.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <sc-for list="{{ onbDeviceChips }}" as="c" hint-placeholder-count="8">
+                  <button onClick="{{ c.onToggle }}" style="min-height:46px;display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font:inherit;font-size:13px;text-align:left;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bc }}">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ c.icon }}"></path></svg>
+                    {{ c.label }}
+                  </button>
+                </sc-for>
+              </div>
+              <div style="display:flex;justify-content:space-between;gap:8px">
+                <button class="btn btn-ghost" onClick="{{ closeOnb }}">Kihagyom</button>
+                <button class="btn btn-primary" style="min-height:46px" onClick="{{ onbNext }}">Tovább →</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onbIs1 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">Milyen áramtarifád van?</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ tariffChips }}" as="c" hint-placeholder-count="3">
+                  <button onClick="{{ c.onPick }}" style="min-height:44px;padding:8px 13px;cursor:pointer;font:inherit;font-size:13px;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bc }}">{{ c.label }}</button>
+                </sc-for>
+              </div>
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;margin-top:4px">Mennyire vagy rugalmas az időzítésben?</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ flexChips }}" as="c" hint-placeholder-count="3">
+                  <button onClick="{{ c.onPick }}" style="min-height:44px;padding:8px 13px;cursor:pointer;font:inherit;font-size:13px;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bc }}">{{ c.label }}</button>
+                </sc-for>
+              </div>
+              <div style="display:flex;justify-content:space-between;gap:8px">
+                <button class="btn btn-ghost" onClick="{{ onbBack }}">← Vissza</button>
+                <button class="btn btn-primary" style="min-height:46px" onClick="{{ onbNext }}">Számítsd ki →</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onbIs2 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">A te megtakarítási potenciálod</div>
+              <div class="blueprint" style="padding:20px;text-align:center;background:var(--color-accent-900);color:#f5f5f8">
+                <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:40px;line-height:1;color:var(--good-300)">{{ onbSaving }} Ft</div>
+                <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-heading);opacity:.75;margin-top:6px">becsült megtakarítás évente</div>
+              </div>
+              <p class="text-muted" style="font-size:13px;margin:0">{{ onbDesc }}</p>
+              <p class="text-muted" style="font-size:10.5px;margin:0">Forrás: MEKH 2024 szabályozott tarifa + HUPX historikus árak.</p>
+              <div style="display:flex;justify-content:space-between;gap:8px">
+                <button class="btn btn-ghost" onClick="{{ onbBack }}">← Vissza</button>
+                <button class="btn btn-primary" style="min-height:46px" onClick="{{ finishOnb }}">Mutasd az ablakokat</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ advOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:40;display:flex;align-items:flex-end;background:color-mix(in srgb, var(--color-neutral-900) 50%, transparent);animation:fadeIn .25s ease both">
+          <div class="blueprint" style="width:100%;max-height:88%;overflow-y:auto;background:var(--color-bg);border-radius:22px 22px 0 0;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px;animation:slideUp .5s cubic-bezier(.32,1.2,.42,1) both">
+            <i class="corner tl"></i><i class="corner tr"></i>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <div style="flex:1;height:3px;background:var(--color-neutral-200)"><div style="height:100%;background:var(--color-accent);width:{{ advProgress }}"></div></div>
+              <span class="text-muted" style="font-size:11px;font-family:var(--font-heading);letter-spacing:.1em">{{ advStepLabel }}</span>
+              <button class="btn btn-icon btn-ghost" onClick="{{ closeAdv }}" aria-label="Bezárás">✕</button>
+            </div>
+            <sc-if value="{{ advIs0 }}" hint-placeholder-val="{{ true }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">Milyen az otthonod?</div>
+              <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Ingatlan típusa</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ advHomeTypes }}" as="o" hint-placeholder-count="3">
+                  <button onClick="{{ o.onPick }}" style="min-height:44px;padding:8px 13px;cursor:pointer;font:inherit;font-size:13px;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bc }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+              <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Alapterület</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ advSizes }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.onPick }}" style="min-height:44px;padding:8px 13px;cursor:pointer;font:inherit;font-size:13px;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bc }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+              <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Fő fűtés</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ advHeatings }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.onPick }}" style="min-height:44px;padding:8px 13px;cursor:pointer;font:inherit;font-size:13px;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bc }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ advIs1 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">Milyen eszközeid vannak?</div>
+              <p class="text-muted" style="font-size:13px;margin:0">Ezekre kapsz személyre szabott tanácsot.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <sc-for list="{{ advDevChips }}" as="c" hint-placeholder-count="8">
+                  <button onClick="{{ c.onToggle }}" style="min-height:46px;display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font:inherit;font-size:13px;text-align:left;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bc }}">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ c.icon }}"></path></svg>
+                    {{ c.label }}
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ advIs2 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">A jelenlegi helyzeted</div>
+              <div class="field">
+                <label>Havi villanyszámla (Ft) — becslés is elég</label>
+                <input class="input" type="number" min="2000" max="200000" step="1000" style="min-height:44px" value="{{ advBill }}" onChange="{{ onAdvBill }}">
+              </div>
+              <p class="text-muted" style="font-size:11px;margin:0">Átlag háztartás: 10 000–20 000 Ft/hó</p>
+              <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Jelenlegi tarifa</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ advTariffs }}" as="o" hint-placeholder-count="3">
+                  <button onClick="{{ o.onPick }}" style="min-height:44px;padding:8px 13px;cursor:pointer;font:inherit;font-size:13px;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bc }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ advIs3 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">Célok és lehetőségek</div>
+              <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Mennyit fektetnél be?</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <sc-for list="{{ advBudgets }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.onPick }}" style="min-height:52px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:8px 12px;cursor:pointer;font:inherit;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bc }}">
+                    <strong style="font-size:13px">{{ o.label }}</strong>
+                    <span style="font-size:10.5px;opacity:.7">{{ o.sub }}</span>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="font-family:var(--font-heading);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">Mi a legfontosabb?</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ advPriorities }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.onPick }}" style="min-height:44px;padding:8px 13px;cursor:pointer;font:inherit;font-size:13px;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bc }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ advIs4 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:21px">A te személyes energiaterved</div>
+              <p class="text-muted" style="font-size:13px;margin:0">{{ advSummary }}</p>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ advRecs }}" as="r" hint-placeholder-count="4">
+                  <div class="blueprint" style="padding:12px;display:flex;flex-direction:column;gap:5px">
+                    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+                      <strong style="font-family:var(--font-heading);font-size:15px">{{ r.rank }}. {{ r.title }}</strong>
+                      <span class="tag tag-accent" style="white-space:nowrap;font-size:10px">{{ r.costTag }}</span>
+                    </div>
+                    <p style="font-size:12.5px;margin:0" class="text-muted">{{ r.desc }}</p>
+                    <span style="font-size:12.5px;font-weight:500;color:var(--good-700)">{{ r.save }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
+              <button class="btn btn-ghost" onClick="{{ advBackOrClose }}">{{ advBackLabel }}</button>
+              <button class="btn btn-primary" style="min-height:46px" onClick="{{ advNextOrClose }}">{{ advNextLabel }}</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </x-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;darkMode&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Megjelenés&quot;},
+  &quot;demoHour&quot;: {&quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: -1, &quot;min&quot;: -1, &quot;max&quot;: 23, &quot;step&quot;: 1, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Demó&quot;, &quot;description&quot;: &quot;-1 = valós idő, egyébként a nap adott órája&quot;},
+  &quot;scenario&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;tipikus nap&quot;, &quot;options&quot;: [&quot;tipikus nap&quot;, &quot;napos nyári nap&quot;, &quot;téli este&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Demó&quot;}
+}">
+class Component extends DCLogic {
+  state = {
+    tab: 'ma', selHour: null, planTab: 'klima',
+    htntKwh: 200, htntPct: 40,
+    onbOpen: false, onbStep: 0, onbDevices: ['mosogep', 'bojler', 'klima'], onbTariff: 'rezsi', onbFlex: 'magas', onbDone: false,
+    advOpen: false, advStep: 0,
+    adv: { homeType: 'haz', homeSize: 'medium', heating: 'gaz', devices: ['mosogep', 'klima'], bill: 15000, tariff: 'rezsi', budget: 100000, priority: 'megtakaritas' }
+  };
+  componentDidMount() {
+    this._t = setInterval(() => this.forceUpdate(), 60000);
+    const start = performance.now();
+    const step = t => {
+      const k = Math.min(1, (t - start) / 900);
+      this.setState({ tick: 1 - Math.pow(1 - k, 3) });
+      if (k < 1) this._raf = requestAnimationFrame(step);
+    };
+    this._raf = requestAnimationFrame(step);
+  }
+  componentWillUnmount() { clearInterval(this._t); cancelAnimationFrame(this._raf); }
+
+  fmt(n) { return Math.round(n).toLocaleString('hu-HU'); }
+  fmt1(n) { return n.toFixed(1).replace('.', ','); }
+
+  prices() {
+    const base = [20,18,17,16,17,19,26,34,38,34,28,24,22,21,22,26,33,44,55,58,48,36,28,23];
+    const scen = this.props.scenario ?? 'tipikus nap';
+    const out = [];
+    for (let d = 0; d < 2; d++) for (let h = 0; h < 24; h++) {
+      let p = base[h] * (d ? 1.06 : 1);
+      if (scen === 'napos nyári nap' && h >= 10 && h <= 15) p *= 0.55;
+      if (scen === 'téli este' && h >= 17 && h <= 21) p *= 1.3;
+      out.push(p + Math.sin((h + d * 7) * 2.1) * 1.4);
+    }
+    return out;
+  }
+  nowH() { const d = this.props.demoHour ?? -1; return d >= 0 ? d : new Date().getHours(); }
+  level(p, sorted) { return p <= sorted[7] ? 'olcso' : p >= sorted[16] ? 'draga' : 'atlagos'; }
+  bestWindow(pr, from, dur) {
+    let best = from, bestAvg = 1e9;
+    for (let s = from; s <= from + 24 - dur && s + dur <= pr.length; s++) {
+      const avg = pr.slice(s, s + dur).reduce((a, b) => a + b, 0) / dur;
+      if (avg < bestAvg) { bestAvg = avg; best = s; }
+    }
+    return { start: best, avg: bestAvg };
+  }
+  deviceDefs() {
+    return [
+      { id: 'mosogep', name: 'Mosógép', kwh: 1.0, dur: 2, annual: 6000, icon: 'M5 3h14v18H5z M8 6h.01 M11 6h.01 M12 14m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0' },
+      { id: 'mosogatogep', name: 'Mosogatógép', kwh: 1.2, dur: 2, annual: 5000, icon: 'M5 3h14v18H5z M5 8h14 M12 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0' },
+      { id: 'bojler', name: 'Bojler', kwh: 8, dur: 3, annual: 18000, icon: 'M7 2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2H7a2 2 0 0 1 -2 -2V4a2 2 0 0 1 2 -2z M9 20v2 M15 20v2 M9 9c1 -1 2 -1 3 0s2 1 3 0' },
+      { id: 'klima', name: 'Klíma', kwh: 2.5, dur: 4, annual: 9000, icon: 'M3 5h18v6H3z M6 8h.01 M17 8h.01 M7 14c0 2 -1 2 -1 4 M12 14c0 2 -1 2 -1 4 M17 14c0 2 -1 2 -1 4' },
+      { id: 'ev', name: 'EV töltő', kwh: 11, dur: 4, annual: 30000, icon: 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8' },
+      { id: 'szarito', name: 'Szárítógép', kwh: 2.5, dur: 2, annual: 7000, icon: 'M5 3h14v18H5z M12 13m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 13m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0' }
+    ];
+  }
+  extraDefs() {
+    return [
+      { id: 'hoszivattyu', name: 'Hőszivattyú', annual: 15000, icon: 'M12 3v18 M5 8l7 -5 7 5 M8 21v-6h8v6' },
+      { id: 'napelemek', name: 'Napelem', annual: 12000, icon: 'M4 6h16l2 9H2z M12 15v6 M8 21h8 M8 9h.01 M12 9h.01 M16 9h.01' }
+    ];
+  }
+  chip(label, sel, onPick, icon) {
+    return { label, icon, onToggle: onPick, onPick,
+      bg: sel ? 'var(--color-accent)' : 'transparent',
+      fg: sel ? 'var(--color-bg)' : 'var(--color-text)',
+      bc: sel ? 'var(--color-accent)' : 'var(--color-divider)' };
+  }
+  tariffMult(t) { return t === 'rezsi' ? 0.45 : t === 'htnt' ? 1.0 : 1.3; }
+  flexMult(f) { return f === 'magas' ? 1.0 : f === 'kozepes' ? 0.7 : 0.4; }
+  onbSavingVal() {
+    const all = [...this.deviceDefs(), ...this.extraDefs()];
+    const sum = this.state.onbDevices.reduce((a, id) => a + (all.find(d => d.id === id)?.annual || 0), 0);
+    return sum * this.tariffMult(this.state.onbTariff) * this.flexMult(this.state.onbFlex);
+  }
+  advRecsList() {
+    const a = this.state.adv, has = id => a.devices.includes(id);
+    const all = [...this.deviceDefs(), ...this.extraDefs()];
+    const billMult = Math.min(2.5, Math.max(0.5, a.bill / 15000));
+    const devSave = a.devices.reduce((s, id) => s + (all.find(d => d.id === id)?.annual || 0), 0) * this.tariffMult(a.tariff) * billMult;
+    const cands = [
+      { t: 'Eszközök időzítése olcsó órákra', d: 'A mosást, bojlert, töltést told az éjszakai és déli olcsó sávokba — ehhez csak ez az app kell.', cost: 0, save: Math.max(devSave, 5000), eco: 1, fast: 1 },
+      { t: 'HT/NT kétmérős tarifa igénylése', d: 'Ingyenesen igényelhető az elosztódtól; az éjszakai sáv 30–40%-kal olcsóbb.', cost: 0, save: 45000 * billMult, ok: a.tariff !== 'htnt' && (has('bojler') || has('ev') || has('hoszivattyu')), fast: 1 },
+      { t: 'Eco programok + teli gép', d: 'A mosó- és mosogatógép eco programja futtatásonként 20–40% energiát spórol.', cost: 0, save: 8000, ok: has('mosogep') || has('mosogatogep'), eco: 1, fast: 1 },
+      { t: 'Okoskonnektorok időzítéssel', d: 'Okosdugalj automatikusan a legolcsóbb órában indítja a gépeket.', cost: 25000, save: 12000, ok: a.devices.length >= 2, comfort: 1, fast: 1 },
+      { t: 'Bojler időzítő beépítése', d: 'A bojler csak éjszaka fűtsön — az egyik legnagyobb egyedi tétel.', cost: 15000, save: 18000 * billMult, ok: has('bojler') },
+      { t: 'Okos termosztát a gázkazánhoz', d: 'Ütemezett, helyiségenkénti fűtés — 10–15% megtakarítás.', cost: 60000, save: 25000, ok: a.heating === 'gaz', comfort: 1 },
+      { t: 'Inverteres klímára csere', d: 'Régi klíma cseréje 30–50%-kal kevesebb áramot fogyaszt.', cost: 350000, save: 20000, ok: has('klima') },
+      { t: 'Napelem rendszer (~4 kWp)', d: 'Önfogyasztásra optimalizálva 8–10 év megtérülés, utána évtizedekig termel.', cost: 3500000, save: 180000, ok: !has('napelemek') && a.homeType === 'haz', eco: 1 },
+      { t: 'Hőszivattyú a gáz kiváltására', d: 'Hosszú távon a legnagyobb megtakarítás — és a legzöldebb fűtés.', cost: 4500000, save: 250000, ok: ['gaz', 'elektromos'].includes(a.heating) && a.homeType === 'haz', eco: 1, comfort: 1 }
+    ].filter(c => (c.ok ?? true) && c.cost <= a.budget);
+    const p = a.priority;
+    cands.sort((x, y) => p === 'megtakaritas' ? y.save - x.save
+      : p === 'gyors' ? (x.cost - y.cost) || ((y.fast || 0) - (x.fast || 0))
+      : p === 'kornyezet' ? ((y.eco || 0) - (x.eco || 0)) || (y.save - x.save)
+      : ((y.comfort || 0) - (x.comfort || 0)) || (y.save - x.save));
+    return cands.slice(0, 5);
+  }
+
+  renderVals() {
+    const pr = this.prices(), nowH = this.nowH(), cur = pr[nowH];
+    const sorted = [...pr.slice(0, 24)].sort((a, b) => a - b);
+    const lvl = this.level(cur, sorted);
+    const avg24 = pr.slice(0, 24).reduce((a, b) => a + b, 0) / 24;
+    const s = this.state;
+    const set = patch => this.setState(patch);
+
+    const tabDefs = [
+      ['ma', 'Ma', 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8'],
+      ['arak', 'Árak', 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z'],
+      ['sporolas', 'Spórolás', 'M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],
+      ['tervek', 'Tervek', 'M8 2v4 M16 2v4 M3 8h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2H5a2 2 0 0 1 -2 -2V6a2 2 0 0 1 2 -2z']
+    ];
+    const tabs = tabDefs.map(([id, label, icon]) => ({
+      label, icon, onClick: () => set({ tab: id }),
+      color: s.tab === id ? 'var(--color-accent-700)' : 'var(--color-neutral-600)',
+      bar: s.tab === id ? 'var(--color-accent)' : 'transparent'
+    }));
+
+    let nextCheap = 0;
+    for (let h = nowH + 1; h < 48; h++) if (pr[h] < cur * 0.85) { nextCheap = h - nowH; break; }
+    const heroTitle = lvl === 'olcso' ? 'Most olcsó az áram — indítsd a gépeket!'
+      : lvl === 'draga' ? 'Most drága — érdemes várni.' : 'Átlagos ár most:\n';
+    const heroSub = lvl === 'olcso' ? 'A mai nap egyik legolcsóbb órájában vagyunk. Mosógép, bojler, EV töltés — most éri meg.'
+      : nextCheap ? `Kb. ${nextCheap} óra múlva jön jelentősen olcsóbb sáv. Addig az alábbi ajánlásokat kövesd.`
+      : 'Az aktuális piaci ár alapján megmondjuk, mikor érdemes bekapcsolni.';
+    const statusMap = { olcso: ['Most olcsó', 'var(--good-500)', '#fff'], atlagos: ['Átlagos ár', '#d6ebff', '#2c455d'], draga: ['Most drága', 'var(--bad-500)', '#fff'] };
+    const [statusLabel, statusBg, statusFg] = statusMap[lvl];
+    const priceColor = lvl === 'olcso' ? 'var(--good-300)' : lvl === 'draga' ? 'var(--bad-300)' : '#d6ebff';
+    const prev = pr[(nowH - 1 + 24) % 24];
+    const deltaPct = ((cur - prev) / prev) * 100;
+    const trendLabel = `${deltaPct >= 0 ? '▲' : '▼'} ${deltaPct >= 0 ? '+' : '−'}${Math.abs(deltaPct).toFixed(1).replace('.', ',')}%`;
+    const trendColor = deltaPct >= 0 ? 'var(--good-300)' : 'var(--bad-300)';
+
+    const deviceCards = this.deviceDefs().map((d, i) => {
+      const w = this.bestWindow(pr, nowH, d.dur);
+      const nowOk = this.level(pr[nowH], sorted) === 'olcso' || w.start === nowH;
+      const savePerRun = Math.max(0, (avg24 - w.avg) * d.kwh);
+      return { name: d.name, icon: d.icon, delay: `${i * 60}ms`,
+        tag: nowOk ? 'Indítsd most' : `Várj ${w.start - nowH} ó`,
+        tagBg: nowOk ? 'var(--good-500)' : 'var(--color-accent-200)',
+        tagFg: nowOk ? '#fff' : 'var(--color-accent-800)',
+        cardBg: nowOk ? 'var(--good-100)' : 'var(--color-accent-100)',
+        iconBg: nowOk ? 'var(--good-500)' : 'var(--color-accent-500)',
+        iconFg: '#fff',
+        win: `${(w.start % 24).toString().padStart(2, '0')}:00–${((w.start + d.dur) % 24).toString().padStart(2, '0')}:00`,
+        save: `~${this.fmt(savePerRun)} Ft / futtatás · ${this.fmt(d.annual)} Ft / év` };
+    });
+
+    const heatCells = pr.slice(0, 24).map((p, h) => {
+      const l = this.level(p, sorted), sel = s.selHour === h;
+      const map = { olcso: ['var(--good-500)', '#fff'], atlagos: ['var(--color-accent-200)', 'var(--color-accent-900)'], draga: ['var(--bad-500)', '#fff'] };
+      return { label: h, price: this.fmt1(p), bg: map[l][0], fg: map[l][1], delay: `${h * 15}ms`,
+        outline: sel ? '2px solid var(--color-accent-900)' : (h === nowH ? '2px dashed var(--color-accent-900)' : 'none'),
+        onClick: () => set({ selHour: sel ? null : h }) };
+    });
+    const lvlName = { olcso: 'olcsó', atlagos: 'átlagos', draga: 'drága' };
+    const heatDetail = s.selHour == null
+      ? `Most (${nowH}:00): ${this.fmt1(cur)} Ft/kWh · ${lvlName[lvl]}`
+      : `${s.selHour}:00–${s.selHour + 1}:00 · ${this.fmt1(pr[s.selHour])} Ft/kWh · ${lvlName[this.level(pr[s.selHour], sorted)]}`;
+
+    const kSave = this.onbSavingVal();
+    const kpiSubtitle = s.onbDone
+      ? `A megadott ${s.onbDevices.length} eszközöd és tarifád alapján.`
+      : 'Tipikus háztartás becslése — pontosítsd a saját eszközeiddel.';
+    const kwhShift = kSave / 46;
+    const htntSave = s.htntKwh * (s.htntPct / 100) * (42 - 26) * 12;
+
+    const isKlima = s.planTab === 'klima';
+    const planBlocks = [];
+    for (let h = 0; h < 24; h++) {
+      const l = this.level(pr[h], sorted);
+      let phase;
+      if (isKlima) phase = l === 'draga' ? ['Hőtartalékon', 'var(--color-neutral-800)']
+        : (h >= 10 && h <= 15) ? ['Előhűtés', 'var(--color-accent-500)']
+        : l === 'olcso' ? ['Futtathatod', 'var(--color-accent-200)'] : ['Hagyd kikapcsolva', 'var(--color-neutral-200)'];
+      else phase = (h >= 10 && h <= 15) ? ['Napelem csúcs', 'var(--color-accent-500)']
+        : (h >= 8 && h <= 17) ? ['Részleges termelés', 'var(--color-accent-200)']
+        : l === 'draga' ? ['Kerüld!', 'var(--bad-500)']
+        : l === 'olcso' ? ['Olcsó hálózat', 'var(--color-accent-100)'] : ['Semleges', 'var(--color-neutral-200)'];
+      planBlocks.push({ title: `${h}:00 — ${phase[0]}`, bg: phase[1], hourLabel: h % 4 === 0 ? `${h}` : '', delay: `${h * 15}ms`, phase: phase[0] });
+    }
+    const phaseDescs = {
+      'Előhűtés': 'Hűtsd 1–2 fokkal a komfort alá — olcsó a déli áram.',
+      'Futtathatod': 'Olcsó sáv — mehet a klíma, ha kell.',
+      'Hőtartalékon': 'Kapcsold ki — a lakás hőtartaléka viszi.',
+      'Hagyd kikapcsolva': 'Nincs teendő — hűvös éjszakai órák.',
+      'Napelem csúcs': 'Futtasd a nagy fogyasztókat: mosógép, EV.',
+      'Részleges termelés': 'Kisebb gépek mehetnek napelemről.',
+      'Olcsó hálózat': 'Éjszakai olcsó áram — EV-töltésre ideális.',
+      'Kerüld!': 'Drága hálózati áram — halaszd későbbre.',
+      'Semleges': 'Nincs teendő.'
+    };
+    const planRows = [];
+    planBlocks.forEach((b, h) => {
+      const last = planRows[planRows.length - 1];
+      if (last && last.phase === b.phase) last.end = h + 1;
+      else planRows.push({ phase: b.phase, bg: b.bg, start: h, end: h + 1 });
+    });
+    planRows.forEach((r, i) => {
+      r.time = `${String(r.start).padStart(2, '0')}:00–${String(r.end % 24).padStart(2, '0')}:00`;
+      r.desc = phaseDescs[r.phase] || '';
+      r.delay = `${i * 50}ms`;
+    });
+    const planLegend = (isKlima
+      ? [['Előhűtés', 'var(--color-accent-500)'], ['Futtathatod', 'var(--color-accent-200)'], ['Hőtartalékon', 'var(--color-neutral-800)'], ['Kikapcsolva', 'var(--color-neutral-200)']]
+      : [['Napelem csúcs', 'var(--color-accent-500)'], ['Részleges', 'var(--color-accent-200)'], ['Olcsó háló', 'var(--color-accent-100)'], ['Kerüld!', 'var(--bad-500)'], ['Semleges', 'var(--color-neutral-200)']]
+    ).map(([label, bg]) => ({ label, bg }));
+
+    const maxP = Math.max(...pr);
+    const chartBars = pr.map((p, i) => {
+      const h = (p / maxP) * 140, l = this.level(p, sorted);
+      return { x: i * 10, y: 155 - h, h, op: i >= 24 ? 0.45 : 1, delay: `${i * 12}ms`,
+        fill: l === 'olcso' ? 'var(--good-500)' : l === 'draga' ? 'var(--bad-500)' : 'var(--color-accent-300)' };
+    });
+    const chartTicks = [0, 6, 12, 18, 24, 30, 36, 42].map(i => ({ x: i * 10, label: `${i % 24}h` }));
+
+    const allDefs = [...this.deviceDefs(), ...this.extraDefs()];
+    const toggleIn = (arr, id) => arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id];
+    const onbDeviceChips = allDefs.map(d => this.chip(d.name, s.onbDevices.includes(d.id), () => set({ onbDevices: toggleIn(s.onbDevices, d.id) }), d.icon));
+    const tariffChips = [['rezsi', 'Rezsivédett (egységár)'], ['htnt', 'Kétmérős HT/NT'], ['piaci', 'Piaci (tőzsdei)']]
+      .map(([v, l]) => this.chip(l, s.onbTariff === v, () => set({ onbTariff: v })));
+    const flexChips = [['magas', 'Előre tervezem'], ['kozepes', 'Néha igen'], ['alacsony', 'Nehézkes']]
+      .map(([v, l]) => this.chip(l, s.onbFlex === v, () => set({ onbFlex: v })));
+    const onbDescs = { rezsi: 'Rezsivédett tarifán az egységár miatt kisebb a mozgástér — de a HT/NT váltás így is sokat hozhat.',
+      htnt: 'A HT/NT méréseddel az éjszakai időzítés közvetlenül a számládon jelentkezik.',
+      piaci: 'Piaci tarifán az órás árkülönbség teljes egészében a te megtakarításod.' };
+
+    const a = s.adv, setAdv = patch => set({ adv: { ...a, ...patch } });
+    const opt = (key, v, l, sub) => ({ ...this.chip(l, a[key] === v, () => setAdv({ [key]: v })), sub: sub || '' });
+    const advRecs = s.advStep === 4 ? this.advRecsList().map((r, i) => ({
+      rank: i + 1, title: r.t, desc: r.d,
+      save: `~${this.fmt(r.save)} Ft megtakarítás / év`,
+      costTag: r.cost === 0 ? 'Ingyenes' : r.cost < 1e6 ? `~${this.fmt(r.cost / 1000)}e Ft` : `~${this.fmt1(r.cost / 1e6)} M Ft`
+    })) : [];
+    const advTotal = s.advStep === 4 ? this.advRecsList().reduce((x, r) => x + r.save, 0) : 0;
+
+    const isDark = this.props.darkMode ?? false;
+    return {
+      isDark, themeClass: isDark ? 'theme-dark' : '',
+      tabs, tabIsMa: s.tab === 'ma', tabIsArak: s.tab === 'arak', tabIsSporolas: s.tab === 'sporolas', tabIsTervek: s.tab === 'tervek',
+      currentPrice: this.fmt1(cur * (s.tick ?? 1)), statusLabel, statusBg, statusFg, heroTitle, heroSub,
+      priceColor, trendLabel, trendColor,
+      ringPct: `${Math.round(Math.min(1, kSave / 180000) * 100)}%`,
+      ringOffset: 232 * (1 - Math.min(1, kSave / 180000)),
+      deviceCards, heatCells, heatDetail,
+      kpiYear: this.fmt(kSave), kpiMonth: this.fmt(kSave / 12), kpiCo2: this.fmt(kwhShift * 0.25), kpiSubtitle,
+      htntKwh: s.htntKwh, htntPct: s.htntPct, htntYear: this.fmt(htntSave),
+      htntNote: `havi ${this.fmt(htntSave / 12)} Ft — ha a fogyasztás ${s.htntPct}%-a éjszakára kerül`,
+      onHtntKwh: e => set({ htntKwh: Math.max(0, +e.target.value || 0) }),
+      onHtntPct: e => set({ htntPct: Math.min(100, Math.max(0, +e.target.value || 0)) }),
+      planTitle: isKlima ? 'Klíma hűtési terv' : 'Napelem önfogyasztás',
+      planSub: isKlima ? 'Előhűtés az olcsó déli sávban — a drága esti csúcsot a lakás hőtartaléka viszi.'
+        : 'A nagy fogyasztókat a déli termelési csúcsra időzítsd, a drága esti sávot kerüld.',
+      planIsKlima: isKlima, planIsSolar: !isKlima,
+      setPlanKlima: () => set({ planTab: 'klima' }), setPlanSolar: () => set({ planTab: 'napelem' }),
+      planBlocks, planLegend, planRows,
+      planTip: isKlima ? 'Tipp: 11:00–15:00 között hűts 1–2 fokkal a komfort alá, 17:00–21:00 között kapcsold ki — a falak hőtárolása kitart.'
+        : 'Tipp: mosógépet, mosogatót 11:00–15:00 közé, EV töltést éjszakára vagy délre időzíts.',
+      chartBars, chartTicks,
+      onbOpen: s.onbOpen, onbIs0: s.onbStep === 0, onbIs1: s.onbStep === 1, onbIs2: s.onbStep === 2,
+      onbStepLabel: `${s.onbStep + 1} / 3 · Kalkulátor`,
+      openOnb: () => set({ onbOpen: true, onbStep: 0 }),
+      closeOnb: () => set({ onbOpen: false }),
+      onbNext: () => set({ onbStep: Math.min(2, s.onbStep + 1) }),
+      onbBack: () => set({ onbStep: Math.max(0, s.onbStep - 1) }),
+      finishOnb: () => set({ onbOpen: false, onbDone: true, tab: 'ma' }),
+      onbDeviceChips, tariffChips, flexChips,
+      onbSaving: this.fmt(this.onbSavingVal()), onbDesc: onbDescs[s.onbTariff],
+      advOpen: s.advOpen, advIs0: s.advStep === 0, advIs1: s.advStep === 1, advIs2: s.advStep === 2, advIs3: s.advStep === 3, advIs4: s.advStep === 4,
+      advStepLabel: `${Math.min(s.advStep + 1, 5)} / 5`, advProgress: `${((s.advStep + 1) / 5) * 100}%`,
+      openAdv: () => set({ advOpen: true, advStep: 0 }),
+      closeAdv: () => set({ advOpen: false }),
+      advBackOrClose: () => s.advStep === 0 ? set({ advOpen: false }) : set({ advStep: s.advStep - 1 }),
+      advNextOrClose: () => s.advStep === 4 ? set({ advOpen: false }) : set({ advStep: s.advStep + 1 }),
+      advBackLabel: s.advStep === 0 ? 'Mégse' : '← Vissza',
+      advNextLabel: s.advStep === 3 ? 'Mutasd a tervet →' : s.advStep === 4 ? 'Bezárás' : 'Következő →',
+      advHomeTypes: [['haz', 'Ház'], ['lakas_tegla', 'Téglaházi lakás'], ['lakas_panel', 'Panellakás']].map(([v, l]) => opt('homeType', v, l)),
+      advSizes: [['small', '60 m² alatt'], ['medium', '60–100 m²'], ['large', '100–150 m²'], ['xlarge', '150 m² felett']].map(([v, l]) => opt('homeSize', v, l)),
+      advHeatings: [['gaz', 'Gázkazán'], ['hoszivattyu', 'Hőszivattyú'], ['elektromos', 'Elektromos'], ['tavfutes', 'Távfűtés']].map(([v, l]) => opt('heating', v, l)),
+      advDevChips: allDefs.map(d => this.chip(d.name, a.devices.includes(d.id), () => setAdv({ devices: toggleIn(a.devices, d.id) }), d.icon)),
+      advTariffs: [['rezsi', 'Rezsivédett'], ['htnt', 'HT/NT kétmérős'], ['piaci', 'Piaci / NKTP']].map(([v, l]) => opt('tariff', v, l)),
+      advBudgets: [[0, 'Semmit', 'csak ingyenes lépések'], [100000, '~100 ezer Ft', 'kisebb eszközök'], [500000, '~500 ezer Ft', 'közepes projekt'], [5000000, 'Bármennyit', 'napelem, hőszivattyú']].map(([v, l, sb]) => opt('budget', v, l, sb)),
+      advPriorities: [['megtakaritas', 'Minél több spórolás'], ['gyors', 'Azonnali eredmény'], ['kornyezet', 'Környezetbarát'], ['kenyelem', 'Kényelem, automatizálás']].map(([v, l]) => opt('priority', v, l)),
+      advBill: a.bill, onAdvBill: e => setAdv({ bill: Math.max(0, +e.target.value || 0) }),
+      advSummary: advRecs.length ? `${advRecs.length} ajánlás a válaszaid alapján — együtt akár ${this.fmt(advTotal)} Ft megtakarítás évente.` : '',
+      advRecs
+    };
+  }
+}
+</script>
+</body>
+</html>
