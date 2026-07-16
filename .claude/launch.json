@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "energia-backend",
+      "runtimeExecutable": "/Users/peteraron/Desktop/Coding/energia/backend/.venv/bin/uvicorn",
+      "runtimeArgs": ["src.api.main:app", "--host", "127.0.0.1", "--port", "8000", "--app-dir", "/Users/peteraron/Desktop/Coding/energia/backend"],
+      "port": 8000
+    }
+  ]
+}
