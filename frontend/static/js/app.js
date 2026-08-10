@@ -103,7 +103,7 @@ function bestWindowDay(pr, from, dur) {
   const limit = Math.min(from + 24 - dur + 1, pr.length - dur + 1);
   for (let s = from; s < limit; s++) {
     const h = s % 24;
-    if (h < 6) continue; // skip night hours
+    if (h < 6 || h >= 22) continue; // only 06:00–21:00 starts
     const slice = pr.slice(s, s + dur);
     if (slice.some(x => x == null)) continue;
     const avg = slice.reduce((a, b) => a + b, 0) / dur;
