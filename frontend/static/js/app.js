@@ -97,6 +97,22 @@ function bestWindow(pr, from, dur) {
   return { start: best, avg: bestAvg < 1e9 ? bestAvg : (pr[from] || 30) };
 }
 
+// Best window excluding 00:00–05:59 (realistic daytime hours)
+function bestWindowDay(pr, from, dur) {
+  let best = null, bestAvg = 1e9;
+  const limit = Math.min(from + 24 - dur + 1, pr.length - dur + 1);
+  for (let s = from; s < limit; s++) {
+    const h = s % 24;
+    if (h < 6) continue; // skip night hours
+    const slice = pr.slice(s, s + dur);
+    if (slice.some(x => x == null)) continue;
+    const avg = slice.reduce((a, b) => a + b, 0) / dur;
+    if (avg < bestAvg) { bestAvg = avg; best = s; }
+  }
+  if (best === null) return null;
+  return { start: best, avg: bestAvg };
+}
+
 function tariffMult(t) { return t === 'htnt' ? 1.0 : t === 'piaci' ? 1.3 : 0.45; }
 function flexMult(f) { return f === 'kozepes' ? 0.7 : f === 'alacsony' ? 0.4 : 1.0; }
 
@@ -190,6 +206,7 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
 
   grid.innerHTML = MAIN_DEV.map((d, i) => {
     const w = bestWindow(pr, nowH, d.dur);
+    const wDay = bestWindowDay(pr, nowH, d.dur);
     const nowOk = level(pr[nowH] ?? 30, sorted) === 'olcso' || w.start === nowH;
     const savePerRun = Math.max(0, (avg24 - w.avg) * d.kwh);
     const winStr = `${String(w.start % 24).padStart(2, '0')}:00–${String((w.start + d.dur) % 24).padStart(2, '0')}:00`;
@@ -199,6 +216,9 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
     const tagFg = nowOk ? '#fff' : 'var(--color-accent-800)';
     const cardStyle = nowOk ? 'background:var(--good-100);border-color:oklch(0.62 0.13 155)' : '';
     const iconBg = nowOk ? 'var(--good-500)' : 'var(--color-accent-500)';
+
+    const showDay = wDay && wDay.start !== w.start;
+    const dayStr = wDay ? `${String(wDay.start % 24).padStart(2, '0')}:00–${String((wDay.start + d.dur) % 24).padStart(2, '0')}:00` : null;
 
     return `<div class="device-card" style="${cardStyle};animation-delay:${i * 60}ms">
       <div class="device-card-top">
@@ -210,6 +230,10 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
         <span class="text-muted">Legjobb ablak</span>
         <strong>${winStr}</strong>
       </div>
+      ${showDay ? `<div class="device-window" style="opacity:0.65;margin-top:3px">
+        <span class="text-muted">Napközben</span>
+        <strong>${dayStr}</strong>
+      </div>` : ''}
       <div class="device-save">~${fmt(savePerRun)} Ft / futtatás · ${fmt(d.annual)} Ft / év</div>
     </div>`;
   }).join('');
