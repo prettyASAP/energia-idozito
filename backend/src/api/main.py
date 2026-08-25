@@ -262,7 +262,6 @@ def get_status(request: Request):
         "subtitle": subtitle,
         "cheap_window": cheap_window_summary,
         "eur_huf_rate": eur_huf,
-        "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
     }
 
 
@@ -299,7 +298,6 @@ def get_prices(
         ],
         "count": len(hourly),
         "eur_huf_rate": eur_huf,
-        "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
     }
 
 
@@ -341,7 +339,6 @@ def get_summary(
         ],
         "weekly_pattern": weekly_pattern(series),
         "eur_huf_rate": eur_huf,
-        "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
     }
 
 
@@ -414,7 +411,6 @@ def get_forecast(
         "history_days_used": history_days,
         "forecast_days": forecast_days,
         "model_accuracy": accuracy,
-        "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
     }
 
 
@@ -549,7 +545,6 @@ def get_recommendation(
             }
             for r in recs
         ],
-        "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
     }
 
 
@@ -676,7 +671,6 @@ def get_cooling_plan(
             }
             for h in plan.hours
         ],
-        "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
         "eur_huf_rate": eur_huf,
     }
 
@@ -789,7 +783,6 @@ def get_solar_plan(
             }
             for h in plan.hours
         ],
-        "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
         "eur_huf_rate": eur_huf,
     }
 
