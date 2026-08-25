@@ -228,16 +228,18 @@ function renderGridPanel() {
   const solarMW = S.grid.renewables?.solar?.latest_actual?.value;
   const windMW = S.grid.renewables?.wind?.latest_actual?.value;
   const netImp = S.grid.flows?.net_import?.actual?.value;
-  const stat = (lbl, val, unit) => val == null ? '' :
+  const stat = (lbl, val, unit, sub) => val == null ? '' :
     `<div style="background:var(--color-neutral-100);border-radius:10px;padding:9px 12px">
       <div style="font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600)">${lbl}</div>
       <div style="font-size:17px;font-weight:600;font-family:var(--font-heading)">${fmt(val)} <span style="font-size:11px;font-weight:400">${unit}</span></div>
+      ${sub ? `<div style="font-size:10px;color:var(--color-neutral-600);margin-top:1px">${sub}</div>` : ''}
     </div>`;
   el('gridStats').innerHTML =
-    stat('Naptermelés', solarMW, 'MW') +
-    stat('Széltermelés', windMW, 'MW') +
-    stat(netImp != null && netImp >= 0 ? 'Nettó import' : 'Nettó export', netImp != null ? Math.abs(netImp) : null, 'MW') +
-    stat('Hazai termelés', mix.total_mw, 'MW');
+    stat('Naptermelés', solarMW, 'MW', 'napelemek most') +
+    stat('Széltermelés', windMW, 'MW', 'szélerőművek most') +
+    stat(netImp != null && netImp >= 0 ? 'Import' : 'Export', netImp != null ? Math.abs(netImp) : null, 'MW',
+      netImp != null && netImp >= 0 ? 'külföldről vesszük' : 'külföldre adjuk') +
+    stat('Hazai termelés', mix.total_mw, 'MW', 'összes erőmű együtt');
 }
 
 // Zöld óra: a nap-előrejelzés az ablak alatt eléri-e a napi csúcs 60%-át
@@ -586,8 +588,8 @@ function renderTrendChart() {
     <text x="0" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">${lbl(0)}</text>
     <text x="${mid * stepX}" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow" text-anchor="middle">${lbl(mid)}</text>
     <text x="${W}" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow" text-anchor="end">${lbl(days.length - 1)}</text>
-    <text x="0" y="10" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">max ${fmt1(maxA)} Ft</text>
-    <text x="${W}" y="10" font-size="10" font-weight="600" fill="${trendUp ? 'var(--bad-500)' : 'var(--good-500)'}" font-family="Barlow" text-anchor="end">${trendUp ? '▲' : '▼'} ${fmt1(lastAvg)} Ft/kWh</text>
+    <text x="0" y="10" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">havi csúcs: ${fmt1(maxA)} Ft</text>
+    <text x="${W}" y="10" font-size="10" font-weight="600" fill="${trendUp ? 'var(--bad-500)' : 'var(--good-500)'}" font-family="Barlow" text-anchor="end">tegnapi átlag: ${fmt1(lastAvg)} Ft ${trendUp ? '▲ emelkedő' : '▼ csökkenő'}</text>
   `;
 }
 
