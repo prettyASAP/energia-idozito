@@ -775,12 +775,36 @@ function obsNext(currentStep) {
     const amt = calcOnboardingSavings();
     S.savedAmt = amt;
     el('obsResultAmt').textContent = fmt(amt);
+    // Őszinte, tarifa-specifikus magyarázat: mikor számít az ár és mikor nem
     const descs = {
-      rezsi: 'Rezsivédett tarifán az egységár miatt kisebb a mozgástér — de a HT/NT váltás így is sokat hozhat.',
-      htnt:  'A HT/NT méréseddel az éjszakai időzítés közvetlenül a számládon jelentkezik.',
-      piaci: 'Piaci tarifán az órás árkülönbség teljes egészében a te megtakarításod.',
+      rezsi: 'Rezsivédett tarifán fix az egységár, ezért az időzítés a számlán csak részben jelenik meg — a fenti összeg erre az óvatos esetre vonatkozik. Tarifaváltással többet hozhatsz ki (lásd lent).',
+      htnt:  'HT/NT méréssel az éjszakai (NT) sávba tolt fogyasztás közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
+      piaci: 'Dinamikus (piaci áras) tarifán az órás árkülönbség teljes egészében a tiéd — az app ablakai pontosan ezt az árat követik.',
     };
     el('obsResultDesc').textContent = descs[S.obsTariff] || '';
+
+    // Összehasonlítás: mennyit hozna ugyanez a három tarifán
+    const cmpEl = el('obsTariffCompare');
+    if (cmpEl) {
+      const base = S.obsDevices.reduce((sum, id) => {
+        const d = ALL_DEV.find(d => d.id === id);
+        return sum + (d ? d.annual : 0);
+      }, 0) * flexMult(S.obsFlex);
+      const rows = [
+        { key: 'rezsi', name: 'Rezsivédett (fix ár)', note: 'időzítés önmagában' },
+        { key: 'htnt',  name: 'HT/NT (vezérelt)',     note: 'éjszakai sávval' },
+        { key: 'piaci', name: 'Dinamikus árazás',      note: 'okosmérő kell hozzá' },
+      ];
+      cmpEl.innerHTML = `<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:6px">Mennyit hozna tarifánként?</div>` +
+        rows.map(r => {
+          const val = Math.round(base * tariffMult(r.key));
+          const mine = r.key === S.obsTariff;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;font-size:12.5px;${mine ? 'background:var(--color-accent-100);font-weight:600' : ''}">
+            <span>${r.name} <span class="text-muted" style="font-weight:400;font-size:11px">· ${r.note}</span>${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a te tarifád</span>' : ''}</span>
+            <strong>${fmt(val)} Ft/év</strong>
+          </div>`;
+        }).join('');
+    }
     updateKpi(amt);
   }
   showObsStep(currentStep + 1);
