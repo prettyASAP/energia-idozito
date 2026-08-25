@@ -6,7 +6,7 @@
   <title>Energia Időzítő</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="/static/css/style.css?v=13" />
+  <link rel="stylesheet" href="/static/css/style.css?v=14" />
 </head>
 <body>
 <div id="app">
@@ -33,9 +33,17 @@
         <div class="hero-box" id="heroBox">
           <div class="hero-status-row">
             <div id="heroStatusPill" class="tag tag-neutral" style="font-size:10px;letter-spacing:.06em;font-family:var(--font-heading)">Betöltés…</div>
-            <div class="live-pill">
-              <span class="live-dot"></span>
-              Élő ár
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="live-pill">
+                <span class="live-dot"></span>
+                Élő ár
+              </div>
+              <button id="pushOptInBtn" class="push-bell" onclick="togglePushOptIn()" title="Értesítés olcsó áram esetén" aria-label="Értesítés olcsó áram esetén">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+              </button>
             </div>
           </div>
           <div class="hero-price-row">
@@ -382,6 +390,15 @@
   </div>
 
 </div><!-- /app -->
-<script src="/static/js/app.js?v=13"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js').catch((err) => {
+        console.warn('Service worker regisztráció sikertelen:', err);
+      });
+    });
+  }
+</script>
+<script src="/static/js/app.js?v=14"></script>
 </body>
 </html>

@@ -45,6 +45,9 @@ const S = {
     budget: 100000, priority: 'megtakaritas'
   },
   savedAmt: 0,
+  // Push notifications
+  pushOptIn: false,
+  pushLastAlertKey: null,
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -166,6 +169,8 @@ function renderHero() {
   const prev = todayFilled[(nowH - 1 + 24) % 24];
   const lvl = level(cur, sorted);
   const avg24 = todayFilled.reduce((a, b) => a + b, 0) / 24;
+
+  maybeNotifyCheapPrice(lvl);
 
   // Status pill
   const statusMap = {
@@ -784,6 +789,90 @@ function toggleAdv(id) {
   buildAdvStep2();
 }
 
+// ── Push notifications ────────────────────────────────────────────────
+// Placeholder VAPID public key — base64url-encoded random bytes, NOT a
+// real elliptic-curve key. It lets pushManager.subscribe() run so the
+// bell opt-in works end-to-end in the browser, but no server can use it
+// to actually deliver push messages yet. Before wiring up real
+// server-sent push, generate a genuine pair with the `web-push` library
+// (`npx web-push generate-vapid-keys`), swap the public key in here, and
+// keep the private key on the backend only — never ship it to the client.
+const VAPID_PUBLIC_KEY = 'BAjrt03nfBKUDZb0jl1U-MvABcBPj8TQFX94rEwj0ZYFGl5UTxsiHuwz7wwnOO9m6qoJobnvQr1YUC_rmmN3McI';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+function updatePushBellUI() {
+  const btn = el('pushOptInBtn');
+  if (!btn) return;
+  const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+  btn.style.display = supported ? '' : 'none';
+  btn.classList.toggle('active', supported && Notification.permission === 'granted' && S.pushOptIn);
+}
+
+function initPushUI() {
+  if (!('Notification' in window)) return;
+  S.pushOptIn = Notification.permission === 'granted';
+  updatePushBellUI();
+}
+
+async function togglePushOptIn() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    alert('A böngésződ nem támogatja az értesítéseket.');
+    return;
+  }
+
+  if (Notification.permission === 'denied') {
+    alert('Az értesítések le vannak tiltva — engedélyezd a böngésző beállításaiban.');
+    return;
+  }
+
+  if (Notification.permission !== 'granted') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { updatePushBellUI(); return; }
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    S.pushOptIn = true;
+    S.pushLastAlertKey = null;
+    if (S.prices.length) renderHero();
+  } catch (e) {
+    console.warn('Push feliratkozás sikertelen:', e);
+    S.pushOptIn = false;
+  }
+  updatePushBellUI();
+}
+
+function maybeNotifyCheapPrice(lvl) {
+  if (!S.pushOptIn || lvl !== 'olcso') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const now = new Date();
+  const alertKey = `${now.toDateString()}-${now.getHours()}`;
+  if (S.pushLastAlertKey === alertKey) return; // already notified for this hour
+  S.pushLastAlertKey = alertKey;
+
+  const title = 'Energia Időzítő';
+  const body = 'Most olcsó — indítsd a mosógépet!';
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, tag: 'price-alert', renotify: true }));
+  } else {
+    new Notification(title, { body });
+  }
+}
+
 // ── Data loading ───────────────────────────────────────────────────────
 const BASE_H = [20,18,17,16,17,19,26,34,38,34,28,24,22,21,22,26,33,44,55,58,48,36,28,23];
 
@@ -820,6 +909,8 @@ async function init() {
     const inp = el(id);
     if (inp) inp.addEventListener('input', updateHtnt);
   });
+
+  initPushUI();
 
   await loadPrices();
 
