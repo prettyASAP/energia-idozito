@@ -87,6 +87,25 @@ function getPrArr() {
   return pr;
 }
 
+// Extract 72-element array from S.prices: [0..23]=yesterday, [24..47]=today, [48..71]=tomorrow
+function getPrArrWithYesterday() {
+  const now = new Date();
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const pr = [];
+  for (let i = 0; i < 72; i++) {
+    const slot = new Date(dayStart.getTime() + i * 3600000);
+    const found = S.prices.find(p => {
+      const pd = new Date(p.timestamp);
+      return pd.getFullYear() === slot.getFullYear() &&
+             pd.getMonth() === slot.getMonth() &&
+             pd.getDate() === slot.getDate() &&
+             pd.getHours() === slot.getHours();
+    });
+    pr.push(found ? found.price_huf_kwh : null);
+  }
+  return pr;
+}
+
 // Index-based best window (from design: slides from `from` over 24h)
 function bestWindow(pr, from, dur) {
   let best = from, bestAvg = 1e9;
@@ -333,14 +352,15 @@ function renderBarChart() {
   const svg = el('barChart');
   if (!svg) return;
 
-  const pr = getPrArr();
+  // [0..23]=yesterday, [24..47]=today, [48..71]=tomorrow
+  const pr = getPrArrWithYesterday();
   const filled = pr.map(x => x ?? 30);
   const maxP = Math.max(...filled);
-  const sorted = sortedArr(filled.slice(0, 24));
-  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
+  const todaySorted = sortedArr(filled.slice(24, 48));
+  while (todaySorted.length < 24) todaySorted.push(todaySorted[todaySorted.length - 1]);
 
-  const H = 140;
-  svg.setAttribute('viewBox', '0 0 480 170');
+  const W = 720, H = 140;
+  svg.setAttribute('viewBox', `0 0 ${W} 170`);
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '170');
 
@@ -350,17 +370,26 @@ function renderBarChart() {
     draga:   'var(--bad-500)',
   };
 
+  const dayLabels = { 0: 'Tegnap', 24: 'Ma', 48: 'Holnap' };
+
   svg.innerHTML = filled.map((p, i) => {
     const h = i % 24;
-    const lvl = level(p, sorted);
+    const isYesterday = i < 24;
+    const isTomorrow = i >= 48;
     const barH = Math.max(2, (p / maxP) * H);
     const x = i * 10;
     const y = 155 - barH;
-    const op = i >= 24 ? 0.45 : 1;
+    // Yesterday: gray/faded, regardless of price level (context only).
+    // Today: full-color, full opacity. Tomorrow: full-color, faded (forecast).
+    const fill = isYesterday ? 'var(--color-neutral-600)' : lvlFill[level(p, todaySorted)];
+    const op = isYesterday ? 0.4 : isTomorrow ? 0.45 : 1;
+    const label = dayLabels[i]
+      ? `<text x="${x}" y="10" font-size="10" font-weight="600" fill="var(--color-neutral-600)" font-family="Barlow">${dayLabels[i]}</text>`
+      : '';
     const tick = h % 6 === 0
       ? `<text x="${x}" y="168" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">${h}h</text>`
       : '';
-    return `<rect x="${x}" y="${y}" width="8" height="${barH}" fill="${lvlFill[lvl]}" opacity="${op}" style="transform-box:fill-box;transform-origin:bottom;animation:growBar .5s ease both;animation-delay:${i * 12}ms"/>${tick}`;
+    return `${label}<rect x="${x}" y="${y}" width="8" height="${barH}" fill="${fill}" opacity="${op}" style="transform-box:fill-box;transform-origin:bottom;animation:growBar .5s ease both;animation-delay:${i * 8}ms"/>${tick}`;
   }).join('');
 }
 
