@@ -24,6 +24,12 @@ from analysis.recommender import recommend
 from analysis.predictor import predict_prices, combined_forecast, compute_model_accuracy
 from analysis.cooling_planner import build_cooling_plan, AC_POWER_KW_DEFAULT, COP_DEFAULT, COMFORT_TEMP_C
 from analysis.solar_planner import build_solar_plan, TYPICAL_HOUSEHOLD_KW
+from services.grid_data import (
+    fetch_system_load,
+    fetch_renewables_forecast,
+    fetch_crossborder_flows,
+    fetch_generation_mix,
+)
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -786,6 +792,64 @@ def get_solar_plan(
         "demo_mode": os.getenv("DEMO_MODE", "true").lower() == "true",
         "eur_huf_rate": eur_huf,
     }
+
+
+# ---------------------------------------------------------------------------
+# Magyar VER (villamosenergia-rendszer) adatok — MAVIR RTDW
+# A fetcherek 15 perces memória-cache-t használnak; hiba esetén sosem 500,
+# hanem {"available": false, ...} válasz megy vissza.
+# ---------------------------------------------------------------------------
+
+
+def _grid_response(fetcher) -> dict:
+    """Fetcher futtatása kecses hibakezeléssel."""
+    try:
+        return fetcher()
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Grid adat lekérés sikertelen: {type(e).__name__}: {e}")
+        return {"available": False, "error": "A MAVIR adatforrás jelenleg nem elérhető."}
+
+
+@app.get("/api/grid/load")
+@limiter.limit("60/minute")
+def get_grid_load(request: Request):
+    """
+    Rendszerterhelés (MAVIR): bruttó/nettó tény + terv + dayahead becslés.
+
+    Idősor: elmúlt 12 óra + következő 24 óra, 15 perces felbontásban, MW-ban.
+    """
+    return _grid_response(fetch_system_load)
+
+
+@app.get("/api/grid/renewables")
+@limiter.limit("60/minute")
+def get_grid_renewables(request: Request):
+    """
+    Nap- és szélerőművi termelés (MAVIR): tény + aktuális/dayahead becslés.
+
+    Idősor: elmúlt 12 óra + következő 24 óra, 15 perces felbontásban, MW-ban.
+    """
+    return _grid_response(fetch_renewables_forecast)
+
+
+@app.get("/api/grid/flows")
+@limiter.limit("60/minute")
+def get_grid_flows(request: Request):
+    """
+    Határkeresztező áramlások (MAVIR): tény + menetrend határonként,
+    valamint nettó import/export. Pozitív = import Magyarországra.
+    """
+    return _grid_response(fetch_crossborder_flows)
+
+
+@app.get("/api/grid/mix")
+@limiter.limit("60/minute")
+def get_grid_mix(request: Request):
+    """
+    Termelési mix energiaforrás szerint (MAVIR): MW + részarány (%),
+    külön megújuló összesítéssel.
+    """
+    return _grid_response(fetch_generation_mix)
 
 
 if FRONTEND_DIR.exists():
