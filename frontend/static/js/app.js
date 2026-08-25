@@ -633,6 +633,8 @@ function setPlanTab(tab) {
   S.planTab = tab;
   el('seg-klima').classList.toggle('active', tab === 'klima');
   el('seg-napelem').classList.toggle('active', tab === 'napelem');
+  const title = el('planTitle');
+  if (title) title.textContent = tab === 'klima' ? 'Klíma hűtési terv' : 'Napelem kihasználási terv';
   renderPlan();
 }
 
@@ -689,20 +691,56 @@ function renderPlan() {
     ? 'Tipp: 11:00–15:00 között hűts 1–2 fokkal a komfort alá, 17:00–21:00 között kapcsold ki — a falak hőtárolása kitart.'
     : 'Tipp: mosógépet, mosogatót 11:00–15:00 közé, EV töltést éjszakára vagy délre időzíts.';
 
-  const rows = planRows.map((r, i) => {
-    const isCur = nowH >= r.start && nowH < r.end;
-    const timeStr = `${String(r.start).padStart(2, '0')}:00–${String(r.end % 24).padStart(2, '0')}:00`;
-    return `<div class="plan-row" style="animation-delay:${i * 50}ms${isCur ? ';background:color-mix(in srgb,var(--color-accent) 6%,transparent);border-radius:8px' : ''}">
-      <div class="plan-bar" style="background:${r.bg}"></div>
-      <div class="plan-info">
-        <div class="plan-phase">${r.phase}</div>
-        <div class="plan-desc">${phaseDescs[r.phase] || ''}</div>
-      </div>
-      <div class="plan-time">${timeStr}</div>
-    </div>`;
-  }).join('');
+  const timeStr = r => `${String(r.start).padStart(2, '0')}:00–${String(r.end % 24).padStart(2, '0')}:00`;
 
-  container.innerHTML = `<div class="plan-card">${rows}<p class="plan-tip text-muted">${tip}</p></div>`;
+  // Aktuális és következő szakasz
+  const curIdx = planRows.findIndex(r => nowH >= r.start && nowH < r.end);
+  const cur = planRows[curIdx];
+  const next = planRows[curIdx + 1] || null;
+
+  // 24 órás idősáv szegmensekkel + "most" jelölő
+  const segs = planRows.map(r =>
+    `<div style="flex:${r.end - r.start};background:${r.bg}" title="${r.phase} (${timeStr(r)})"></div>`
+  ).join('');
+  const nowPct = ((nowH + new Date().getMinutes() / 60) / 24 * 100).toFixed(1);
+  const ticks = [0, 6, 12, 18, 24].map(h =>
+    `<span style="position:absolute;left:${h / 24 * 100}%;transform:translateX(${h === 24 ? '-100%' : h === 0 ? '0' : '-50%'});font-size:9.5px;color:var(--color-neutral-600)">${h}</span>`
+  ).join('');
+
+  const timeline = `
+    <div style="position:relative;padding-top:12px;margin-bottom:6px">
+      <div style="position:absolute;top:0;left:${nowPct}%;transform:translateX(-50%);font-size:9px;font-weight:600;font-family:var(--font-heading);letter-spacing:.05em;color:var(--color-accent-800)">▼ MOST</div>
+      <div style="display:flex;height:22px;border-radius:8px;overflow:hidden">${segs}</div>
+      <div style="position:relative;height:14px;margin-top:3px">${ticks}</div>
+    </div>`;
+
+  // Jelmagyarázat — csak a ma előforduló fázisok
+  const seen = [...new Set(planRows.map(r => r.phase))];
+  const legend = `<div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11px;margin-bottom:14px">${
+    seen.map(ph => {
+      const bg = planRows.find(r => r.phase === ph).bg;
+      return `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:3px;background:${bg};display:inline-block"></span>${ph}</span>`;
+    }).join('')
+  }</div>`;
+
+  const bigCard = (kicker, r, accent) => r ? `
+    <div style="background:${accent ? 'var(--color-accent-100)' : 'var(--color-neutral-100)'};border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="width:6px;align-self:stretch;border-radius:3px;background:${r.bg}"></div>
+      <div style="flex:1">
+        <div style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600)">${kicker}</div>
+        <div style="font-size:15.5px;font-weight:600;font-family:var(--font-heading)">${r.phase}</div>
+        <div style="font-size:12px;color:var(--color-neutral-600);line-height:1.4">${phaseDescs[r.phase] || ''}</div>
+      </div>
+      <div style="font-size:12.5px;font-weight:600;font-family:var(--font-heading);white-space:nowrap">${timeStr(r)}</div>
+    </div>` : '';
+
+  container.innerHTML = `<div class="plan-card" style="padding:16px">
+    ${timeline}
+    ${legend}
+    ${bigCard('Most', cur, true)}
+    ${bigCard('Következő', next, false)}
+    <p class="plan-tip text-muted">${tip}</p>
+  </div>`;
 }
 
 // ── Sheet utilities ────────────────────────────────────────────────────
