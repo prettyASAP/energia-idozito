@@ -297,6 +297,21 @@ section h2 { font-size: 22px; margin-bottom: 12px; }
   background: var(--color-accent-300);
   animation: pulse 2.2s ease-in-out infinite;
 }
+.push-bell {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  border: 1px solid rgba(214,235,255,.35);
+  background: rgba(214,235,255,.08);
+  color: #d6ebff; opacity: .7; cursor: pointer;
+  transition: opacity .15s ease, background .15s ease, color .15s ease;
+}
+.push-bell:hover { opacity: 1; }
+.push-bell.active {
+  opacity: 1;
+  background: var(--good-500);
+  border-color: var(--good-500);
+  color: #fff;
+}
 .hero-price-row { display: flex; align-items: baseline; gap: 9px; }
 .hero-price {
   font-family: var(--font-heading);
