@@ -778,7 +778,7 @@ function obsNext(currentStep) {
     // Őszinte, tarifa-specifikus magyarázat: mikor számít az ár és mikor nem
     const descs = {
       rezsi: 'Rezsivédett tarifán fix az egységár, ezért az időzítés a számlán csak részben jelenik meg — a fenti összeg erre az óvatos esetre vonatkozik. Tarifaváltással többet hozhatsz ki (lásd lent).',
-      htnt:  'HT/NT méréssel az éjszakai (NT) sávba tolt fogyasztás közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
+      htnt:  'Éjszakai (vezérelt) áramkörre kötött gépeknél a kedvezményes ár közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
       piaci: 'Dinamikus (piaci áras) tarifán az órás árkülönbség teljes egészében a tiéd — az app ablakai pontosan ezt az árat követik.',
     };
     el('obsResultDesc').textContent = descs[S.obsTariff] || '';
@@ -807,7 +807,7 @@ function obsNext(currentStep) {
 
       const opts = [
         { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
-        { key: 'htnt',  name: 'HT/NT (vezérelt)', bill: htntBill },
+        { key: 'htnt',  name: 'Éjszakai áram (vezérelt)', bill: htntBill },
         { key: 'piaci', name: 'Okosmérős dinamikus', bill: dynBill },
       ];
       const best = opts.reduce((a, b) => (b.bill < a.bill ? b : a));
@@ -904,16 +904,22 @@ function buildObsDeviceGrid() {
   }).join('');
 }
 
+const TARIFF_INFO = {
+  rezsi: 'A normál lakossági áram — ezt fizeti szinte mindenki, fix kedvezményes egységáron.',
+  htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel + napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, külön áramkör kiépítése kell hozzá.',
+  piaci: 'Óránként változó tőzsdei ár — okosmérő kell hozzá, és a szolgáltatódnál kell dinamikus árazású szerződést kérni.',
+};
+
 function buildObsTariffGrid() {
   const opts = [
-    { id: 'rezsi', label: 'Rezsivédett (egységár)' },
-    { id: 'htnt',  label: 'Kétmérős HT/NT' },
-    { id: 'piaci', label: 'Piaci (tőzsdei)' },
+    { id: 'rezsi', label: 'Rezsivédett (normál)' },
+    { id: 'htnt',  label: 'Éjszakai áram (vezérelt)' },
+    { id: 'piaci', label: 'Dinamikus (okosmérős)' },
   ];
   el('obsTariffGrid').innerHTML = opts.map(o => {
     const sel = S.obsTariff === o.id;
     return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setObsTariff('${o.id}')">${o.label}</button>`;
-  }).join('');
+  }).join('') + `<p id="obsTariffInfo" class="text-muted" style="font-size:11.5px;line-height:1.45;margin:8px 0 0;flex-basis:100%">${TARIFF_INFO[S.obsTariff] || ''}</p>`;
 }
 
 function buildObsFlexGrid() {
