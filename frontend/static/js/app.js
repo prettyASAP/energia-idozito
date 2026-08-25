@@ -783,27 +783,59 @@ function obsNext(currentStep) {
     };
     el('obsResultDesc').textContent = descs[S.obsTariff] || '';
 
-    // Összehasonlítás: mennyit hozna ugyanez a három tarifán
+    // Melyik tarifa éri meg? — éves számla becslés mindhárom opcióra
     const cmpEl = el('obsTariffCompare');
     if (cmpEl) {
-      const base = S.obsDevices.reduce((sum, id) => {
-        const d = ALL_DEV.find(d => d.id === id);
-        return sum + (d ? d.annual : 0);
-      }, 0) * flexMult(S.obsFlex);
-      const rows = [
-        { key: 'rezsi', name: 'Rezsivédett (fix ár)', note: 'időzítés önmagában' },
-        { key: 'htnt',  name: 'HT/NT (vezérelt)',     note: 'éjszakai sávval' },
-        { key: 'piaci', name: 'Dinamikus árazás',      note: 'okosmérő kell hozzá' },
+      const kwhMonth = Math.max(50, parseInt(el('obsKwh')?.value) || 200);
+      const annualKwh = kwhMonth * 12;
+      const flexShare = 0.3 * flexMult(S.obsFlex); // a fogyasztás mozgatható hányada
+
+      // 30 napos spot átlag a betöltött árakból (csak historikus)
+      const hist = S.prices.filter(p => !p.is_forecast).map(p => p.price_huf_kwh);
+      const spot30 = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : 60;
+      const cheapAvg = spot30 * 0.55; // olcsó sávok tipikus átlaga
+
+      // Közelítő 2026-os lakossági egységárak (MEKH): rezsivédett 36,9 Ft/kWh
+      // a 2523 kWh/év keretig, felette 70,1 Ft; vezérelt (NT) ~25,9 Ft;
+      // dinamikus: tőzsdei ár + ~25 Ft rendszerhasználati díj.
+      const CAP = 2523, REZSI = 36.9, PIACI = 70.1, NT = 25.9, NETFEE = 25;
+      const rezsiBill = Math.min(annualKwh, CAP) * REZSI + Math.max(0, annualKwh - CAP) * PIACI;
+      const htntBill = annualKwh * flexShare * NT +
+        (Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
+         Math.max(0, annualKwh * (1 - flexShare) - CAP) * PIACI);
+      const dynBill = annualKwh * ((1 - flexShare) * (spot30 + NETFEE) + flexShare * (cheapAvg + NETFEE));
+
+      const opts = [
+        { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
+        { key: 'htnt',  name: 'HT/NT (vezérelt)', bill: htntBill },
+        { key: 'piaci', name: 'Okosmérős dinamikus', bill: dynBill },
       ];
-      cmpEl.innerHTML = `<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:6px">Mennyit hozna tarifánként?</div>` +
-        rows.map(r => {
-          const val = Math.round(base * tariffMult(r.key));
-          const mine = r.key === S.obsTariff;
-          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;font-size:12.5px;${mine ? 'background:var(--color-accent-100);font-weight:600' : ''}">
-            <span>${r.name} <span class="text-muted" style="font-weight:400;font-size:11px">· ${r.note}</span>${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a te tarifád</span>' : ''}</span>
-            <strong>${fmt(val)} Ft/év</strong>
+      const best = opts.reduce((a, b) => (b.bill < a.bill ? b : a));
+      const mineOpt = opts.find(o => o.key === S.obsTariff) || opts[0];
+      const savedBySwitch = Math.round(mineOpt.bill - best.bill);
+
+      const verdict = best.key === S.obsTariff
+        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb. Az okosmérős dinamikus árazás a te fogyasztásoddal <strong>nem érné meg</strong>.`
+        : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással kb. <strong>${fmt(savedBySwitch)} Ft/év</strong>-et spórolnál a mostanihoz képest.`;
+
+      const maxBill = Math.max(...opts.map(o => o.bill));
+      cmpEl.innerHTML = `
+        <div style="font-size:13px;line-height:1.5;background:var(--color-accent-100);border-radius:10px;padding:10px 12px;margin-bottom:12px">${verdict}</div>
+        <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:6px">Éves villanyszámla — ${fmt(kwhMonth)} kWh/hó mellett</div>` +
+        opts.map(o => {
+          const isBest = o === best;
+          const mine = o.key === S.obsTariff;
+          return `<div style="padding:6px 0">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px">
+              <span${isBest ? ' style="font-weight:600"' : ''}>${o.name}${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a tiéd</span>' : ''}${isBest ? ' <span style="font-size:10px;color:oklch(0.45 0.12 155)">— legolcsóbb</span>' : ''}</span>
+              <strong>${fmt(o.bill)} Ft/év</strong>
+            </div>
+            <div style="height:7px;border-radius:4px;background:var(--color-neutral-200);overflow:hidden">
+              <div style="width:${(o.bill / maxBill * 100).toFixed(0)}%;height:100%;background:${isBest ? 'var(--good-500)' : 'var(--color-accent-300)'}"></div>
+            </div>
           </div>`;
-        }).join('');
+        }).join('') +
+        `<p class="text-muted" style="font-size:11px;margin-top:8px;line-height:1.45">Közelítő becslés: rezsivédett 36,9 Ft/kWh (2523 kWh/év felett 70,1 Ft), vezérelt NT 25,9 Ft, dinamikus = tőzsdei átlagár (${fmt1(spot30)} Ft) + hálózati díjak.</p>`;
     }
     updateKpi(amt);
   }
