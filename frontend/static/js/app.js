@@ -170,7 +170,7 @@ function setTab(tab) {
     el(`tbtn-${t}`).classList.toggle('active', t === tab);
   });
   S.tab = tab;
-  if (tab === 'arak' && S.prices.length) { renderHeatmap(); renderBarChart(); }
+  if (tab === 'arak' && S.prices.length) { renderHeatmap(); renderBarChart(); renderTrendChart(); }
   if (tab === 'sporolas') { updateKpi(S.savedAmt); updateHtnt(); }
   if (tab === 'tervek') renderPlan();
 }
@@ -391,6 +391,60 @@ function renderBarChart() {
       : '';
     return `${label}<rect x="${x}" y="${y}" width="8" height="${barH}" fill="${fill}" opacity="${op}" style="transform-box:fill-box;transform-origin:bottom;animation:growBar .5s ease both;animation-delay:${i * 8}ms"/>${tick}`;
   }).join('');
+}
+
+// ── 30 napos trend ─────────────────────────────────────────────────────
+function renderTrendChart() {
+  const svg = el('trendChart');
+  if (!svg || !S.prices.length) return;
+
+  // Napi átlagok az elmúlt 30 napra (a mai napot kihagyva, mert csonka lehet)
+  const byDay = {};
+  const todayKey = new Date().toISOString().slice(0, 10);
+  S.prices.forEach(p => {
+    const d = new Date(p.timestamp);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (key >= todayKey) return;
+    (byDay[key] = byDay[key] || []).push(p.price_huf_kwh);
+  });
+  const days = Object.keys(byDay).sort().slice(-30);
+  if (days.length < 2) return;
+
+  const avgs = days.map(k => byDay[k].reduce((a, b) => a + b, 0) / byDay[k].length);
+  const maxA = Math.max(...avgs), minA = Math.min(...avgs);
+  const range = Math.max(1, maxA - minA);
+
+  const W = 480, H = 110, TOP = 14, BOT = 26;
+  const stepX = W / (days.length - 1);
+  const pts = avgs.map((a, i) => {
+    const x = i * stepX;
+    const y = TOP + H - ((a - minA) / range) * H;
+    return [x, y];
+  });
+
+  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const area = `${path} L${pts[pts.length - 1][0].toFixed(1)},${TOP + H + 8} L0,${TOP + H + 8} Z`;
+
+  // Tengelyfeliratok: első, középső, utolsó nap + min/max érték
+  const lbl = i => {
+    const [y, m, d] = days[i].split('-');
+    return `${parseInt(m)}.${parseInt(d)}.`;
+  };
+  const mid = Math.floor(days.length / 2);
+  const lastAvg = avgs[avgs.length - 1];
+  const firstAvg = avgs[0];
+  const trendUp = lastAvg > firstAvg;
+
+  svg.innerHTML = `
+    <path d="${area}" fill="var(--color-accent-200)" opacity="0.35"/>
+    <path d="${path}" fill="none" stroke="var(--color-accent-500)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${pts[pts.length - 1][0]}" cy="${pts[pts.length - 1][1]}" r="3.5" fill="var(--color-accent-500)"/>
+    <text x="0" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">${lbl(0)}</text>
+    <text x="${mid * stepX}" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow" text-anchor="middle">${lbl(mid)}</text>
+    <text x="${W}" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow" text-anchor="end">${lbl(days.length - 1)}</text>
+    <text x="0" y="10" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">max ${fmt1(maxA)} Ft</text>
+    <text x="${W}" y="10" font-size="10" font-weight="600" fill="${trendUp ? 'var(--bad-500)' : 'var(--good-500)'}" font-family="Barlow" text-anchor="end">${trendUp ? '▲' : '▼'} ${fmt1(lastAvg)} Ft/kWh</text>
+  `;
 }
 
 // ── KPI (Spórolás) ─────────────────────────────────────────────────────
@@ -905,7 +959,7 @@ function maybeNotifyCheapPrice(lvl) {
 // ── Data loading ───────────────────────────────────────────────────────
 async function loadPrices() {
   try {
-    const res = await fetch('/api/forecast?history_days=7&forecast_days=2');
+    const res = await fetch('/api/forecast?history_days=31&forecast_days=2');
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
     S.prices = data.prices || [];
@@ -943,7 +997,7 @@ async function init() {
   setInterval(async () => {
     await loadPrices();
     if (S.prices.length) renderHero();
-    if (S.tab === 'arak') { renderHeatmap(); renderBarChart(); }
+    if (S.tab === 'arak') { renderHeatmap(); renderBarChart(); renderTrendChart(); }
     if (S.tab === 'tervek') renderPlan();
   }, 60000);
 }
