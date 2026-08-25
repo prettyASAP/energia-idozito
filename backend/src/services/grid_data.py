@@ -28,6 +28,7 @@ import ssl
 import time
 import logging
 import threading
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -81,9 +82,28 @@ _cache_lock = threading.Lock()
 _last_fetch_ts = 0.0
 _pace_lock = threading.Lock()
 
-_ssl_ctx = ssl.create_default_context()
-_ssl_ctx.check_hostname = False
-_ssl_ctx.verify_mode = ssl.CERT_NONE
+# A MAVIR rtdwweb szervere hiányos tanúsítványláncot küld, ezért a szigorú
+# ellenőrzés jelenleg elbukik. Először mindig érvényes ellenőrzéssel próbálkozunk,
+# és CSAK tanúsítványhiba esetén, KIZÁRÓLAG a rtdwweb.mavir.hu hostra esünk
+# vissza ellenőrzés nélküli kapcsolatra (nyilvános, csak olvasható adat).
+_ssl_ctx_verified = ssl.create_default_context()
+_ssl_ctx_insecure = ssl.create_default_context()
+_ssl_ctx_insecure.check_hostname = False
+_ssl_ctx_insecure.verify_mode = ssl.CERT_NONE
+
+_MAVIR_HOST = "rtdwweb.mavir.hu"
+
+
+def _open_mavir(req: urllib.request.Request, timeout: float):
+    """Verify-first HTTPS: érvényes lánccal próbál, cert-hibánál MAVIR-only fallback."""
+    try:
+        return urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx_verified)
+    except urllib.error.URLError as e:
+        is_cert_error = isinstance(getattr(e, "reason", None), ssl.SSLCertVerificationError)
+        host = urllib.parse.urlparse(req.full_url).hostname
+        if is_cert_error and host == _MAVIR_HOST:
+            return urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx_insecure)
+        raise
 
 
 def _pace() -> None:
@@ -141,7 +161,7 @@ def _fetch_chart_rows(
     try:
         _pace()
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (energia-app)"})
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_SECONDS, context=_ssl_ctx) as resp:
+        with _open_mavir(req, FETCH_TIMEOUT_SECONDS) as resp:
             body = resp.read()
         if not body.startswith(b"PK"):
             raise RuntimeError("A válasz nem XLSX (hibás magic bytes)")
