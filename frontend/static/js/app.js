@@ -903,8 +903,6 @@ function maybeNotifyCheapPrice(lvl) {
 }
 
 // ── Data loading ───────────────────────────────────────────────────────
-const BASE_H = [20,18,17,16,17,19,26,34,38,34,28,24,22,21,22,26,33,44,55,58,48,36,28,23];
-
 async function loadPrices() {
   try {
     const res = await fetch('/api/forecast?history_days=7&forecast_days=2');
@@ -913,21 +911,12 @@ async function loadPrices() {
     S.prices = data.prices || [];
     return S.prices;
   } catch (e) {
-    const now = new Date();
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Nincs demo fallback — hibaállapotot mutatunk valós adat helyett
     S.prices = [];
-    for (let d = 0; d < 2; d++) {
-      for (let h = 0; h < 24; h++) {
-        const ts = new Date(dayStart.getTime() + (d * 24 + h) * 3600000);
-        let p = BASE_H[h] * (d ? 1.06 : 1);
-        p += Math.sin((h + d * 7) * 2.1) * 1.4;
-        S.prices.push({
-          timestamp: ts.toISOString(),
-          price_huf_kwh: Math.max(10, parseFloat(p.toFixed(2))),
-          is_forecast: d > 0 || h > now.getHours(),
-        });
-      }
-    }
+    const sub = el('heroSub');
+    if (sub) sub.textContent = 'Nem sikerült áradatot betölteni. Próbáld újra pár perc múlva.';
+    const pill = el('heroStatusPill');
+    if (pill) pill.textContent = 'Nincs adat';
     return S.prices;
   }
 }

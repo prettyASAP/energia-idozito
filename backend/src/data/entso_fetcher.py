@@ -1,8 +1,8 @@
 import os
 import logging
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -19,43 +19,37 @@ except ImportError:
     ENTSOE_AVAILABLE = False
 
 
-def _demo_prices(start: datetime, end: datetime) -> pd.Series:
-    """Szimulált magyar villamosenergia árak ha nincs API kulcs."""
-    start_floor = start.replace(minute=0, second=0, microsecond=0)
-    end_floor = end.replace(minute=0, second=0, microsecond=0)
-    start_naive = start_floor.replace(tzinfo=None)
-    end_naive = end_floor.replace(tzinfo=None)
-    hours = pd.date_range(start=start_naive, end=end_naive, freq="h", tz="Europe/Budapest")
-    np.random.seed(int(start.timestamp()) % 10000)
+def _fetch_energy_charts(start: datetime, end: datetime) -> pd.Series:
+    """
+    Day-ahead árak az energy-charts.info API-ról (Fraunhofer ISE).
+    Kulcs nélküli, CC BY 4.0 licencű forrás — adat: Bundesnetzagentur | SMARD.de.
+    15 perces felbontású választ ad, óránkénti átlagra resample-öljük.
+    """
+    import json
 
-    base = 80.0
-    prices = []
-    for ts in hours:
-        h = ts.hour
-        dow = ts.dayofweek
-        if 7 <= h <= 9:
-            hour_factor = 1.35
-        elif 18 <= h <= 21:
-            hour_factor = 1.45
-        elif 0 <= h <= 5:
-            hour_factor = 0.65
-        elif 22 <= h <= 23:
-            hour_factor = 0.80
-        else:
-            hour_factor = 1.0
-        weekend_factor = 0.85 if dow >= 5 else 1.0
-        month = ts.month
-        if month in (12, 1, 2):
-            seasonal = 1.25
-        elif month in (6, 7, 8):
-            seasonal = 0.90
-        else:
-            seasonal = 1.0
-        noise = np.random.normal(0, 5)
-        price = base * hour_factor * weekend_factor * seasonal + noise
-        prices.append(max(price, 10.0))
+    url = (
+        "https://api.energy-charts.info/price?bzn=HU"
+        f"&start={urllib.parse.quote(start.isoformat(timespec='minutes'))}"
+        f"&end={urllib.parse.quote(end.isoformat(timespec='minutes'))}"
+    )
+    with urllib.request.urlopen(url, timeout=15) as r:
+        data = json.loads(r.read().decode("utf-8"))
 
-    return pd.Series(prices, index=hours, name="price_eur_mwh")
+    ts_list = data.get("unix_seconds") or []
+    pr_list = data.get("price") or []
+    prices = {
+        pd.Timestamp(t, unit="s", tz="UTC").tz_convert("Europe/Budapest"): p
+        for t, p in zip(ts_list, pr_list)
+        if p is not None
+    }
+    if not prices:
+        return pd.Series(dtype=float, name="price_eur_mwh")
+
+    series = pd.Series(prices, name="price_eur_mwh").sort_index()
+    if len(series) > 1 and (series.index[1] - series.index[0]) < pd.Timedelta("1h"):
+        series = series.resample("1h").mean().dropna()
+        series.name = "price_eur_mwh"
+    return series
 
 
 def _fetch_raw_xml(key: str, start: datetime, end: datetime) -> str:
@@ -136,14 +130,26 @@ def fetch_day_ahead_prices(
 ) -> pd.Series:
     """
     Lekéri a magyarországi day-ahead áramárakat EUR/MWh-ban.
-    Ha az API hívás sikertelen, demo módba esik vissza.
+    Források: energy-charts.info (elsődleges), ENTSO-E (fallback). Hibánál üres sorozat.
     """
     key = api_key or os.getenv("ENTSOE_API_KEY", "")
-    demo = os.getenv("DEMO_MODE", "true").lower() == "true"
 
-    if not key or demo:
-        logger.info("Demo mód: szimulált adatok használata.")
-        return _demo_prices(start, end)
+    # Elsődleges forrás: energy-charts.info (nem igényel API kulcsot)
+    try:
+        series = _fetch_energy_charts(start, end)
+        if not series.empty:
+            logger.info(
+                f"energy-charts.info valódi adatok: {len(series)} óránkénti adatpont, "
+                f"{series.index[0]} – {series.index[-1]}"
+            )
+            return series
+        logger.warning("energy-charts.info: üres válasz, ENTSO-E-re visszaállás.")
+    except Exception as e:
+        logger.warning(f"energy-charts.info hiba ({type(e).__name__}: {e}), ENTSO-E-re visszaállás.")
+
+    if not key:
+        logger.error("Nincs ENTSO-E kulcs és az energy-charts.info sem elérhető — nincs áradat.")
+        return pd.Series(dtype=float, name="price_eur_mwh")
 
     try:
         # UTC-ben adjuk meg a dátumokat
@@ -154,8 +160,8 @@ def fetch_day_ahead_prices(
         series = _parse_prices(xml_text)
 
         if series.empty:
-            logger.warning("ENTSO-E: üres válasz, demo módra visszaállás.")
-            return _demo_prices(start, end)
+            logger.warning("ENTSO-E: üres válasz — nincs áradat.")
+            return series
 
         # 15 perces adatok → óránkénti átlag
         if len(series) > 1:
@@ -172,5 +178,5 @@ def fetch_day_ahead_prices(
         return series
 
     except Exception as e:
-        logger.error(f"ENTSO-E API hiba ({type(e).__name__}: {e}), demo módra visszaállás.")
-        return _demo_prices(start, end)
+        logger.error(f"ENTSO-E API hiba ({type(e).__name__}: {e}) — nincs áradat.")
+        return pd.Series(dtype=float, name="price_eur_mwh")
