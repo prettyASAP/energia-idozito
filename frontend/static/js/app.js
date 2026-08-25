@@ -820,23 +820,52 @@ function obsNext(currentStep) {
 
       const maxBill = Math.max(...opts.map(o => o.bill));
       cmpEl.innerHTML = `
-        <div style="font-size:13px;line-height:1.5;background:var(--color-accent-100);border-radius:10px;padding:10px 12px;margin-bottom:12px">${verdict}</div>
-        <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:6px">Éves villanyszámla — ${fmt(kwhMonth)} kWh/hó mellett</div>` +
-        opts.map(o => {
+        <div class="cmp-verdict" style="font-size:13px;line-height:1.5;background:var(--color-accent-100);border-radius:10px;padding:10px 12px;margin-bottom:14px;animation:fadeUp .4s ease both">${verdict}</div>
+        <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:8px">Éves villanyszámla — ${fmt(kwhMonth)} kWh/hó mellett</div>` +
+        opts.map((o, i) => {
           const isBest = o === best;
           const mine = o.key === S.obsTariff;
-          return `<div style="padding:6px 0">
-            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px">
-              <span${isBest ? ' style="font-weight:600"' : ''}>${o.name}${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a tiéd</span>' : ''}${isBest ? ' <span style="font-size:10px;color:oklch(0.45 0.12 155)">— legolcsóbb</span>' : ''}</span>
-              <strong>${fmt(o.bill)} Ft/év</strong>
+          const diff = Math.round(o.bill - best.bill);
+          return `<div style="padding:7px 0;animation:fadeUp .4s ease both;animation-delay:${200 + i * 150}ms">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:4px">
+              <span${isBest ? ' style="font-weight:600"' : ''}>${isBest ? '🏆 ' : ''}${o.name}${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a tiéd</span>' : ''}</span>
+              <span>
+                <strong class="cmp-count" data-target="${Math.round(o.bill)}" style="font-family:var(--font-heading);font-size:15px">0</strong>
+                <span style="font-size:11px;color:var(--color-neutral-600)"> Ft/év</span>
+                ${!isBest ? `<span style="font-size:10.5px;color:var(--bad-500);font-weight:600"> +${fmt(diff)}</span>` : ''}
+              </span>
             </div>
-            <div style="height:7px;border-radius:4px;background:var(--color-neutral-200);overflow:hidden">
-              <div style="width:${(o.bill / maxBill * 100).toFixed(0)}%;height:100%;background:${isBest ? 'var(--good-500)' : 'var(--color-accent-300)'}"></div>
+            <div style="height:14px;border-radius:7px;background:var(--color-neutral-200);overflow:hidden">
+              <div class="cmp-fill" data-w="${(o.bill / maxBill * 100).toFixed(1)}"
+                style="width:0%;height:100%;border-radius:7px;transition:width 1s cubic-bezier(.22,1,.36,1) ${300 + i * 150}ms;background:${isBest
+                  ? 'linear-gradient(90deg, oklch(0.62 0.13 155), oklch(0.72 0.14 155))'
+                  : 'linear-gradient(90deg, var(--color-accent-300), var(--color-accent-200))'}"></div>
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:8px;line-height:1.45">Közelítő becslés: rezsivédett 36,9 Ft/kWh (2523 kWh/év felett 70,1 Ft), vezérelt NT 25,9 Ft, dinamikus = tőzsdei átlagár (${fmt1(spot30)} Ft) + hálózati díjak.</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés: rezsivédett 36,9 Ft/kWh (2523 kWh/év felett 70,1 Ft), vezérelt NT 25,9 Ft, dinamikus = tőzsdei átlagár (${fmt1(spot30)} Ft) + hálózati díjak.</p>`;
+
+      // Animációk indítása: sávok kinövése + számlálók felpörgése.
+      // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
+      const startBars = () => cmpEl.querySelectorAll('.cmp-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
+      requestAnimationFrame(startBars);
+      setTimeout(startBars, 80);
+      cmpEl.querySelectorAll('.cmp-count').forEach((c, i) => {
+        const target = parseInt(c.dataset.target);
+        const t0 = performance.now() + 300 + i * 150;
+        (function tick(now) {
+          const t = Math.min(1, Math.max(0, (now - t0) / 1000));
+          const e = 1 - Math.pow(1 - t, 3);
+          c.textContent = fmt(Math.round(target * e));
+          if (t < 1) requestAnimationFrame(tick);
+        })(performance.now());
+        // Végérték garantálva akkor is, ha az animáció nem fut le
+        setTimeout(() => { c.textContent = fmt(target); }, 1600 + i * 150);
+      });
     }
+    // A nagy szám is számlálóval pörögjön fel
+    const amtEl = el('obsResultAmt');
+    if (amtEl) countUp(amtEl, amt, 1000);
     updateKpi(amt);
   }
   showObsStep(currentStep + 1);
