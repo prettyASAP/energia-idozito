@@ -48,6 +48,8 @@ const S = {
   // Push notifications
   pushOptIn: false,
   pushLastAlertKey: null,
+  // Élő hálózati adatok (MAVIR)
+  grid: { mix: null, renewables: null, flows: null, solarForecastByHour: {} },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -163,6 +165,99 @@ function countUp(elem, target, ms = 900) {
   requestAnimationFrame(step);
 }
 
+// ── Élő hálózati adatok (MAVIR) ────────────────────────────────────────
+async function loadGrid() {
+  const get = async ep => {
+    try {
+      const r = await fetch(`/api/grid/${ep}`);
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d && d.available ? d : null;
+    } catch (e) { return null; }
+  };
+  const [mix, renewables, flows] = await Promise.all([get('mix'), get('renewables'), get('flows')]);
+  S.grid.mix = mix;
+  S.grid.renewables = renewables;
+  S.grid.flows = flows;
+
+  // Óránkénti nap-előrejelzés a zöld órákhoz
+  S.grid.solarForecastByHour = {};
+  const fc = renewables?.solar?.series?.forecast_current || [];
+  fc.forEach(pt => {
+    const d = new Date(pt.timestamp);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+    const cur = S.grid.solarForecastByHour[key];
+    S.grid.solarForecastByHour[key] = cur == null ? pt.value : Math.max(cur, pt.value);
+  });
+
+  renderGridPanel();
+  if (S.prices.length) renderHero(); // magyarázat frissítése valós grid adattal
+}
+
+const MIX_GROUPS = [
+  { key: 'nuclear', label: 'Paks (atom)', color: '#7c6ff0' },
+  { key: 'gas',     label: 'Gáz',         color: '#e0a83c' },
+  { key: '_renew',  label: 'Megújuló',    color: 'oklch(0.62 0.13 155)' },
+  { key: '_other',  label: 'Egyéb',       color: 'var(--color-neutral-300)' },
+];
+
+function renderGridPanel() {
+  const sec = el('gridPanelSection');
+  if (!sec) return;
+  const mix = S.grid.mix;
+  if (!mix) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+
+  const m = mix.mix || {};
+  const nuclearPct = m.nuclear?.share_pct ?? 0;
+  const gasPct = m.gas?.share_pct ?? 0;
+  const renewPct = mix.renewable_share_pct ?? 0;
+  const otherPct = Math.max(0, 100 - nuclearPct - gasPct - renewPct);
+  const shares = { nuclear: nuclearPct, gas: gasPct, _renew: renewPct, _other: otherPct };
+
+  el('gridMixBar').innerHTML = MIX_GROUPS.map(g =>
+    `<div style="width:${shares[g.key]}%;background:${g.color}" title="${g.label}: ${fmt1(shares[g.key])}%"></div>`
+  ).join('');
+  el('gridMixLegend').innerHTML = MIX_GROUPS.map(g =>
+    `<span style="display:inline-flex;align-items:center;gap:5px">
+      <span style="width:9px;height:9px;border-radius:3px;background:${g.color};display:inline-block"></span>
+      ${g.label} <strong>${fmt1(shares[g.key])}%</strong>
+    </span>`
+  ).join('');
+
+  const solarMW = S.grid.renewables?.solar?.latest_actual?.value;
+  const windMW = S.grid.renewables?.wind?.latest_actual?.value;
+  const netImp = S.grid.flows?.net_import?.actual?.value;
+  const stat = (lbl, val, unit) => val == null ? '' :
+    `<div style="background:var(--color-neutral-100);border-radius:10px;padding:9px 12px">
+      <div style="font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600)">${lbl}</div>
+      <div style="font-size:17px;font-weight:600;font-family:var(--font-heading)">${fmt(val)} <span style="font-size:11px;font-weight:400">${unit}</span></div>
+    </div>`;
+  el('gridStats').innerHTML =
+    stat('Naptermelés', solarMW, 'MW') +
+    stat('Széltermelés', windMW, 'MW') +
+    stat(netImp != null && netImp >= 0 ? 'Nettó import' : 'Nettó export', netImp != null ? Math.abs(netImp) : null, 'MW') +
+    stat('Hazai termelés', mix.total_mw, 'MW');
+}
+
+// Zöld óra: a nap-előrejelzés az ablak alatt eléri-e a napi csúcs 60%-át
+function isGreenWindow(startIdx, dur) {
+  const map = S.grid.solarForecastByHour;
+  const vals = Object.values(map);
+  if (!vals.length) return false;
+  const dayMax = Math.max(...vals);
+  if (dayMax <= 0) return false;
+  const now = new Date();
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let sum = 0, n = 0;
+  for (let i = startIdx; i < startIdx + dur; i++) {
+    const slot = new Date(dayStart.getTime() + i * 3600000);
+    const key = `${slot.getFullYear()}-${slot.getMonth()}-${slot.getDate()}-${slot.getHours()}`;
+    if (map[key] != null) { sum += map[key]; n++; }
+  }
+  return n > 0 && (sum / n) >= dayMax * 0.6;
+}
+
 // ── Tab switching ──────────────────────────────────────────────────────
 function setTab(tab) {
   ['ma', 'arak', 'sporolas', 'tervek'].forEach(t => {
@@ -259,6 +354,12 @@ function renderHero() {
     } else {
       why = `Az ár a mai átlag közelében mozog (${pctStr}).`;
     }
+    // Élő hálózati kontextus, ha van
+    const solarMW = S.grid.renewables?.solar?.latest_actual?.value;
+    const netImp = S.grid.flows?.net_import?.actual?.value;
+    if (solarMW != null && netImp != null) {
+      why += ` Naptermelés most: ${fmt(solarMW)} MW, ${netImp >= 0 ? 'import' : 'export'}: ${fmt(Math.abs(netImp))} MW.`;
+    }
     reasonEl.textContent = why;
   }
 
@@ -285,6 +386,9 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
 
     const showDay = wDay && wDay.start !== w.start;
     const dayStr = wDay ? `${String(wDay.start % 24).padStart(2, '0')}:00–${String((wDay.start + d.dur) % 24).padStart(2, '0')}:00` : null;
+    const greenBest = isGreenWindow(w.start, d.dur);
+    const greenDay = showDay && isGreenWindow(wDay.start, d.dur);
+    const leaf = `<span title="Zöld óra — magas naptermelés" style="font-size:11px">🌱</span>`;
 
     return `<div class="device-card" style="${cardStyle};animation-delay:${i * 60}ms">
       <div class="device-card-top">
@@ -294,11 +398,11 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
       <div class="device-name">${d.name}</div>
       <div class="device-window">
         <span class="text-muted">Legjobb ablak</span>
-        <strong>${winStr}</strong>
+        <strong>${winStr}${greenBest ? ' ' + leaf : ''}</strong>
       </div>
       ${showDay ? `<div class="device-window" style="opacity:0.65;margin-top:3px">
         <span class="text-muted">Napközben</span>
-        <strong>${dayStr}</strong>
+        <strong>${dayStr}${greenDay ? ' ' + leaf : ''}</strong>
       </div>` : ''}
       <div class="device-save">~${fmt(savePerRun)} Ft / futtatás · ${fmt(d.annual)} Ft / év</div>
     </div>`;
@@ -998,6 +1102,8 @@ async function init() {
 
   if (S.prices.length) renderHero();
 
+  loadGrid(); // háttérben — nem blokkolja az árakat
+
   // Default savings from design's initial onboarding state
   const defaultSave = calcOnboardingSavings();
   updateKpi(defaultSave);
@@ -1010,6 +1116,8 @@ async function init() {
     if (S.tab === 'arak') { renderHeatmap(); renderBarChart(); renderTrendChart(); }
     if (S.tab === 'tervek') renderPlan();
   }, 60000);
+
+  setInterval(loadGrid, 15 * 60000); // MAVIR adatok 15 percenként
 }
 
 document.addEventListener('DOMContentLoaded', init);
