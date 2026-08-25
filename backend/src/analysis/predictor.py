@@ -154,6 +154,7 @@ def combined_forecast(
     forecast: pd.Series,
     eur_huf: float,
     days_ahead: int = 7,
+    history_days: int = 7,
 ) -> List[PredictedHour]:
     """Összekapcsolt historikus + előrejelzett adatsor a frontendnek, konfidencia intervalumokkal."""
 
@@ -169,8 +170,8 @@ def combined_forecast(
 
     result = []
 
-    # Historikus adatok (utolsó 7 nap)
-    cutoff = historical.index[-1] - pd.Timedelta(days=7)
+    # Historikus adatok (utolsó history_days nap)
+    cutoff = historical.index[-1] - pd.Timedelta(days=history_days)
     hist_slice = historical[historical.index >= cutoff]
     for ts, price in hist_slice.items():
         huf = round(float(price) * eur_huf, 0)

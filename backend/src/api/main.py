@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from data.entso_fetcher import fetch_day_ahead_prices, fetch_eur_huf_rate
+from data.entso_fetcher import fetch_day_ahead_prices, fetch_eur_huf_rate, fetch_quarter_hour_prices
 from data.weather_fetcher import fetch_weather_forecast, get_city_coords, HUNGARIAN_CITIES
 from analysis.price_analyzer import analyze_prices, daily_summary, weekly_pattern
 from analysis.recommender import recommend
@@ -169,9 +169,7 @@ def get_status(request: Request):
     Aktuális áram státusz: most érdemes-e bekapcsolni?
     Visszaadja az aktuális Ft/kWh árat és a zöld/sárga/piros státuszt.
     """
-    api_key = _get_entso_api_key()
-    if not api_key:
-        raise HTTPException(status_code=503, detail="ENTSO_E_API_KEY environment variable not set")
+    api_key = _get_entso_api_key()  # opcionális — energy-charts.info kulcs nélkül megy
 
     now = datetime.now(tz=timezone.utc)
     # 24 óra visszafelé + 24 óra előre az aktuális helyzet kontextusához
@@ -271,9 +269,7 @@ def get_prices(
     request: Request,
     days: int = Query(default=7, ge=1, le=30),
 ):
-    api_key = _get_entso_api_key()
-    if not api_key:
-        raise HTTPException(status_code=503, detail="ENTSO_E_API_KEY environment variable not set")
+    api_key = _get_entso_api_key()  # opcionális — energy-charts.info kulcs nélkül megy
 
     end = datetime.now(tz=timezone.utc)
     start = end - timedelta(days=days)
@@ -301,15 +297,46 @@ def get_prices(
     }
 
 
+@app.get("/api/prices/quarterly")
+@limiter.limit("60/minute")
+def get_prices_quarterly(
+    request: Request,
+    days: int = Query(default=2, ge=1, le=31, description="Hány nap visszamenőleg"),
+):
+    """15 perces felbontású árak — max 31 nap történet + a teljes elérhető holnapi nap."""
+    end = datetime.now(tz=timezone.utc) + timedelta(hours=49)
+    start = datetime.now(tz=timezone.utc) - timedelta(days=days)
+
+    eur_huf = fetch_eur_huf_rate()
+    series = fetch_quarter_hour_prices(start, end)
+    if series.empty:
+        raise HTTPException(status_code=503, detail="Nem sikerült áradatot lekérni.")
+
+    now_ts = datetime.now(tz=timezone.utc)
+    return {
+        "resolution_minutes": 15,
+        "prices": [
+            {
+                "timestamp": ts.isoformat(),
+                "price_eur_mwh": round(float(v), 2),
+                "price_huf_kwh": round(float(v) * eur_huf / 1000, 2),
+                "is_forecast": ts.tz_convert("UTC").to_pydatetime() > now_ts,
+            }
+            for ts, v in series.items()
+        ],
+        "count": len(series),
+        "eur_huf_rate": eur_huf,
+        "source": "energy-charts.info (Bundesnetzagentur | SMARD.de, CC BY 4.0)",
+    }
+
+
 @app.get("/api/summary")
 @limiter.limit("60/minute")
 def get_summary(
     request: Request,
     days: int = Query(default=7, ge=1, le=30),
 ):
-    api_key = _get_entso_api_key()
-    if not api_key:
-        raise HTTPException(status_code=503, detail="ENTSO_E_API_KEY environment variable not set")
+    api_key = _get_entso_api_key()  # opcionális — energy-charts.info kulcs nélkül megy
 
     end = datetime.now(tz=timezone.utc)
     start = end - timedelta(days=days)
@@ -353,9 +380,7 @@ def get_forecast(
     Előrejelzett árak a következő napokra a historikus minták alapján.
     Konfidencia intervallumot és modell-pontosságot is tartalmaz.
     """
-    api_key = _get_entso_api_key()
-    if not api_key:
-        raise HTTPException(status_code=503, detail="ENTSO_E_API_KEY environment variable not set")
+    api_key = _get_entso_api_key()  # opcionális — energy-charts.info kulcs nélkül megy
 
     end = datetime.now(tz=timezone.utc)
     start = end - timedelta(days=history_days)
@@ -366,7 +391,7 @@ def get_forecast(
         raise HTTPException(status_code=503, detail="Nem sikerült historikus adatot lekérni.")
 
     forecast = predict_prices(historical, days_ahead=forecast_days)
-    hours = combined_forecast(historical, forecast, eur_huf=eur_huf)
+    hours = combined_forecast(historical, forecast, eur_huf=eur_huf, history_days=history_days)
 
     # Modell pontossága
     accuracy = compute_model_accuracy(historical)
@@ -429,9 +454,7 @@ def get_recommendation(
     Elfogad device_id-t az előre definiált eszközprofilokból,
     vagy egyedi power_kw + hours_per_day paramétereket.
     """
-    api_key = _get_entso_api_key()
-    if not api_key:
-        raise HTTPException(status_code=503, detail="ENTSO_E_API_KEY environment variable not set")
+    api_key = _get_entso_api_key()  # opcionális — energy-charts.info kulcs nélkül megy
 
     # Eszközprofil alapú paraméter feloldás
     if device_id and device_id in DEVICE_MAP:
@@ -580,9 +603,7 @@ def get_cooling_plan(
     - Javasolt akció: előhűtés / futtasd / hőtartalékon coast / kikapcs
     - Naiv vs. okos stratégia összehasonlítása (megtakarítás Ft-ban)
     """
-    api_key = _get_entso_api_key()
-    if not api_key:
-        raise HTTPException(status_code=503, detail="ENTSO_E_API_KEY environment variable not set")
+    api_key = _get_entso_api_key()  # opcionális — energy-charts.info kulcs nélkül megy
 
     # Koordináta feloldás
     if lat is not None and lon is not None:
@@ -696,9 +717,7 @@ def get_solar_plan(
     - Éves hozam- és megtakarítás-becslés
     - Top 3 legjobb időablak nagy fogyasztókhoz
     """
-    api_key = _get_entso_api_key()
-    if not api_key:
-        raise HTTPException(status_code=503, detail="ENTSO_E_API_KEY environment variable not set")
+    api_key = _get_entso_api_key()  # opcionális — energy-charts.info kulcs nélkül megy
 
     # Koordináta feloldás
     if lat is not None and lon is not None:

@@ -19,20 +19,35 @@ except ImportError:
     ENTSOE_AVAILABLE = False
 
 
-def _fetch_energy_charts(start: datetime, end: datetime) -> pd.Series:
+# Rövid TTL-ű cache, hogy ne terheljük az energy-charts.info-t kérésenként,
+# de az adat legfeljebb 10 percenként frissüljön.
+_EC_CACHE: dict = {}
+_EC_CACHE_TTL = 600  # másodperc
+import time as _time
+import threading as _threading
+_ec_lock = _threading.Lock()
+
+
+def _fetch_energy_charts(start: datetime, end: datetime, hourly: bool = True) -> pd.Series:
     """
     Day-ahead árak az energy-charts.info API-ról (Fraunhofer ISE).
     Kulcs nélküli, CC BY 4.0 licencű forrás — adat: Bundesnetzagentur | SMARD.de.
-    15 perces felbontású választ ad, óránkénti átlagra resample-öljük.
+    15 perces felbontású adat; hourly=True esetén óránkénti átlagra resample-öljük.
     """
     import json
+
+    cache_key = (start.isoformat(timespec="minutes"), end.isoformat(timespec="minutes"), hourly)
+    with _ec_lock:
+        hit = _EC_CACHE.get(cache_key)
+        if hit and (_time.time() - hit[0]) < _EC_CACHE_TTL:
+            return hit[1]
 
     url = (
         "https://api.energy-charts.info/price?bzn=HU"
         f"&start={urllib.parse.quote(start.isoformat(timespec='minutes'))}"
         f"&end={urllib.parse.quote(end.isoformat(timespec='minutes'))}"
     )
-    with urllib.request.urlopen(url, timeout=15) as r:
+    with urllib.request.urlopen(url, timeout=20) as r:
         data = json.loads(r.read().decode("utf-8"))
 
     ts_list = data.get("unix_seconds") or []
@@ -46,10 +61,26 @@ def _fetch_energy_charts(start: datetime, end: datetime) -> pd.Series:
         return pd.Series(dtype=float, name="price_eur_mwh")
 
     series = pd.Series(prices, name="price_eur_mwh").sort_index()
-    if len(series) > 1 and (series.index[1] - series.index[0]) < pd.Timedelta("1h"):
+    if hourly and len(series) > 1 and (series.index[1] - series.index[0]) < pd.Timedelta("1h"):
         series = series.resample("1h").mean().dropna()
         series.name = "price_eur_mwh"
+
+    with _ec_lock:
+        _EC_CACHE[cache_key] = (_time.time(), series)
+        # ne nőjön korlátlanul
+        if len(_EC_CACHE) > 64:
+            oldest = min(_EC_CACHE, key=lambda k: _EC_CACHE[k][0])
+            _EC_CACHE.pop(oldest, None)
     return series
+
+
+def fetch_quarter_hour_prices(start: datetime, end: datetime) -> pd.Series:
+    """15 perces felbontású day-ahead árak (EUR/MWh), resample nélkül."""
+    try:
+        return _fetch_energy_charts(start, end, hourly=False)
+    except Exception as e:
+        logger.error(f"Negyedórás árlekérés hiba ({type(e).__name__}: {e})")
+        return pd.Series(dtype=float, name="price_eur_mwh")
 
 
 def _fetch_raw_xml(key: str, start: datetime, end: datetime) -> str:
