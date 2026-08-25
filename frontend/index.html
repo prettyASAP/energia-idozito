@@ -19,7 +19,7 @@
       </svg>
       Energia Időzítő
     </div>
-    <span class="tag tag-outline" style="font-size:10px">ENTSO-E · élő</span>
+    <span class="tag tag-outline" style="font-size:10px">Élő tőzsdei árak</span>
   </header>
 
   <!-- ── Content ── -->
@@ -80,6 +80,7 @@
         <h2>Mikor kapcsoljam be?</h2>
         <p id="deviceSummary" style="display:none;font-size:13px;background:var(--good-100);border:1px solid oklch(0.62 0.13 155 / .35);border-radius:10px;padding:10px 12px;margin:0 0 12px;line-height:1.45"></p>
         <div class="device-grid" id="deviceGrid"></div>
+        <p class="text-muted" style="font-size:11px;margin:10px 2px 0;line-height:1.5">🌱 = ebben a sávban sok a napenergia — olcsó <em>és</em> zöld · Zöld kártya = most érdemes indítani</p>
       </section>
 
       <!-- CTA -->
@@ -111,8 +112,9 @@
 
       <!-- Bar chart -->
       <section>
+        <div class="section-kicker">TEGNAP · MA · HOLNAP</div>
         <h2 style="margin-bottom:4px">72 órás grafikon</h2>
-        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Tegnap (szürkén) + ma + holnap (előrejelzés halványan) — így látszik, tényleg olcsó-e a mai nap. Forrás: ENTSO-E day-ahead.</p>
+        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Tegnap (szürke) · ma (élénk) · holnap (halvány). Zöld = olcsó óra, piros = drága.</p>
         <div class="chart-card">
           <svg id="barChart" viewBox="0 0 720 170" width="100%" height="170" style="display:block"></svg>
         </div>
@@ -120,6 +122,7 @@
 
       <!-- 30-day trend -->
       <section>
+        <div class="section-kicker">MERRE TART A PIAC?</div>
         <h2 style="margin-bottom:4px">30 napos trend</h2>
         <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Napi átlagárak az elmúlt hónapban — látszik, merre tart a piac.</p>
         <div class="chart-card">
