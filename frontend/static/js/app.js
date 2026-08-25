@@ -265,9 +265,13 @@ function setTab(tab) {
     el(`tbtn-${t}`).classList.toggle('active', t === tab);
   });
   S.tab = tab;
+  window.scrollTo({ top: 0 });
   if (tab === 'arak' && S.prices.length) { renderHeatmap(); renderBarChart(); renderTrendChart(); }
   if (tab === 'sporolas') { updateKpi(S.savedAmt); updateHtnt(); }
   if (tab === 'tervek') renderPlan();
+  // Az animáció csak először fusson le — visszaváltásnál ne villogjon
+  const pane = el(`tab-${tab}`);
+  setTimeout(() => pane && pane.classList.add('seen'), 700);
 }
 
 // ── Hero ───────────────────────────────────────────────────────────────
@@ -370,6 +374,30 @@ function renderHero() {
 function renderDeviceGrid(pr, sorted, nowH, avg24) {
   const grid = el('deviceGrid');
   if (!grid) return;
+  // Újrarendereléskor ne fusson le megint a belépő animáció (percenként villogna)
+  const rerender = grid.dataset.rendered === '1';
+  grid.dataset.rendered = '1';
+
+  // Összefoglaló: ha a legtöbb gép legjobb ablaka egybeesik, egy sorban a lényeg
+  const summaryEl = el('deviceSummary');
+  if (summaryEl) {
+    const counts = {};
+    MAIN_DEV.forEach(d => {
+      const w = bestWindow(pr, nowH, d.dur);
+      const key = `${w.start}`;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    const topStart = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    if (topStart != null && counts[topStart] >= 3) {
+      const s = parseInt(topStart);
+      const day = s < 24 ? 'ma' : 'holnap';
+      const green = isGreenWindow(s, 2) ? ' — olcsó és 🌱 zöld' : '';
+      summaryEl.innerHTML = `💡 A legtöbb gépet <strong>${day} ${String(s % 24).padStart(2, '0')}:00 körül</strong> éri meg indítani${green}.`;
+      summaryEl.style.display = '';
+    } else {
+      summaryEl.style.display = 'none';
+    }
+  }
 
   grid.innerHTML = MAIN_DEV.map((d, i) => {
     const w = bestWindow(pr, nowH, d.dur);
@@ -377,8 +405,8 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
     const nowOk = level(pr[nowH] ?? 30, sorted) === 'olcso' || w.start === nowH;
     const savePerRun = Math.max(0, (avg24 - w.avg) * d.kwh);
     const winStr = `${String(w.start % 24).padStart(2, '0')}:00–${String((w.start + d.dur) % 24).padStart(2, '0')}:00`;
-    const waitH = w.start - nowH;
-    const tag = nowOk ? 'Indítsd most' : `Várj ${waitH} ó`;
+    const startDay = w.start < 24 ? 'Ma' : 'Holnap';
+    const tag = nowOk ? 'Indítsd most' : `${startDay} ${String(w.start % 24).padStart(2, '0')}:00`;
     const tagBg = nowOk ? 'var(--good-500)' : 'var(--color-accent-200)';
     const tagFg = nowOk ? '#fff' : 'var(--color-accent-800)';
     const cardStyle = nowOk ? 'background:var(--good-100);border-color:oklch(0.62 0.13 155)' : '';
@@ -390,7 +418,7 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
     const greenDay = showDay && isGreenWindow(wDay.start, d.dur);
     const leaf = `<span title="Zöld óra — magas naptermelés" style="font-size:11px">🌱</span>`;
 
-    return `<div class="device-card" style="${cardStyle};animation-delay:${i * 60}ms">
+    return `<div class="device-card" style="${cardStyle};${rerender ? 'animation:none' : `animation-delay:${i * 60}ms`}">
       <div class="device-card-top">
         <div class="device-icon" style="background:${iconBg};color:#fff">${svgIcon(d.icon)}</div>
         <span class="tag" style="font-size:9.5px;background:${tagBg};color:${tagFg};border:none;letter-spacing:.05em;text-transform:uppercase;font-family:var(--font-heading);white-space:nowrap;padding:2px 7px">${tag}</span>

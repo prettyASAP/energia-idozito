@@ -97,6 +97,8 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 @keyframes ringIn { from { stroke-dashoffset: 232; } }
 section { animation: fadeUp .4s ease both; }
 section + section { animation-delay: .08s; }
+/* Belépő animáció csak az első megnyitáskor — visszaváltásnál azonnal jelenjen meg */
+.tab-pane.seen section, .tab-pane.seen .device-card, .tab-pane.seen .plan-row { animation: none; }
 button { transition: transform .12s ease; cursor: pointer; }
 button:active { transform: scale(.96); }
 
