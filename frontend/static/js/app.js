@@ -10,7 +10,7 @@ const MAIN_DEV = [
     icon: 'M7 2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2H7a2 2 0 0 1 -2 -2V4a2 2 0 0 1 2 -2z M9 20v2 M15 20v2 M9 9c1 -1 2 -1 3 0s2 1 3 0' },
   { id: 'klima',       name: 'Klíma',        kwh: 2.5, dur: 4, annual: 9000,
     icon: 'M3 5h18v6H3z M6 8h.01 M17 8h.01 M7 14c0 2 -1 2 -1 4 M12 14c0 2 -1 2 -1 4 M17 14c0 2 -1 2 -1 4' },
-  { id: 'ev',          name: 'EV töltő',     kwh: 11,  dur: 4, annual: 30000,
+  { id: 'ev',          name: 'E-autó töltő',     kwh: 11,  dur: 4, annual: 30000,
     icon: 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8' },
   { id: 'szarito',     name: 'Szárítógép',   kwh: 2.5, dur: 2, annual: 7000,
     icon: 'M5 3h14v18H5z M12 13m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 13m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0' },
@@ -337,7 +337,7 @@ function renderHero() {
     if (p != null && p < cur * 0.85) { nextCheap = h - nowH; break; }
   }
   el('heroSub').textContent = lvl === 'olcso'
-    ? 'A mai nap egyik legolcsóbb órájában vagyunk. Mosógép, bojler, EV töltés — most éri meg.'
+    ? 'A mai nap egyik legolcsóbb órájában vagyunk. Mosógép, bojler, autótöltés — most éri meg.'
     : nextCheap
     ? `Kb. ${nextCheap} óra múlva jön jelentősen olcsóbb sáv. Addig az alábbi ajánlásokat kövesd.`
     : 'Az aktuális piaci ár alapján megmondjuk, mikor érdemes bekapcsolni.';
@@ -358,7 +358,7 @@ function renderHero() {
         ? `A napelemek csúcson termelnek — az ár ${pctStr} van.`
         : `Alacsony kereslet — az ár ${pctStr} van.`;
     } else {
-      why = `Az ár a mai átlag közelében mozog (${pctStr}).`;
+      why = 'Az ár a mai átlag közelében mozog.';
     }
     // Élő hálózati kontextus, ha van
     const solarMW = S.grid.renewables?.solar?.latest_actual?.value;
@@ -427,14 +427,14 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
       </div>
       <div class="device-name">${d.name}</div>
       <div class="device-window">
-        <span class="text-muted">Legjobb ablak</span>
+        <span class="text-muted">Legolcsóbb sáv</span>
         <strong>${winStr}${greenBest ? ' ' + leaf : ''}</strong>
       </div>
       ${showDay ? `<div class="device-window" style="opacity:0.65;margin-top:3px">
         <span class="text-muted">Napközben</span>
         <strong>${dayStr}${greenDay ? ' ' + leaf : ''}</strong>
       </div>` : ''}
-      <div class="device-save">~${fmt(savePerRun)} Ft / futtatás · ${fmt(d.annual)} Ft / év</div>
+      <div class="device-save">~${fmt(savePerRun)} Ft alkalmanként · ${fmt(d.annual)} Ft évente</div>
     </div>`;
   }).join('');
 }
@@ -660,7 +660,7 @@ function renderPlan() {
     if (isKlima) {
       if (l === 'draga')           { phase = 'Hőtartalékon';    bg = 'var(--color-neutral-800)'; }
       else if (h >= 10 && h <= 15) { phase = 'Előhűtés';        bg = 'var(--color-accent-500)'; }
-      else if (l === 'olcso')      { phase = 'Futtathatod';      bg = 'var(--color-accent-200)'; }
+      else if (l === 'olcso')      { phase = 'Bekapcsolhatod';   bg = 'var(--color-accent-200)'; }
       else                         { phase = 'Hagyd kikapcsolva'; bg = 'var(--color-neutral-200)'; }
     } else {
       if (h >= 10 && h <= 15)      { phase = 'Napelem csúcs';       bg = 'var(--color-accent-500)'; }
@@ -681,10 +681,10 @@ function renderPlan() {
 
   const phaseDescs = {
     'Előhűtés':         'Hűtsd 1–2 fokkal a komfort alá — olcsó a déli áram.',
-    'Futtathatod':      'Olcsó sáv — mehet a klíma, ha kell.',
+    'Bekapcsolhatod':   'Olcsó sáv — mehet a klíma, ha kell.',
     'Hőtartalékon':     'Kapcsold ki — a lakás hőtartaléka viszi.',
     'Hagyd kikapcsolva':'Nincs teendő — hűvös éjszakai órák.',
-    'Napelem csúcs':    'Futtasd a nagy fogyasztókat: mosógép, EV.',
+    'Napelem csúcs':    'Ekkor menjenek a nagy fogyasztók: mosógép, autótöltés.',
     'Részleges termelés':'Kisebb gépek mehetnek napelemről.',
     'Olcsó hálózat':    'Éjszakai olcsó áram — EV-töltésre ideális.',
     'Kerüld!':          'Drága hálózati áram — halaszd későbbre.',
@@ -693,7 +693,7 @@ function renderPlan() {
 
   const tip = isKlima
     ? 'Tipp: 11:00–15:00 között hűts 1–2 fokkal a komfort alá, 17:00–21:00 között kapcsold ki — a falak hőtárolása kitart.'
-    : 'Tipp: mosógépet, mosogatót 11:00–15:00 közé, EV töltést éjszakára vagy délre időzíts.';
+    : 'Tipp: mosógépet, mosogatót 11:00–15:00 közé, az autótöltést éjszakára vagy délre időzítsd.';
 
   const timeStr = r => `${String(r.start).padStart(2, '0')}:00–${String(r.end % 24).padStart(2, '0')}:00`;
 
@@ -781,7 +781,7 @@ function obsNext(currentStep) {
     const descs = {
       rezsi: 'Rezsivédett tarifán fix az egységár, ezért az időzítés a számlán csak részben jelenik meg — a fenti összeg erre az óvatos esetre vonatkozik. Tarifaváltással többet hozhatsz ki (lásd lent).',
       htnt:  'Éjszakai (vezérelt) áramkörre kötött gépeknél a kedvezményes ár közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
-      piaci: 'Dinamikus (piaci áras) tarifán az órás árkülönbség teljes egészében a tiéd — az app ablakai pontosan ezt az árat követik.',
+      piaci: 'Dinamikus (piaci áras) tarifán az órás árkülönbség teljes egészében a tiéd — az app ajánlott idősávjai pontosan ezt az árat követik.',
     };
     el('obsResultDesc').textContent = descs[S.obsTariff] || '';
 
@@ -818,12 +818,12 @@ function obsNext(currentStep) {
 
       const verdict = best.key === S.obsTariff
         ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb. Az okosmérős dinamikus árazás a te fogyasztásoddal <strong>nem érné meg</strong>.`
-        : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással kb. <strong>${fmt(savedBySwitch)} Ft/év</strong>-et spórolnál a mostanihoz képest.`;
+        : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással évente kb. <strong>${fmt(savedBySwitch)} Ft</strong>-tal kevesebbet fizetnél.`;
 
       const maxBill = Math.max(...opts.map(o => o.bill));
       cmpEl.innerHTML = `
         <div class="cmp-verdict" style="font-size:13px;line-height:1.5;background:var(--color-accent-100);border-radius:10px;padding:10px 12px;margin-bottom:14px;animation:fadeUp .4s ease both">${verdict}</div>
-        <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:8px">Éves villanyszámla — ${fmt(kwhMonth)} kWh/hó mellett</div>` +
+        <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:8px">Éves villanyszámla havi ${fmt(kwhMonth)} kWh fogyasztással</div>` +
         opts.map((o, i) => {
           const isBest = o === best;
           const mine = o.key === S.obsTariff;
@@ -845,7 +845,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés: rezsivédett 36,9 Ft/kWh (2523 kWh/év felett 70,1 Ft), vezérelt NT 25,9 Ft, dinamikus = tőzsdei átlagár (${fmt1(spot30)} Ft) + hálózati díjak.</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés: rezsivédett 36,9 Ft/kWh (2523 kWh/év felett 70,1 Ft), vezérelt NT 25,9 Ft, a dinamikus ár a tőzsdei átlagár (${fmt1(spot30)} Ft) és a hálózati díjak összege.</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
@@ -1050,7 +1050,7 @@ function buildAdvStep4() {
   }).join('');
 
   const prios = [
-    { id: 'megtakaritas', label: 'Minél több spórolás' },
+    { id: 'megtakaritas', label: 'Minél nagyobb megtakarítás' },
     { id: 'gyors',        label: 'Azonnali eredmény' },
     { id: 'kornyezet',    label: 'Környezetbarát' },
     { id: 'kenyelem',     label: 'Kényelem, automatizálás' },
@@ -1078,8 +1078,8 @@ function buildAdvResults() {
       d: 'Ingyenesen igényelhető az elosztódtól; az éjszakai sáv 30–40%-kal olcsóbb.',
       cost: 0, save: 45000 * billMult,
       ok: a.tariff !== 'htnt' && (has('bojler') || has('ev') || has('hoszivattyu')), fast: 1 },
-    { t: 'Eco programok + teli gép',
-      d: 'A mosó- és mosogatógép eco programja futtatásonként 20–40% energiát spórol.',
+    { t: 'Öko programok és teli gép',
+      d: 'A mosó- és mosogatógép öko programja alkalmanként 20–40%-kal kevesebb energiát használ.',
       cost: 0, save: 8000, ok: has('mosogep') || has('mosogatogep'), eco: 1, fast: 1 },
     { t: 'Okoskonnektorok időzítéssel',
       d: 'Okosdugalj automatikusan a legolcsóbb órában indítja a gépeket.',
