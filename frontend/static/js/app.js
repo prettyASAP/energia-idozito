@@ -6,13 +6,13 @@ const MAIN_DEV = [
     icon: 'M5 3h14v18H5z M8 6h.01 M11 6h.01 M12 14m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0' },
   { id: 'mosogatogep', name: 'Mosogatógép', kwh: 1.2, dur: 2, annual: 5000,
     icon: 'M5 3h14v18H5z M5 8h14 M12 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0' },
-  { id: 'bojler',      name: 'Bojler',       kwh: 8,   dur: 3, annual: 18000,
+  { id: 'bojler',      name: 'Bojler',       kwh: 6,   dur: 3, annual: 18000,
     icon: 'M7 2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2H7a2 2 0 0 1 -2 -2V4a2 2 0 0 1 2 -2z M9 20v2 M15 20v2 M9 9c1 -1 2 -1 3 0s2 1 3 0' },
   { id: 'klima',       name: 'Klíma',        kwh: 2.5, dur: 4, annual: 9000,
     icon: 'M3 5h18v6H3z M6 8h.01 M17 8h.01 M7 14c0 2 -1 2 -1 4 M12 14c0 2 -1 2 -1 4 M17 14c0 2 -1 2 -1 4' },
   { id: 'ev',          name: 'E-autó töltő',     kwh: 11,  dur: 4, annual: 30000,
     icon: 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8' },
-  { id: 'szarito',     name: 'Szárítógép',   kwh: 2.5, dur: 2, annual: 7000,
+  { id: 'szarito',     name: 'Szárítógép',   kwh: 2.0, dur: 2, annual: 7000,
     icon: 'M5 3h14v18H5z M12 13m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 13m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0' },
 ];
 
@@ -798,9 +798,9 @@ function obsNext(currentStep) {
       const cheapAvg = spot30 * 0.55; // olcsó sávok tipikus átlaga
 
       // Közelítő 2026-os lakossági egységárak (MEKH): rezsivédett 36,9 Ft/kWh
-      // a 2523 kWh/év keretig, felette 70,1 Ft; vezérelt (NT) ~25,9 Ft;
+      // a 2523 kWh/év keretig, felette 70,1 Ft; vezérelt ~23,0 Ft (MVM: 22,68–23,52);
       // dinamikus: tőzsdei ár + ~25 Ft rendszerhasználati díj.
-      const CAP = 2523, REZSI = 36.9, PIACI = 70.1, NT = 25.9, NETFEE = 25;
+      const CAP = 2523, REZSI = 36.9, PIACI = 70.1, NT = 23.0, NETFEE = 25;
       const rezsiBill = Math.min(annualKwh, CAP) * REZSI + Math.max(0, annualKwh - CAP) * PIACI;
       const htntBill = annualKwh * flexShare * NT +
         (Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
@@ -810,7 +810,7 @@ function obsNext(currentStep) {
       const opts = [
         { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
         { key: 'htnt',  name: 'Éjszakai áram (vezérelt)', bill: htntBill },
-        { key: 'piaci', name: 'Okosmérős dinamikus', bill: dynBill },
+        { key: 'piaci', name: 'Okosmérős dinamikus (még nem elérhető)', bill: dynBill },
       ];
       const best = opts.reduce((a, b) => (b.bill < a.bill ? b : a));
       const mineOpt = opts.find(o => o.key === S.obsTariff) || opts[0];
@@ -845,7 +845,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés: rezsivédett 36,9 Ft/kWh (2523 kWh/év felett 70,1 Ft), vezérelt NT 25,9 Ft, a dinamikus ár a tőzsdei átlagár (${fmt1(spot30)} Ft) és a hálózati díjak összege.</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés: rezsivédett kb. 36,9 Ft/kWh (területenként 31–43 Ft; 2523 kWh/év felett 70,1 Ft), vezérelt kb. 23 Ft, a dinamikus ár a tőzsdei átlagár (${fmt1(spot30)} Ft) és a hálózati díjak összege.</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
@@ -909,7 +909,7 @@ function buildObsDeviceGrid() {
 const TARIFF_INFO = {
   rezsi: 'A normál lakossági áram — ezt fizeti szinte mindenki, fix kedvezményes egységáron.',
   htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel + napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, külön áramkör kiépítése kell hozzá.',
-  piaci: 'Óránként változó tőzsdei ár — okosmérő kell hozzá, és a szolgáltatódnál kell dinamikus árazású szerződést kérni.',
+  piaci: 'Óránként változó tőzsdei ár — okosmérő kell hozzá. Lakossági ügyfeleknek egyelőre csak tervezet: még egyik szolgáltató sem kínálja.',
 };
 
 function buildObsTariffGrid() {
@@ -1074,8 +1074,8 @@ function buildAdvResults() {
     { t: 'Eszközök időzítése olcsó órákra',
       d: 'A mosást, bojlert, töltést told az éjszakai és déli olcsó sávokba — ehhez csak ez az app kell.',
       cost: 0, save: Math.max(devSave, 5000), eco: 1, fast: 1 },
-    { t: 'HT/NT kétmérős tarifa igénylése',
-      d: 'Ingyenesen igényelhető az elosztódtól; az éjszakai sáv 30–40%-kal olcsóbb.',
+    { t: 'Vezérelt (éjszakai) tarifa igénylése',
+      d: 'Ingyenesen igényelhető az elosztódtól; a kedvezményes sávban kb. 36%-kal olcsóbb az éjszakai áram.',
       cost: 0, save: 45000 * billMult,
       ok: a.tariff !== 'htnt' && (has('bojler') || has('ev') || has('hoszivattyu')), fast: 1 },
     { t: 'Öko programok és teli gép',
@@ -1094,7 +1094,7 @@ function buildAdvResults() {
       d: 'Régi klíma cseréje 30–50%-kal kevesebb áramot fogyaszt.',
       cost: 350000, save: 20000, ok: has('klima') },
     { t: 'Napelem rendszer (~4 kWp)',
-      d: 'Önfogyasztásra optimalizálva 8–10 év megtérülés, utána évtizedekig termel.',
+      d: 'Bruttó elszámolással kb. 10–12 év megtérülés (állami támogatással 5–6 év), utána évtizedekig termel.',
       cost: 3500000, save: 180000, ok: !has('napelemek') && a.homeType === 'haz', eco: 1 },
     { t: 'Hőszivattyú a gáz kiváltására',
       d: 'Hosszú távon a legnagyobb megtakarítás — és a legzöldebb fűtés.',
