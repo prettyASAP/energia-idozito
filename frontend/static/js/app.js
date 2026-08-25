@@ -113,6 +113,20 @@ function bestWindowDay(pr, from, dur) {
   return { start: best, avg: bestAvg };
 }
 
+let _freshnessTimer = null;
+function startFreshness() {
+  const updEl = el('heroUpdated');
+  if (!updEl) return;
+  if (_freshnessTimer) clearInterval(_freshnessTimer);
+  const fetchedAt = Date.now();
+  function tick() {
+    const mins = Math.floor((Date.now() - fetchedAt) / 60000);
+    updEl.textContent = mins === 0 ? 'frissítve most' : `frissítve ${mins} perce`;
+  }
+  tick();
+  _freshnessTimer = setInterval(tick, 60000);
+}
+
 function tariffMult(t) { return t === 'htnt' ? 1.0 : t === 'piaci' ? 1.3 : 0.45; }
 function flexMult(f) { return f === 'kozepes' ? 0.7 : f === 'alacsony' ? 0.4 : 1.0; }
 
@@ -184,6 +198,13 @@ function renderHero() {
   trendEl.textContent = `${deltaPct >= 0 ? '▲' : '▼'} ${deltaPct >= 0 ? '+' : '−'}${Math.abs(deltaPct).toFixed(1).replace('.', ',')}%`;
   trendEl.style.color = deltaPct >= 0 ? 'var(--good-300)' : 'var(--bad-300)';
 
+  // Avg24
+  const avgEl = el('heroAvg');
+  if (avgEl) avgEl.textContent = `${fmt1(avg24)} Ft/kWh`;
+
+  // Freshness timestamp (restarts each render)
+  startFreshness();
+
   // Sub
   let nextCheap = 0;
   for (let h = nowH + 1; h < 48; h++) {
@@ -195,6 +216,17 @@ function renderHero() {
     : nextCheap
     ? `Kb. ${nextCheap} óra múlva jön jelentősen olcsóbb sáv. Addig az alábbi ajánlásokat kövesd.`
     : 'Az aktuális piaci ár alapján megmondjuk, mikor érdemes bekapcsolni.';
+
+  // Why explanation
+  const reasonEl = el('heroReason');
+  if (reasonEl) {
+    const h = nowH;
+    if (h >= 10 && h <= 15) reasonEl.textContent = 'Napközben a napenergia csökkenti az árakat — a napelemek csúcson termelnek.';
+    else if (h >= 18 && h <= 21) reasonEl.textContent = 'Esti csúcsfogyasztás: hazaérnek az emberek, a napenergia leáll — ezért drágább most.';
+    else if (h >= 0 && h <= 5) reasonEl.textContent = 'Éjszakai mélypont — alacsony fogyasztás, ez az egyik legolcsóbb sáv a nap folyamán.';
+    else if (h >= 6 && h <= 9) reasonEl.textContent = 'Reggeli indulás: a fogyasztás nő, a napenergia még nem csúcson — közepes árszint.';
+    else reasonEl.textContent = 'Az ár a napi átlag közelében van — a hőtérképen láthatod a jobb sávokat.';
+  }
 
   renderDeviceGrid(pr, sorted, nowH, avg24);
 }
