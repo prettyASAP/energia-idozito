@@ -542,7 +542,9 @@ function renderTrendChart() {
 
   // Napi átlagok az elmúlt 30 napra (a mai napot kihagyva, mert csonka lehet)
   const byDay = {};
-  const todayKey = new Date().toISOString().slice(0, 10);
+  // Helyi dátum szerint — a toISOString() UTC-t adna, ami éjfél után a tegnapot is levágná
+  const tNow = new Date();
+  const todayKey = `${tNow.getFullYear()}-${String(tNow.getMonth() + 1).padStart(2, '0')}-${String(tNow.getDate()).padStart(2, '0')}`;
   S.prices.forEach(p => {
     const d = new Date(p.timestamp);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
