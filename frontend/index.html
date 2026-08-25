@@ -80,13 +80,13 @@
         <h2>Mikor kapcsoljam be?</h2>
         <p id="deviceSummary" style="display:none;font-size:13px;background:var(--good-100);border:1px solid oklch(0.62 0.13 155 / .35);border-radius:10px;padding:10px 12px;margin:0 0 12px;line-height:1.45"></p>
         <div class="device-grid" id="deviceGrid"></div>
-        <p class="text-muted" style="font-size:11px;margin:10px 2px 0;line-height:1.5">🌱 = ebben a sávban sok a napenergia — olcsó <em>és</em> zöld · Zöld kártya = most érdemes indítani</p>
+        <p class="text-muted" style="font-size:11px;margin:10px 2px 0;line-height:1.5">A 🌱 jel azt mutatja, hogy a sávban sok a napenergia — olcsó <em>és</em> zöld. A zöld kártya: most érdemes indítani.</p>
       </section>
 
       <!-- CTA -->
       <section>
         <button class="btn btn-primary btn-block" onclick="openOnboarding()">
-          Mennyit spórolhatok? →
+          Mennyit takaríthatok meg? →
         </button>
       </section>
 
@@ -123,8 +123,8 @@
       <!-- 30-day trend -->
       <section>
         <div class="section-kicker">MERRE TART A PIAC?</div>
-        <h2 style="margin-bottom:4px">30 napos trend</h2>
-        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Napi átlagárak az elmúlt hónapban — látszik, merre tart a piac.</p>
+        <h2 style="margin-bottom:4px">30 napos áralakulás</h2>
+        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Napi átlagárak az elmúlt hónapban.</p>
         <div class="chart-card">
           <svg id="trendChart" viewBox="0 0 480 150" width="100%" height="150" style="display:block"></svg>
         </div>
@@ -148,7 +148,7 @@
       <!-- KPI dark box -->
       <section>
         <div class="section-kicker">Megtakarítás</div>
-        <h2>Mennyit spórolhatsz?</h2>
+        <h2>Mennyit takaríthatsz meg?</h2>
         <p class="text-muted" id="kpiSubtitle" style="font-size:12.5px;margin:0 0 12px">Tipikus háztartás becslése — pontosítsd a saját eszközeiddel.</p>
         <div class="kpi-dark-box">
           <div>
@@ -259,7 +259,7 @@
         <line x1="12" y1="1" x2="12" y2="23"/>
         <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
       </svg>
-      <span>Spórolás</span>
+      <span>Megtakarítás</span>
     </button>
     <button class="tab-btn" id="tbtn-tervek" onclick="setTab('tervek')">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -334,7 +334,7 @@
         </p>
         <div class="sheet-nav">
           <button class="btn btn-block" style="max-width:48%" onclick="obsBack(3)">Vissza</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="obsDone()">Mutasd az ablakokat</button>
+          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="obsDone()">Mutasd az időpontokat</button>
         </div>
       </div>
 
