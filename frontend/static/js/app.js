@@ -241,15 +241,25 @@ function renderHero() {
     ? `Kb. ${nextCheap} óra múlva jön jelentősen olcsóbb sáv. Addig az alábbi ajánlásokat kövesd.`
     : 'Az aktuális piaci ár alapján megmondjuk, mikor érdemes bekapcsolni.';
 
-  // Why explanation
+  // Why explanation — valós árból, nem órából
   const reasonEl = el('heroReason');
   if (reasonEl) {
     const h = nowH;
-    if (h >= 10 && h <= 15) reasonEl.textContent = 'Napközben a napenergia csökkenti az árakat — a napelemek csúcson termelnek.';
-    else if (h >= 18 && h <= 21) reasonEl.textContent = 'Esti csúcsfogyasztás: hazaérnek az emberek, a napenergia leáll — ezért drágább most.';
-    else if (h >= 0 && h <= 5) reasonEl.textContent = 'Éjszakai mélypont — alacsony fogyasztás, ez az egyik legolcsóbb sáv a nap folyamán.';
-    else if (h >= 6 && h <= 9) reasonEl.textContent = 'Reggeli indulás: a fogyasztás nő, a napenergia még nem csúcson — közepes árszint.';
-    else reasonEl.textContent = 'Az ár a napi átlag közelében van — a hőtérképen láthatod a jobb sávokat.';
+    const diffPct = Math.round(((cur - avg24) / avg24) * 100);
+    const pctStr = `${Math.abs(diffPct)}%-kal ${diffPct >= 0 ? 'a mai átlag felett' : 'a mai átlag alatt'}`;
+    let why;
+    if (diffPct >= 15) {
+      why = h >= 17 && h <= 22
+        ? `Esti csúcsfogyasztás, a naptermelés leállt — az ár ${pctStr} van.`
+        : `Magas kereslet vagy gyenge naptermelés — az ár ${pctStr} van.`;
+    } else if (diffPct <= -15) {
+      why = h >= 9 && h <= 16
+        ? `A napelemek csúcson termelnek — az ár ${pctStr} van.`
+        : `Alacsony kereslet — az ár ${pctStr} van.`;
+    } else {
+      why = `Az ár a mai átlag közelében mozog (${pctStr}).`;
+    }
+    reasonEl.textContent = why;
   }
 
   renderDeviceGrid(pr, sorted, nowH, avg24);
