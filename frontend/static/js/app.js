@@ -34,7 +34,7 @@ const S = {
   // Onboarding
   obsStep: 0,
   obsDevices: ['mosogep', 'bojler', 'klima'],
-  obsTariff: 'rezsi',
+  obsTariff: 'htnt',
   obsFlex: 'magas',
   obsDone: false,
   // Advisor
@@ -151,7 +151,7 @@ function startFreshness() {
   _freshnessTimer = setInterval(tick, 60000);
 }
 
-function tariffMult(t) { return t === 'htnt' ? 1.0 : t === 'piaci' ? 1.3 : 0.45; }
+function tariffMult(t) { return t === 'htnt' ? 1.0 : t === 'piaci' ? 1.3 : 0.0; }
 function flexMult(f) { return f === 'kozepes' ? 0.7 : f === 'alacsony' ? 0.4 : 1.0; }
 
 function countUp(elem, target, ms = 900) {
@@ -610,9 +610,6 @@ function updateKpi(amt) {
   const monthEl = el('kpiMonth');
   if (monthEl) countUp(monthEl, Math.round(amt / 12));
 
-  const co2El = el('kpiCo2');
-  if (co2El) countUp(co2El, Math.round((amt / 46) * 0.25));
-
   const subEl = el('kpiSubtitle');
   if (subEl) {
     subEl.textContent = S.obsDone
@@ -779,7 +776,7 @@ function obsNext(currentStep) {
     el('obsResultAmt').textContent = fmt(amt);
     // Őszinte, tarifa-specifikus magyarázat: mikor számít az ár és mikor nem
     const descs = {
-      rezsi: 'Rezsivédett tarifán fix az egységár, ezért az időzítés a számlán csak részben jelenik meg — a fenti összeg erre az óvatos esetre vonatkozik. Tarifaváltással többet hozhatsz ki (lásd lent).',
+      rezsi: 'Rezsivédett tarifán az egységár napszaktól függetlenül fix — az időzítés a jelenlegi tarifán nem csökkenti közvetlenül a számlát. Vezérelt (éjszakai) vagy dinamikus tarifára váltva a lenti összeg már ténylegesen megjelenne.',
       htnt:  'Éjszakai (vezérelt) áramkörre kötött gépeknél a kedvezményes ár közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
       piaci: 'Dinamikus (piaci áras) tarifán az órás árkülönbség teljes egészében a tiéd — az app ajánlott idősávjai pontosan ezt az árat követik.',
     };
@@ -862,7 +859,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (MEKH 2026). Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette (tőzsdei ár ${fmt1(spot30)} Ft + ~25 Ft hálózati díj) × 1,27 ÁFA — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>).</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (MEKH 2026). Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette (tőzsdei ár ${fmt1(spot30)} Ft + ~25,4 Ft hálózati díj) × 1,27 ÁFA — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>).</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
@@ -1041,7 +1038,7 @@ function buildAdvStep3Tariff() {
   const opts = [
     { id: 'rezsi', label: 'Rezsivédett' },
     { id: 'htnt',  label: 'HT/NT kétmérős' },
-    { id: 'piaci', label: 'Piaci / NKTP' },
+    { id: 'piaci', label: 'Dinamikus / Piaci' },
   ];
   const grid = el('advTariffGrid');
   if (!grid) return;
