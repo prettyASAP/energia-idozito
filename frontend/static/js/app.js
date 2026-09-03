@@ -339,8 +339,8 @@ function renderHero() {
   el('heroSub').textContent = lvl === 'olcso'
     ? 'A mai nap egyik legolcsóbb órájában vagyunk. Mosógép, bojler, autótöltés — most éri meg.'
     : nextCheap
-    ? `Kb. ${nextCheap} óra múlva jön jelentősen olcsóbb sáv. Addig az alábbi ajánlásokat kövesd.`
-    : 'Az aktuális piaci ár alapján megmondjuk, mikor érdemes bekapcsolni.';
+    ? `Kb. ${nextCheap} óra múlva jön olcsóbb sáv. Addig nézd a lenti tippeket.`
+    : 'Az élő piaci ár alapján mutatjuk, mikor éri meg bekapcsolni.';
 
   // Why explanation — valós árból, nem órából
   const reasonEl = el('heroReason');
@@ -614,7 +614,7 @@ function updateKpi(amt) {
   if (subEl) {
     subEl.textContent = S.obsDone
       ? `A megadott ${S.obsDevices.length} eszközöd és tarifád alapján.`
-      : 'Tipikus háztartás becslése — pontosítsd a saját eszközeiddel.';
+      : 'Átlagos háztartás alapján — pontosítsd a saját eszközeiddel.';
   }
 }
 
@@ -635,7 +635,7 @@ function setPlanTab(tab) {
   el('seg-klima').classList.toggle('active', tab === 'klima');
   el('seg-napelem').classList.toggle('active', tab === 'napelem');
   const title = el('planTitle');
-  if (title) title.textContent = tab === 'klima' ? 'Klíma hűtési terv' : 'Napelem kihasználási terv';
+  if (title) title.textContent = tab === 'klima' ? 'Klímaterv' : 'Napelemes terv';
   renderPlan();
 }
 
@@ -776,7 +776,7 @@ function obsNext(currentStep) {
     el('obsResultAmt').textContent = fmt(amt);
     // Őszinte, tarifa-specifikus magyarázat: mikor számít az ár és mikor nem
     const descs = {
-      rezsi: 'Rezsivédett tarifán az egységár napszaktól függetlenül fix — az időzítés a jelenlegi tarifán nem csökkenti közvetlenül a számlát. Vezérelt (éjszakai) vagy dinamikus tarifára váltva a lenti összeg már ténylegesen megjelenne.',
+      rezsi: 'Rezsivédett tarifán az egységár napszaktól függetlenül fix — az időzítés a jelenlegi tarifán nem csökkenti közvetlenül a számlát. Vezérelt (éjszakai) vagy dinamikus tarifán ez az összeg valóban megjelenne.',
       htnt:  'Éjszakai (vezérelt) áramkörre kötött gépeknél a kedvezményes ár közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
       piaci: 'Dinamikus (piaci áras) tarifán az órás árkülönbség teljes egészében a tiéd — az app ajánlott idősávjai pontosan ezt az árat követik.',
     };
@@ -925,7 +925,7 @@ function buildObsDeviceGrid() {
 
 const TARIFF_INFO = {
   rezsi: 'A normál lakossági áram — ezt fizeti szinte mindenki, fix kedvezményes egységáron.',
-  htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel + napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, külön áramkör kiépítése kell hozzá.',
+  htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel és napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, de külön mérőkör szükséges.',
   piaci: 'Óránként változó tőzsdei ár — okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép életbe.',
 };
 
@@ -1102,15 +1102,15 @@ function buildAdvResults() {
       d: 'Okosdugalj automatikusan a legolcsóbb órában indítja a gépeket.',
       cost: 25000, save: 12000, ok: a.devices.length >= 2, comfort: 1, fast: 1 },
     { t: 'Bojler időzítő beépítése',
-      d: 'A bojler csak éjszaka fűtsön — az egyik legnagyobb egyedi tétel.',
+      d: 'A bojler csak éjszaka fűtsön — a háztartás egyik legnagyobb fogyasztója.',
       cost: 15000, save: 18000 * billMult, ok: has('bojler') },
     { t: 'Okos termosztát a gázkazánhoz',
       d: 'Ütemezett, helyiségenkénti fűtés — 10–15% megtakarítás.',
       cost: 60000, save: 25000, ok: a.heating === 'gaz', comfort: 1 },
     { t: 'Inverteres klímára csere',
-      d: 'Régi klíma cseréje 30–50%-kal kevesebb áramot fogyaszt.',
+      d: 'Inverteres klíma 30–50%-kal kevesebb áramot fogyaszt a régi, fixfordulatú gépeknél.',
       cost: 350000, save: 20000, ok: has('klima') },
-    { t: 'Napelem rendszer (~4 kWp)',
+    { t: 'Napelemes rendszer (~4 kWp)',
       d: 'Állami támogatással (50-60%) kb. 10–14 év megtérülés, támogatás nélkül ~20–25 év (bruttó elszámolás, 2024 óta nincs nettó elszámolás). Utána évtizedekig termel.',
       cost: 3500000, save: 130000, ok: !has('napelemek') && a.homeType === 'haz', eco: 1 },
     { t: 'Hőszivattyú a gáz kiváltására',
@@ -1131,7 +1131,7 @@ function buildAdvResults() {
   const totalSave = recs.reduce((s, r) => s + r.save, 0);
   el('advSummary').textContent = recs.length
     ? `${recs.length} ajánlás a válaszaid alapján — együtt akár ${fmt(totalSave)} Ft megtakarítás évente.`
-    : 'Nincs a szűrőfeltételeidnek megfelelő ajánlás.';
+    : 'Nincs ajánlás a megadott szempontokra.';
 
   el('advRecsList').innerHTML = recs.map((r, i) => {
     const costTag = r.cost === 0
