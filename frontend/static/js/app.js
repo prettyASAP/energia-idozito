@@ -802,11 +802,14 @@ function obsNext(currentStep) {
       //   Vezérelt NT: ~23,0 Ft/kWh (MVM: 22,68–23,52)
       //   D tarifa hálózati díj (nettó): elosztói 20,01 + átviteli 3,39 + KÁT ~1,5 + adó ~0,5 = ~25,4 Ft/kWh
       //   spot30 a nagykereskedelmi ár ÁFA nélkül → D tarifa fogyasztói ár = (spot + 25,4) × 1,27
-      const CAP = 2523, REZSI = 36.4, PIACI = 70.1, NT = 23.0, NETFEE_NET = 25.4, VAT = 1.27;
+      const CAP = 2523, REZSI = 36.4, PIACI = 70.1, NT = 23.0, NT_PIACI = 60.9, NETFEE_NET = 25.4, VAT = 1.27;
+      // NT_PIACI: B alap (vezérelt) tarifa 2523 kWh-es kereten felüli ára (MVM Next 2026: 60.935 Ft)
       const rezsiBill = Math.min(annualKwh, CAP) * REZSI + Math.max(0, annualKwh - CAP) * PIACI;
-      const htntBill = annualKwh * flexShare * NT +
-        (Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
-         Math.max(0, annualKwh * (1 - flexShare) - CAP) * PIACI);
+      const ntKwh = annualKwh * flexShare;
+      const htntBill =
+        Math.min(ntKwh, CAP) * NT + Math.max(0, ntKwh - CAP) * NT_PIACI +
+        Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
+        Math.max(0, annualKwh * (1 - flexShare) - CAP) * PIACI;
       // D tarifa: az első 2523 kWh/év rezsivédett áron, felette (spot + hálózati) × ÁFA
       const overCap = Math.max(0, annualKwh - CAP);
       const underCap = Math.min(annualKwh, CAP);
@@ -1089,7 +1092,7 @@ function buildAdvResults() {
       d: 'A mosást, bojlert, töltést told az éjszakai és déli olcsó sávokba — ehhez csak ez az app kell.',
       cost: 0, save: Math.max(devSave, 5000), eco: 1, fast: 1 },
     { t: 'Vezérelt (éjszakai) tarifa igénylése',
-      d: 'Ingyenesen igényelhető az elosztódtól; a kedvezményes sávban kb. 36%-kal olcsóbb az éjszakai áram.',
+      d: 'Ingyenesen igényelhető az elosztódtól; a kedvezményes sávban kb. 37%-kal olcsóbb az éjszakai áram (23 vs. 36,4 Ft/kWh).',
       cost: 0, save: 45000 * billMult,
       ok: a.tariff !== 'htnt' && (has('bojler') || has('ev') || has('hoszivattyu')), fast: 1 },
     { t: 'Öko programok és teli gép',
