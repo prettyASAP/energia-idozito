@@ -625,7 +625,7 @@ function updateKpi(amt) {
 function updateHtnt() {
   const kwh = parseFloat(el('htntKwh')?.value) || 0;
   const pct = parseFloat(el('htntPct')?.value) || 0;
-  const saving = kwh * (pct / 100) * (42 - 26) * 12;
+  const saving = kwh * (pct / 100) * (36.4 - 23.0) * 12; // 36,4 Ft rezsivédett − 23,0 Ft NT = 13,4 Ft/kWh megtakarítás
   const resEl = el('htntResult');
   const noteEl = el('htntNote');
   if (resEl) resEl.textContent = `${fmt(saving)} Ft / év`;
@@ -797,18 +797,23 @@ function obsNext(currentStep) {
       const spot30 = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : 60;
       const cheapAvg = spot30 * 0.55; // olcsó sávok tipikus átlaga
 
-      // Közelítő 2026-os lakossági egységárak (MEKH): rezsivédett 36,9 Ft/kWh
-      // a 2523 kWh/év keretig, felette 70,1 Ft; vezérelt ~23,0 Ft (MVM: 22,68–23,52);
-      // dinamikus: tőzsdei ár + ~25 Ft rendszerhasználati díj.
-      const CAP = 2523, REZSI = 36.9, PIACI = 70.1, NT = 23.0, NETFEE = 25;
+      // 2026-os lakossági egységárak (MEKH H2995/2025):
+      //   A1 (rezsivédett): 36,386 Ft/kWh keretig, 70,104 Ft/kWh felett
+      //   Vezérelt NT: ~23,0 Ft/kWh (MVM: 22,68–23,52)
+      //   D tarifa hálózati díj (nettó): elosztói 20,01 + átviteli 3,39 + KÁT ~1,5 + adó ~0,5 = ~25,4 Ft/kWh
+      //   spot30 a nagykereskedelmi ár ÁFA nélkül → D tarifa fogyasztói ár = (spot + 25,4) × 1,27
+      const CAP = 2523, REZSI = 36.4, PIACI = 70.1, NT = 23.0, NETFEE_NET = 25.4, VAT = 1.27;
       const rezsiBill = Math.min(annualKwh, CAP) * REZSI + Math.max(0, annualKwh - CAP) * PIACI;
       const htntBill = annualKwh * flexShare * NT +
         (Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
          Math.max(0, annualKwh * (1 - flexShare) - CAP) * PIACI);
-      // D tarifa: az első 2523 kWh/év rezsivédett áron, csak a keret felett tőzsdei + hálózati díj
+      // D tarifa: az első 2523 kWh/év rezsivédett áron, felette (spot + hálózati) × ÁFA
       const overCap = Math.max(0, annualKwh - CAP);
       const underCap = Math.min(annualKwh, CAP);
-      const dynBill = underCap * REZSI + overCap * ((1 - flexShare) * (spot30 + NETFEE) + flexShare * (cheapAvg + NETFEE));
+      const dynBill = underCap * REZSI + overCap * (
+        (1 - flexShare) * (spot30 + NETFEE_NET) * VAT +
+        flexShare * (cheapAvg + NETFEE_NET) * VAT
+      );
 
       const opts = [
         { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
@@ -854,7 +859,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,9 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft. Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette tőzsdei átlag (most: ${fmt1(spot30)} Ft/kWh) + ~25 Ft/kWh hálózati díj — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>).</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (MEKH 2026). Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette (tőzsdei ár ${fmt1(spot30)} Ft + ~25 Ft hálózati díj) × 1,27 ÁFA — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>).</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
@@ -1103,8 +1108,8 @@ function buildAdvResults() {
       d: 'Régi klíma cseréje 30–50%-kal kevesebb áramot fogyaszt.',
       cost: 350000, save: 20000, ok: has('klima') },
     { t: 'Napelem rendszer (~4 kWp)',
-      d: 'Bruttó elszámolással kb. 10–12 év megtérülés (állami támogatással 5–6 év), utána évtizedekig termel.',
-      cost: 3500000, save: 180000, ok: !has('napelemek') && a.homeType === 'haz', eco: 1 },
+      d: 'Állami támogatással (50-60%) kb. 10–14 év megtérülés, támogatás nélkül ~20–25 év (bruttó elszámolás, 2024 óta nincs nettó elszámolás). Utána évtizedekig termel.',
+      cost: 3500000, save: 130000, ok: !has('napelemek') && a.homeType === 'haz', eco: 1 },
     { t: 'Hőszivattyú a gáz kiváltására',
       d: 'Hosszú távon a legnagyobb megtakarítás — és a legzöldebb fűtés.',
       cost: 4500000, save: 250000,
