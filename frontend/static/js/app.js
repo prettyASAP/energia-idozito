@@ -842,9 +842,12 @@ function obsNext(currentStep) {
           const isBest = o === best;
           const mine = o.key === S.obsTariff;
           const diff = Math.round(o.bill - best.bill);
+          const dynCapNote = o.key === 'piaci' && annualKwh <= CAP
+            ? ` <span style="font-size:10px;color:var(--color-neutral-600)">(${annualKwh} kWh/év — kereten belül, teljes fogyasztás rezsivédett áron)</span>`
+            : '';
           return `<div style="padding:7px 0;animation:fadeUp .4s ease both;animation-delay:${200 + i * 150}ms">
             <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:4px">
-              <span${isBest ? ' style="font-weight:600"' : ''}>${isBest ? '🏆 ' : ''}${o.name}${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a tiéd</span>' : ''}</span>
+              <span${isBest ? ' style="font-weight:600"' : ''}>${isBest ? '🏆 ' : ''}${o.name}${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a tiéd</span>' : ''}${dynCapNote}</span>
               <span>
                 <strong class="cmp-count" data-target="${Math.round(o.bill)}" style="font-family:var(--font-heading);font-size:15px">0</strong>
                 <span style="font-size:11px;color:var(--color-neutral-600)"> Ft/év</span>
