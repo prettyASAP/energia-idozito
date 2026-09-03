@@ -851,7 +851,7 @@ function obsNext(currentStep) {
               <span>
                 <strong class="cmp-count" data-target="${Math.round(o.bill)}" style="font-family:var(--font-heading);font-size:15px">0</strong>
                 <span style="font-size:11px;color:var(--color-neutral-600)"> Ft/év</span>
-                ${!isBest ? `<span style="font-size:10.5px;color:var(--bad-500);font-weight:600"> +${fmt(diff)}</span>` : ''}
+                ${!isBest ? `<span style="font-size:10.5px;color:var(--bad-500);font-weight:600" title="Ennyivel drágább évente a legjobb opciónál"> +${fmt(diff)} Ft drágább</span>` : ''}
               </span>
             </div>
             <div style="height:14px;border-radius:7px;background:var(--color-neutral-200);overflow:hidden">
