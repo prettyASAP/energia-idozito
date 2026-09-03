@@ -434,7 +434,7 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
         <span class="text-muted">Napközben</span>
         <strong>${dayStr}${greenDay ? ' ' + leaf : ''}</strong>
       </div>` : ''}
-      <div class="device-save">~${fmt(savePerRun)} Ft alkalmanként · ${fmt(d.annual)} Ft évente</div>
+      <div class="device-save">~${fmt(savePerRun)} Ft alkalmanként (tőzsdei áron) · ${fmt(d.annual)} Ft évente vezérelt/dinamikus tarifán</div>
     </div>`;
   }).join('');
 }
@@ -1090,7 +1090,7 @@ function buildAdvResults() {
   const cands = [
     { t: 'Eszközök időzítése olcsó órákra',
       d: 'A mosást, bojlert, töltést told az éjszakai és déli olcsó sávokba — ehhez csak ez az app kell.',
-      cost: 0, save: Math.max(devSave, 5000), eco: 1, fast: 1 },
+      cost: 0, save: Math.max(devSave, 5000), eco: 1, fast: 1, ok: a.tariff !== 'rezsi' },
     { t: 'Vezérelt (éjszakai) tarifa igénylése',
       d: 'Ingyenesen igényelhető az elosztódtól; a kedvezményes sávban kb. 37%-kal olcsóbb az éjszakai áram (23 vs. 36,4 Ft/kWh).',
       cost: 0, save: 45000 * billMult,
