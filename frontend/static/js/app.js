@@ -805,7 +805,10 @@ function obsNext(currentStep) {
       const htntBill = annualKwh * flexShare * NT +
         (Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
          Math.max(0, annualKwh * (1 - flexShare) - CAP) * PIACI);
-      const dynBill = annualKwh * ((1 - flexShare) * (spot30 + NETFEE) + flexShare * (cheapAvg + NETFEE));
+      // D tarifa: az első 2523 kWh/év rezsivédett áron, csak a keret felett tőzsdei + hálózati díj
+      const overCap = Math.max(0, annualKwh - CAP);
+      const underCap = Math.min(annualKwh, CAP);
+      const dynBill = underCap * REZSI + overCap * ((1 - flexShare) * (spot30 + NETFEE) + flexShare * (cheapAvg + NETFEE));
 
       const opts = [
         { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
@@ -816,10 +819,14 @@ function obsNext(currentStep) {
       const mineOpt = opts.find(o => o.key === S.obsTariff) || opts[0];
       const savedBySwitch = Math.round(mineOpt.bill - best.bill);
 
+      // Ha a fogyasztás a kereten belül van, a D tarifa ugyanannyit ér mint a rezsivédett
+      const dynNote = annualKwh <= CAP
+        ? ` (${annualKwh} kWh/év — te a ${CAP} kWh-es kereten belül vagy, a D tarifa esetén neked is rezsivédett ár érvényes a teljes fogyasztásra.)`
+        : ` (A keret feletti ${fmt(overCap)} kWh-ra érvényes a tőzsdei ár.)`;
       const verdict = best.key === S.obsTariff
-        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb. ${mineOpt.key === 'piaci' ? 'A Dinamikus D tarifa 2027-ben lép életbe — addig vezérelt vagy rezsivédett áron is optimalizálhatsz.' : 'A Dinamikus D tarifa a te fogyasztásoddal <strong>nem érné meg</strong>.'}`
+        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb.${mineOpt.key === 'piaci' ? ' A Dinamikus D tarifa 2027-ben lép életbe — addig vezérelt vagy rezsivédett áron is optimalizálhatsz.' : annualKwh <= CAP ? ' A D tarifa a te fogyasztásoddal nem hoz különbséget (kereten belül vagy).' : ' A D tarifa a te fogyasztásoddal nem érné meg.'}`
         : best.key === 'piaci'
-          ? `💡 A <strong>Dinamikus D tarifa</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás. 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép életbe.`
+          ? `💡 A <strong>Dinamikus D tarifa</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás a keret feletti ${fmt(overCap)} kWh-on.${overCap > 0 ? ' 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép életbe.' : ''}`
           : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással évente kb. <strong>${fmt(savedBySwitch)} Ft</strong>-tal kevesebbet fizetnél.`;
 
       const maxBill = Math.max(...opts.map(o => o.bill));
@@ -847,7 +854,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés: rezsivédett kb. 36,9 Ft/kWh (területenként 31–43 Ft; 2523 kWh/év felett 70,1 Ft), vezérelt kb. 23 Ft, a dinamikus (D) tarifa a tőzsdei átlagárat (most: ${fmt1(spot30)} Ft/kWh) követi a keret felett — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>).</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,9 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft. Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette tőzsdei átlag (most: ${fmt1(spot30)} Ft/kWh) + ~25 Ft/kWh hálózati díj — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>).</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
