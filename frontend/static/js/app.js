@@ -831,7 +831,7 @@ function obsNext(currentStep) {
       const verdict = best.key === S.obsTariff
         ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb.${mineOpt.key === 'piaci' ? ' A Dinamikus D tarifa 2027-ben lép életbe — addig vezérelt vagy rezsivédett áron is optimalizálhatsz.' : annualKwh <= CAP ? ' A D tarifa a te fogyasztásoddal nem hoz különbséget (kereten belül vagy).' : ' A D tarifa a te fogyasztásoddal nem érné meg.'}`
         : best.key === 'piaci'
-          ? `💡 A <strong>Dinamikus D tarifa</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás a keret feletti ${fmt(overCap)} kWh-on.${overCap > 0 ? ' 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép életbe.' : ''}`
+          ? `💡 A <strong>Dinamikus D tarifa</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás a keret feletti ${fmt(overCap)} kWh-on.${overCap > 0 ? ' 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép életbe.' : ''} Figyelj arra, hogy az ár euróban képződik — az árfolyam is befolyásolja a számlát.`
           : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással évente kb. <strong>${fmt(savedBySwitch)} Ft</strong>-tal kevesebbet fizetnél.`;
 
       const maxBill = Math.max(...opts.map(o => o.bill));
@@ -862,7 +862,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (MEKH 2026). Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette (tőzsdei ár ${fmt1(spot30)} Ft + ~25,4 Ft hálózati díj) × 1,27 ÁFA — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>).</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (MEKH 2026). Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette (tőzsdei ár ${fmt1(spot30)} Ft + ~25,4 Ft hálózati díj) × 1,27 ÁFA — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>). A tőzsdei ár euróban képződik, MNB napi deviza-középárfolyamon váltva — árfolyamkockázat terheli.</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
@@ -926,7 +926,7 @@ function buildObsDeviceGrid() {
 const TARIFF_INFO = {
   rezsi: 'A normál lakossági áram — ezt fizeti szinte mindenki, fix kedvezményes egységáron.',
   htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel és napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, de külön mérőkör szükséges.',
-  piaci: 'Óránként változó tőzsdei ár — okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép életbe.',
+  piaci: 'Óránként változó tőzsdei ár — okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép életbe. Az ár euróban képződik (EUR/MWh), a forintra váltás az MNB napi deviza-középárfolyamán történik — az euró erősödése a számlát is emeli.',
 };
 
 function buildObsTariffGrid() {
