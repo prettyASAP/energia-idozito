@@ -800,8 +800,9 @@ function obsNext(currentStep) {
 
       // 2026-os lakossági egységárak (MVM Next üzletszabályzat M.1. 3.1., 4/2011. NFM rendelet 2. melléklet):
       //   A1 (rezsivédett): 35,3–36,4 Ft/kWh keretig elosztónként, 70,104 Ft/kWh felett (= (31,8 + 23,4) × 1,27)
-      //   RHD 23,4 = elosztói forgalmi 20,01 + átviteli 3,39 (MEKH 2026, a 70,104-ből visszaszámolva egyezik)
-      //   Vezérelt NT: ~23,0 Ft/kWh bruttó, RHD-vel; modellfeltevés, mert a vezérelt RHD tétel külön határozatban van
+      //   RHD 23,4 = elosztói forgalmi 18,56 + átviteli 4,84 (lakosságra 2025-ös szinten befagyasztva, 350/2025. Korm. r.;
+      //   a 2026-os határozat 20,01 + 3,39 bontása ugyanezt az összeget adja)
+      //   Vezérelt B Alap: (1,90 energia + 16,18 RHD) × 1,27 = 22,96 ≈ 23,0; keret felett 60,935 (20/2022. MEKH r.)
       //   D árszabás (MVM Next ajánlatminta M.2.2., hirdetmény 2026.09.10.):
       //     havi súlyozott HUPX átlag a TELJES fogyasztásra + kereskedői díj 13,70 Ft nettó,
       //     ez az egységár a keret feletti kWh-ra, plusz RHD 23,4 Ft (elosztói 20,01 + átviteli 3,39), × 1,27 áfa
