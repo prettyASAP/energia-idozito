@@ -2,7 +2,7 @@
 
 // ── Device definitions (IDs match design exactly) ──────────────────────
 const MAIN_DEV = [
-  { id: 'mosogep',     name: 'Mosógép',     kwh: 1.0, dur: 2, annual: 6000,
+  { id: 'mosogep',     name: 'Mosógép',     kwh: 1.0, dur: 2, annual: 3000,
     icon: 'M5 3h14v18H5z M8 6h.01 M11 6h.01 M12 14m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0' },
   { id: 'mosogatogep', name: 'Mosogatógép', kwh: 1.2, dur: 2, annual: 5000,
     icon: 'M5 3h14v18H5z M5 8h14 M12 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0' },
@@ -12,7 +12,7 @@ const MAIN_DEV = [
     icon: 'M3 5h18v6H3z M6 8h.01 M17 8h.01 M7 14c0 2 -1 2 -1 4 M12 14c0 2 -1 2 -1 4 M17 14c0 2 -1 2 -1 4' },
   { id: 'ev',          name: 'E-autó töltő',     kwh: 11,  dur: 4, annual: 30000,
     icon: 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8' },
-  { id: 'szarito',     name: 'Szárítógép',   kwh: 2.0, dur: 2, annual: 7000,
+  { id: 'szarito',     name: 'Szárítógép',   kwh: 2.0, dur: 2, annual: 4000,
     icon: 'M5 3h14v18H5z M12 13m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 13m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0' },
 ];
 
@@ -434,7 +434,7 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
         <span class="text-muted">Napközben</span>
         <strong>${dayStr}${greenDay ? ' ' + leaf : ''}</strong>
       </div>` : ''}
-      <div class="device-save">~${fmt(savePerRun)} Ft tőzsdei árkülönbség alkalmanként (nettó) · ${fmt(d.annual)} Ft évente vezérelt tarifán</div>
+      <div class="device-save">~${fmt(savePerRun)} Ft tőzsdei árkülönbség alkalmanként (nettó HUPX) · ${fmt(d.annual)} Ft/év becsült potenciál időzítéssel</div>
     </div>`;
   }).join('');
 }
@@ -798,9 +798,10 @@ function obsNext(currentStep) {
       const profileAvg = spot30 * 1.13;
       const cheapAvg = spot30 * 0.43;
 
-      // 2026-os lakossági egységárak (4/2011. NFM rendelet 2. melléklet, MEKH RHD 2026):
-      //   A1 (rezsivédett): 36,4 Ft/kWh keretig, 70,104 Ft/kWh felett (= (31,8 + 23,4) × 1,27)
-      //   Vezérelt NT: ~23,0 Ft/kWh (MVM: 22,68–23,52)
+      // 2026-os lakossági egységárak (MVM Next üzletszabályzat M.1. 3.1., 4/2011. NFM rendelet 2. melléklet):
+      //   A1 (rezsivédett): 35,3–36,4 Ft/kWh keretig elosztónként, 70,104 Ft/kWh felett (= (31,8 + 23,4) × 1,27)
+      //   RHD 23,4 = elosztói forgalmi 20,01 + átviteli 3,39 (MEKH 2026, a 70,104-ből visszaszámolva egyezik)
+      //   Vezérelt NT: ~23,0 Ft/kWh bruttó, RHD-vel; modellfeltevés, mert a vezérelt RHD tétel külön határozatban van
       //   D árszabás (MVM Next ajánlatminta M.2.2., hirdetmény 2026.09.10.):
       //     havi súlyozott HUPX átlag a TELJES fogyasztásra + kereskedői díj 13,70 Ft nettó,
       //     ez az egységár a keret feletti kWh-ra, plusz RHD 23,4 Ft (elosztói 20,01 + átviteli 3,39), × 1,27 áfa
@@ -822,6 +823,9 @@ function obsNext(currentStep) {
       const dynUnit = (hupxWeighted + SPREAD + RHD) * VAT;   // bruttó Ft/kWh a keret felett
       const dynBill = underCap * REZSI + overCap * dynUnit;
       const breakEvenHupx = FIX_E - SPREAD;                  // 18,1 Ft nettó: ez alatt olcsóbb a D a fix árnál
+      // D árszabáson az időzítés tényleges haszna: a keret feletti kWh × a súlyozott átlag csökkenése × áfa
+      const dynSave = Math.round(overCap * flexShare * (profileAvg - cheapAvg) * VAT);
+      if (S.obsTariff === 'piaci') { S.savedAmt = dynSave; el('obsResultAmt').textContent = fmt(dynSave); }
 
       const opts = [
         { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
@@ -837,7 +841,7 @@ function obsNext(currentStep) {
         ? ` (${annualKwh} kWh/év — te a ${CAP} kWh-es kereten belül vagy, a D tarifa esetén neked is rezsivédett ár érvényes a teljes fogyasztásra.)`
         : ` (A keret feletti ${fmt(overCap)} kWh-ra érvényes a tőzsdei ár.)`;
       const verdict = best.key === S.obsTariff
-        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb.${mineOpt.key === 'piaci' ? ' A D árszabás 2027. január 1-jén lép hatályba, addig vezérelt vagy rezsivédett áron is optimalizálhatsz.' : annualKwh <= CAP ? ' A D árszabás a te fogyasztásoddal nem hoz különbséget (kereten belül vagy).' : ` A D árszabás a te fogyasztásoddal nem érné meg: a súlyozott tőzsdei átlagod ${fmt1(hupxWeighted)} Ft, a fedezeti pont ${fmt1(breakEvenHupx)} Ft/kWh.`}`
+        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb.${mineOpt.key === 'piaci' ? ' A D árszabás 2027. január 1-jén lép hatályba, addig rezsivédett áron is optimalizálhatsz.' : annualKwh <= CAP ? ' A D árszabás a te fogyasztásoddal nem hoz különbséget (kereten belül vagy).' : mineOpt.key === 'rezsi' ? ` A D árszabás a te fogyasztásoddal nem érné meg: a súlyozott tőzsdei átlagod ${fmt1(hupxWeighted)} Ft, a fedezeti pont ${fmt1(breakEvenHupx)} Ft/kWh.` : ' A D árszabás vezérelt mérő mellett nem is választható.'}`
         : best.key === 'piaci'
           ? `💡 A <strong>D árszabás</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás a keret feletti ${fmt(overCap)} kWh-on. A súlyozott tőzsdei átlagod ${fmt1(hupxWeighted)} Ft, a fedezeti pont ${fmt1(breakEvenHupx)} Ft/kWh.${overCap > 0 ? ' 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép hatályba.' : ''} Az ár euróban képződik, az árfolyam is befolyásolja a számlát.`
           : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással évente kb. <strong>${fmt(savedBySwitch)} Ft</strong>-tal kevesebbet fizetnél.`;
@@ -870,7 +874,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (4/2011. NFM rendelet, 2026). Vezérelt (NT): ~23 Ft. D árszabás: 2523 kWh-ig rezsivédett ár, felette (havi súlyozott tőzsdei átlag ${fmt1(hupxWeighted)} Ft + 13,7 Ft kereskedői díj + 23,4 Ft rendszerhasználati díj) × 1,27 áfa = ${fmt1(dynUnit)} Ft/kWh. A 30 napos tőzsdei átlag most ${fmt1(spot30)} Ft. Igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-jén (<a href="https://www.mvmnext.hu/aram/pages/aloldal.jsp?id=16455187" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu, D árszabás</a>). A tőzsdei ár euróban képződik, az MNB napi árfolyamán váltva, árfolyamkockázat terheli. A kereskedői díjat az MVM 60 napos előzetes hirdetménnyel módosíthatja.</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (4/2011. NFM rendelet, 2026). Vezérelt (NT): ~23 Ft. D árszabás: 2523 kWh-ig rezsivédett ár, felette (havi súlyozott tőzsdei átlag ${fmt1(hupxWeighted)} Ft + 13,7 Ft kereskedői díj + 23,4 Ft rendszerhasználati díj) × 1,27 áfa = ${fmt1(dynUnit)} Ft/kWh. A 30 napos tőzsdei átlag most ${fmt1(spot30)} Ft. Igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-jén (<a href="https://www.mvmnext.hu/aram/pages/aloldal.jsp?id=16455187" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu, D árszabás</a>). A tőzsdei ár euróban képződik, az MNB napi árfolyamán váltva, árfolyamkockázat terheli (az app az EKB napi árfolyamával közelít). A 30 napos átlag szezonális, az éves átlag ettől eltérhet. A kereskedői díjat az MVM 60 napos előzetes hirdetménnyel módosíthatja. A rezsivédett ár elosztói területtől függően 35,3 és 36,4 Ft között van. A mozgatható hányad D árszabáson időzítést, vezérelten külön mérőkört jelent; a kettő ugyanazon a helyen nem kombinálható.</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
@@ -934,7 +938,7 @@ function buildObsDeviceGrid() {
 const TARIFF_INFO = {
   rezsi: 'A normál lakossági áram — ezt fizeti szinte mindenki, fix kedvezményes egységáron.',
   htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel és napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, de külön mérőkör szükséges.',
-  piaci: 'Negyedóránként változó tőzsdei ár, távleolvasott okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép hatályba. A keret feletti kWh ára a havi fogyasztás tőzsdei árral súlyozott átlaga plusz 13,7 Ft kereskedői díj. Az ár euróban képződik (EUR/MWh), a forintra váltás az MNB napi árfolyamán történik, az euró erősödése a számlát is emeli. Visszaváltás után 12 hónapig nem választható újra.',
+  piaci: 'Negyedóránként változó tőzsdei ár, távleolvasott okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép hatályba. A keret feletti kWh ára a havi fogyasztás tőzsdei árral súlyozott átlaga plusz 13,7 Ft kereskedői díj. Az ár euróban képződik (EUR/MWh), a forintra váltás az MNB napi árfolyamán történik, az euró erősödése a számlát is emeli. Visszaváltás után 12 hónapig nem választható újra. Vezérelt (B) vagy H mérővel rendelkező felhasználási helyre nem választható.',
 };
 
 function buildObsTariffGrid() {
