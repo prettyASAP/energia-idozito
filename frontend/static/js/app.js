@@ -434,7 +434,7 @@ function renderDeviceGrid(pr, sorted, nowH, avg24) {
         <span class="text-muted">Napközben</span>
         <strong>${dayStr}${greenDay ? ' ' + leaf : ''}</strong>
       </div>` : ''}
-      <div class="device-save">~${fmt(savePerRun)} Ft alkalmanként (tőzsdei áron) · ${fmt(d.annual)} Ft évente vezérelt/dinamikus tarifán</div>
+      <div class="device-save">~${fmt(savePerRun)} Ft tőzsdei árkülönbség alkalmanként (nettó) · ${fmt(d.annual)} Ft évente vezérelt tarifán</div>
     </div>`;
   }).join('');
 }
@@ -778,7 +778,7 @@ function obsNext(currentStep) {
     const descs = {
       rezsi: 'Rezsivédett tarifán az egységár napszaktól függetlenül fix — az időzítés a jelenlegi tarifán nem csökkenti közvetlenül a számlát. Vezérelt (éjszakai) vagy dinamikus tarifán ez az összeg valóban megjelenne.',
       htnt:  'Éjszakai (vezérelt) áramkörre kötött gépeknél a kedvezményes ár közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
-      piaci: 'Dinamikus (piaci áras) tarifán az órás árkülönbség teljes egészében a tiéd — az app ajánlott idősávjai pontosan ezt az árat követik.',
+      piaci: 'D árszabáson a keret feletti kWh ára a havi fogyasztásod tőzsdei árral súlyozott átlagából jön. Minden olcsó sávba tolt kWh ezt az átlagot húzza le, ezért az időzítés közvetlenül a számládon jelenik meg.',
     };
     el('obsResultDesc').textContent = descs[S.obsTariff] || '';
 
@@ -789,17 +789,23 @@ function obsNext(currentStep) {
       const annualKwh = kwhMonth * 12;
       const flexShare = 0.3 * flexMult(S.obsFlex); // a fogyasztás mozgatható hányada
 
-      // 30 napos spot átlag a betöltött árakból (csak historikus)
+      // 30 napos HUPX átlag a betöltött árakból (nettó Ft/kWh, csak historikus)
       const hist = S.prices.filter(p => !p.is_forecast).map(p => p.price_huf_kwh);
-      const spot30 = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : 60;
-      const cheapAvg = spot30 * 0.55; // olcsó sávok tipikus átlaga
+      const spot30 = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : 45;
+      // Az MVM Next 2025.09–2026.08 közzétett negyedórás árlistájából számolt profilszorzók:
+      //   esti csúcsú lakossági profil súlyozott átlaga = 1,13 × egyszerű átlag
+      //   a nap legolcsóbb 4 órájának átlaga = 0,43 × egyszerű átlag
+      const profileAvg = spot30 * 1.13;
+      const cheapAvg = spot30 * 0.43;
 
-      // 2026-os lakossági egységárak (MEKH H2995/2025):
-      //   A1 (rezsivédett): 36,386 Ft/kWh keretig, 70,104 Ft/kWh felett
+      // 2026-os lakossági egységárak (4/2011. NFM rendelet 2. melléklet, MEKH RHD 2026):
+      //   A1 (rezsivédett): 36,4 Ft/kWh keretig, 70,104 Ft/kWh felett (= (31,8 + 23,4) × 1,27)
       //   Vezérelt NT: ~23,0 Ft/kWh (MVM: 22,68–23,52)
-      //   D tarifa hálózati díj (nettó): elosztói 20,01 + átviteli 3,39 + KÁT ~1,5 + adó ~0,5 = ~25,4 Ft/kWh
-      //   spot30 a nagykereskedelmi ár ÁFA nélkül → D tarifa fogyasztói ár = (spot + 25,4) × 1,27
-      const CAP = 2523, REZSI = 36.4, PIACI = 70.1, NT = 23.0, NT_PIACI = 60.9, NETFEE_NET = 25.4, VAT = 1.27;
+      //   D árszabás (MVM Next ajánlatminta M.2.2., hirdetmény 2026.09.10.):
+      //     havi súlyozott HUPX átlag a TELJES fogyasztásra + kereskedői díj 13,70 Ft nettó,
+      //     ez az egységár a keret feletti kWh-ra, plusz RHD 23,4 Ft (elosztói 20,01 + átviteli 3,39), × 1,27 áfa
+      const CAP = 2523, REZSI = 36.4, PIACI = 70.1, NT = 23.0, NT_PIACI = 60.9, VAT = 1.27;
+      const SPREAD = 13.7, RHD = 23.4, FIX_E = 31.8; // nettó Ft/kWh
       // NT_PIACI: B alap (vezérelt) tarifa 2523 kWh-es kereten felüli ára (MVM Next 2026: 60.935 Ft)
       const rezsiBill = Math.min(annualKwh, CAP) * REZSI + Math.max(0, annualKwh - CAP) * PIACI;
       const ntKwh = annualKwh * flexShare;
@@ -807,13 +813,15 @@ function obsNext(currentStep) {
         Math.min(ntKwh, CAP) * NT + Math.max(0, ntKwh - CAP) * NT_PIACI +
         Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
         Math.max(0, annualKwh * (1 - flexShare) - CAP) * PIACI;
-      // D tarifa: az első 2523 kWh/év rezsivédett áron, felette (spot + hálózati) × ÁFA
+      // D árszabás: az első 2523 kWh/év rezsivédett áron. A keret feletti kWh egységára a háztartás
+      // TELJES havi fogyasztásának HUPX-súlyozott átlaga + kereskedői díj + RHD, × áfa.
+      // Az időzítés a súlyozott átlagot húzza le: a mozgatott hányad az olcsó sávba, a többi a profil szerint.
       const overCap = Math.max(0, annualKwh - CAP);
       const underCap = Math.min(annualKwh, CAP);
-      const dynBill = underCap * REZSI + overCap * (
-        (1 - flexShare) * (spot30 + NETFEE_NET) * VAT +
-        flexShare * (cheapAvg + NETFEE_NET) * VAT
-      );
+      const hupxWeighted = (1 - flexShare) * profileAvg + flexShare * cheapAvg;
+      const dynUnit = (hupxWeighted + SPREAD + RHD) * VAT;   // bruttó Ft/kWh a keret felett
+      const dynBill = underCap * REZSI + overCap * dynUnit;
+      const breakEvenHupx = FIX_E - SPREAD;                  // 18,1 Ft nettó: ez alatt olcsóbb a D a fix árnál
 
       const opts = [
         { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
@@ -829,9 +837,9 @@ function obsNext(currentStep) {
         ? ` (${annualKwh} kWh/év — te a ${CAP} kWh-es kereten belül vagy, a D tarifa esetén neked is rezsivédett ár érvényes a teljes fogyasztásra.)`
         : ` (A keret feletti ${fmt(overCap)} kWh-ra érvényes a tőzsdei ár.)`;
       const verdict = best.key === S.obsTariff
-        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb.${mineOpt.key === 'piaci' ? ' A Dinamikus D tarifa 2027-ben lép életbe — addig vezérelt vagy rezsivédett áron is optimalizálhatsz.' : annualKwh <= CAP ? ' A D tarifa a te fogyasztásoddal nem hoz különbséget (kereten belül vagy).' : ' A D tarifa a te fogyasztásoddal nem érné meg.'}`
+        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb.${mineOpt.key === 'piaci' ? ' A D árszabás 2027. január 1-jén lép hatályba, addig vezérelt vagy rezsivédett áron is optimalizálhatsz.' : annualKwh <= CAP ? ' A D árszabás a te fogyasztásoddal nem hoz különbséget (kereten belül vagy).' : ` A D árszabás a te fogyasztásoddal nem érné meg: a súlyozott tőzsdei átlagod ${fmt1(hupxWeighted)} Ft, a fedezeti pont ${fmt1(breakEvenHupx)} Ft/kWh.`}`
         : best.key === 'piaci'
-          ? `💡 A <strong>Dinamikus D tarifa</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás a keret feletti ${fmt(overCap)} kWh-on.${overCap > 0 ? ' 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép életbe.' : ''} Figyelj arra, hogy az ár euróban képződik — az árfolyam is befolyásolja a számlát.`
+          ? `💡 A <strong>D árszabás</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás a keret feletti ${fmt(overCap)} kWh-on. A súlyozott tőzsdei átlagod ${fmt1(hupxWeighted)} Ft, a fedezeti pont ${fmt1(breakEvenHupx)} Ft/kWh.${overCap > 0 ? ' 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép hatályba.' : ''} Az ár euróban képződik, az árfolyam is befolyásolja a számlát.`
           : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással évente kb. <strong>${fmt(savedBySwitch)} Ft</strong>-tal kevesebbet fizetnél.`;
 
       const maxBill = Math.max(...opts.map(o => o.bill));
@@ -862,7 +870,7 @@ function obsNext(currentStep) {
             </div>
           </div>`;
         }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (MEKH 2026). Vezérelt (NT): ~23 Ft. Dinamikus D tarifa: 2523 kWh-ig rezsivédett ár, felette (tőzsdei ár ${fmt1(spot30)} Ft + ~25,4 Ft hálózati díj) × 1,27 ÁFA — igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-én (<a href="https://www.mvmnext.hu/aram/dinamikus" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu/aram/dinamikus</a>). A tőzsdei ár euróban képződik, MNB napi deviza-középárfolyamon váltva — árfolyamkockázat terheli.</p>`;
+        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (4/2011. NFM rendelet, 2026). Vezérelt (NT): ~23 Ft. D árszabás: 2523 kWh-ig rezsivédett ár, felette (havi súlyozott tőzsdei átlag ${fmt1(hupxWeighted)} Ft + 13,7 Ft kereskedői díj + 23,4 Ft rendszerhasználati díj) × 1,27 áfa = ${fmt1(dynUnit)} Ft/kWh. A 30 napos tőzsdei átlag most ${fmt1(spot30)} Ft. Igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-jén (<a href="https://www.mvmnext.hu/aram/pages/aloldal.jsp?id=16455187" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu, D árszabás</a>). A tőzsdei ár euróban képződik, az MNB napi árfolyamán váltva, árfolyamkockázat terheli. A kereskedői díjat az MVM 60 napos előzetes hirdetménnyel módosíthatja.</p>`;
 
       // Animációk indítása: sávok kinövése + számlálók felpörgése.
       // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
@@ -926,7 +934,7 @@ function buildObsDeviceGrid() {
 const TARIFF_INFO = {
   rezsi: 'A normál lakossági áram — ezt fizeti szinte mindenki, fix kedvezményes egységáron.',
   htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel és napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, de külön mérőkör szükséges.',
-  piaci: 'Óránként változó tőzsdei ár — okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép életbe. Az ár euróban képződik (EUR/MWh), a forintra váltás az MNB napi deviza-középárfolyamán történik — az euró erősödése a számlát is emeli.',
+  piaci: 'Negyedóránként változó tőzsdei ár, távleolvasott okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép hatályba. A keret feletti kWh ára a havi fogyasztás tőzsdei árral súlyozott átlaga plusz 13,7 Ft kereskedői díj. Az ár euróban képződik (EUR/MWh), a forintra váltás az MNB napi árfolyamán történik, az euró erősödése a számlát is emeli. Visszaváltás után 12 hónapig nem választható újra.',
 };
 
 function buildObsTariffGrid() {
