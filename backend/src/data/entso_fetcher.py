@@ -138,20 +138,44 @@ def _parse_prices(xml_text: str) -> pd.Series:
     return series
 
 
-def fetch_eur_huf_rate() -> float:
-    """Lekéri az aktuális EUR/HUF árfolyamot az EKB-tól."""
+# Utolsó sikeres EKB-árfolyam. Ha a lekérés nem sikerül, ezt használjuk,
+# és csak ennek hiányában a becsült tartalékot, amit a válaszban jelzünk.
+FALLBACK_EUR_HUF = 395.0
+_FX_TTL_S = 3600
+_fx_cache = {"rate": None, "date": None, "fetched": 0.0}
+
+
+def fetch_eur_huf_info() -> dict:
+    """EUR/HUF árfolyam az EKB napi referencia-árfolyamából, forrásjelzéssel.
+
+    Visszatér: {"rate", "date", "status"}, ahol status: "ecb" (friss),
+    "cached" (utolsó ismert érték) vagy "fallback" (becsült tartalék).
+    """
+    import time
+    now = time.time()
+    if _fx_cache["rate"] is not None and now - _fx_cache["fetched"] < _FX_TTL_S:
+        return {"rate": _fx_cache["rate"], "date": _fx_cache["date"], "status": "ecb"}
     try:
         url = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
         with urllib.request.urlopen(url, timeout=5) as r:
             tree = ET.parse(r)
         ns = {"ecb": "http://www.ecb.int/vocabulary/2002-08-01/eurofxref"}
+        day = tree.find(".//ecb:Cube[@time]", ns)
         for cube in tree.findall(".//ecb:Cube[@currency='HUF']", ns):
             rate = float(cube.attrib["rate"])
+            _fx_cache.update(rate=rate, date=day.attrib["time"] if day is not None else None, fetched=now)
             logger.info(f"EUR/HUF árfolyam (EKB): {rate}")
-            return rate
+            return {"rate": rate, "date": _fx_cache["date"], "status": "ecb"}
     except Exception as e:
-        logger.warning(f"EUR/HUF lekérés sikertelen, 395.0 használata: {e}")
-    return 395.0
+        logger.warning(f"EUR/HUF lekérés sikertelen: {e}")
+    if _fx_cache["rate"] is not None:
+        return {"rate": _fx_cache["rate"], "date": _fx_cache["date"], "status": "cached"}
+    return {"rate": FALLBACK_EUR_HUF, "date": None, "status": "fallback"}
+
+
+def fetch_eur_huf_rate() -> float:
+    """Az EUR/HUF árfolyam értéke (lásd fetch_eur_huf_info)."""
+    return fetch_eur_huf_info()["rate"]
 
 
 def fetch_day_ahead_prices(

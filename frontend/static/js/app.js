@@ -15,6 +15,7 @@ const T = {
   a1Over: 70.1,       // Ft/kWh bruttó a keret felett
   b: 23.0,            // vezérelt, keretig
   bOver: 60.9,        // vezérelt, keret felett
+  bBase: 602,         // vezérelt mérő alapdíja, Ft/év bruttó
   spread: 13.7,       // D kereskedői díj, nettó (hirdetmény 2026.09.10.)
   grid: 23.4,         // lakossági hálózati díj, nettó
   vat: 1.27,
@@ -22,9 +23,21 @@ const T = {
 };
 const BREAK_EVEN = T.fixEnergy - T.spread; // 18,1 Ft nettó súlyozott tőzsdei átlag
 
-// Az MVM Next 2025.09.01. és 2026.08.31. közötti negyedórás árlistájából (a kereskedői díj nélkül):
-// esti csúcsú háztartási profil súlyozott átlaga és a nap legolcsóbb 4 órájának átlaga, nettó Ft/kWh.
-const YEAR = { profile: 51.14, cheap4: 19.72 };
+// Havi tőzsdei átlagok 2025.09.01. és 2026.08.31. között, nettó Ft/kWh, kereskedői díj nélkül
+// (HUPX másnapi ár az Energy-Charts adatából, EKB napi árfolyammal; eltérés az MVM listától 0,02% alatt).
+// [esti csúcsú háztartási profil súlyozott átlaga, a nap legolcsóbb 4 órájának átlaga], hónap szerint.
+// A profil súlyai: 0 és 6 óra 0,5; 6 és 9 óra 1,2; 9 és 17 óra 0,8; 17 és 22 óra 2,0; 22 és 24 óra 0,9 (feltevés).
+const MONTHS = [
+  [62.38, 37.61], [46.11, 30.37], [52.84, 12.49], [42.31, -2.80], [43.62, 0.80], [52.76, 12.41],
+  [48.90, 14.38], [61.20, 24.54], [47.85, 15.77], [55.45, 25.98], [51.58, 32.10], [47.20, 32.86],
+];
+const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+// Havi fogyasztási szorzó: január a legnagyobb, nyár közepe a legkisebb, arányuk 1,57
+// (MEKH 2024: januárban kb. 1 570 GWh, júniusban kb. 1 000 GWh). Átlaga 1.
+const SEASON = MONTH_DAYS.map((_, m) => 1 + 0.2218 * Math.cos(2 * Math.PI * m / 12));
+const SHIFTS = [0, 0.1, 0.25, 0.5];
+const VSHARES = [0, 0.25, 0.5];
+const snap = (v, list, d) => (list.includes(v) ? v : d);
 
 const DEVICES = [
   { id: 'mosogep', name: 'Mosógép', h: 2, icon: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 6.5h.01M11 6.5h.01M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
@@ -46,7 +59,13 @@ const S = {
   day: 0,
   sel: null,           // kijelölt negyedóra index a napi grafikonon
   devices: loadPref('ei.devices', DEFAULT_DEVICES),
-  calc: { kwh: loadPref('ei.kwh', 250), shift: loadPref('ei.shift', 0.3), period: '30' },
+  calc: {
+    kwh: loadPref('ei.kwh', 250),
+    shift: snap(loadPref('ei.shift', 0.1), SHIFTS, 0.1),
+    vshare: snap(loadPref('ei.vshare', 0), VSHARES, 0),
+    period: '365',
+  },
+  fx: null,            // { rate, date, status } az árak lekéréséből
 };
 
 // ── Segédek ──────────────────────────────────────────────────────────────
@@ -124,6 +143,7 @@ async function loadPrices() {
       .map(x => ({ t: new Date(x.timestamp), p: x.price_huf_kwh }))
       .filter(x => Number.isFinite(x.p) && !seen.has(+x.t) && seen.add(+x.t))
       .sort((a, b) => a.t - b.t);
+    S.fx = { rate: d.eur_huf_rate, date: d.eur_huf_date, status: d.eur_huf_status || 'ecb' };
     for (const k in thCache) delete thCache[k];
     S.loadedAt = new Date();
     S.loadError = false;
@@ -203,9 +223,11 @@ function renderNow() {
 
   const diff = dayAvg > 1 ? Math.round((cur.p - dayAvg) / dayAvg * 100) : 0;
   $('nowLine').textContent = Math.abs(diff) < 8
-    ? 'Nagyjából a mai átlag, tőzsdei ár áfa nélkül.'
+    ? 'Nagyjából a mai átlag.'
     : `A mai átlagnál ${Math.abs(diff)}%-kal ${diff < 0 ? 'olcsóbb' : 'drágább'}.`;
 
+  const fxn = fxNote();
+  if (fxn) $('nowLine').textContent += ` ${fxn}`;
   renderStrip(i);
   $('nowNext').innerHTML = nextText(i);
 }
@@ -501,89 +523,136 @@ function weightedHupx(days, shift) {
   return n >= 10 ? { v: total / n, days: n } : null;
 }
 
+// Lépcsős díj: keretig az egyik, felette a másik egységár
+const tier = (q, cap, lo, hi) => Math.min(q, cap) * lo + Math.max(0, q - cap) * hi;
+
+// Éves modell: havi fogyasztás szezonális szorzóval, a D árszabásnál havi naparányos kerettel.
+// A rezsivédett és a vezérelt keret az éves elszámolásban egyenlítődik ki.
+function yearModel(c) {
+  const annual = c.kwh * 12;
+  let dBill = 0, dOver = 0, dOverCost = 0, dMonths = 0, dHupxSum = 0;
+  MONTHS.forEach(([prof, cheap], m) => {
+    const q = c.kwh * SEASON[m];
+    const cap = T.cap * MONTH_DAYS[m] / 365;
+    const over = Math.max(0, q - cap);
+    const h = (1 - c.shift) * prof + c.shift * cheap;
+    dBill += Math.min(q, cap) * T.a1 + over * (h + T.spread + T.grid) * T.vat;
+    if (over > 0.5) { dMonths++; dOver += over; dHupxSum += over * h; dOverCost += over * (h + T.spread + T.grid) * T.vat; }
+  });
+  const nt = annual * c.vshare, rest = annual - nt;
+  return {
+    unit: 'Ft/év', annual,
+    rezsi: tier(annual, T.cap, T.a1, T.a1Over),
+    vez: tier(nt, T.cap, T.b, T.bOver) + tier(rest, T.cap, T.a1, T.a1Over) + (c.vshare > 0 ? T.bBase : 0),
+    dBill, dOver, dMonths,
+    dHupx: dOver ? dHupxSum / dOver : null,
+    dUnit: dOver ? dOverCost / dOver : null,
+    basis: 'a 2025. szeptember és 2026. augusztus közötti tőzsdei árakon, hónaponként',
+  };
+}
+
+// Havi modell: egy átlagos hónap az elmúlt 30 nap áraival, naparányos kerettel, évesítés nélkül
+function monthModel(c) {
+  const w = weightedHupx(30, c.shift);
+  if (!w) return null;
+  const q = c.kwh, cap = T.cap * 30 / 365;
+  const over = Math.max(0, q - cap);
+  const dUnit = (w.v + T.spread + T.grid) * T.vat;
+  const nt = q * c.vshare, rest = q - nt;
+  return {
+    unit: 'Ft/hó', annual: q * 12,
+    rezsi: tier(q, cap, T.a1, T.a1Over),
+    vez: tier(nt, cap, T.b, T.bOver) + tier(rest, cap, T.a1, T.a1Over) + (c.vshare > 0 ? T.bBase / 12 : 0),
+    dBill: tier(q, cap, T.a1, dUnit),
+    dOver: over, dMonths: over > 0.5 ? 1 : 0,
+    dHupx: w.v, dUnit: over ? dUnit : null,
+    basis: `az elmúlt ${w.days} nap tőzsdei árain, 30 napos hónapra`,
+  };
+}
+
+function fxNote() {
+  const f = S.fx;
+  if (!f || f.status === 'ecb') return '';
+  return f.status === 'cached'
+    ? `Az árfolyam most nem frissült, a legutóbbi ismert EKB-értékkel (${fmt1(f.rate)} Ft/EUR) számolunk.`
+    : `Az árfolyamot most nem sikerült lekérni, becsült ${fmt(f.rate)} Ft/EUR értékkel számolunk. A forintos árak pontatlanok lehetnek.`;
+}
+
 function renderCalc() {
   const c = S.calc;
   $('kwh').value = c.kwh;
   $('kwhOut').textContent = fmt(c.kwh);
   document.querySelectorAll('[data-shift]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.shift === c.shift)));
+  document.querySelectorAll('[data-vshare]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.vshare === c.vshare)));
   document.querySelectorAll('[data-period]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.period === c.period)));
 
   const annual = c.kwh * 12;
-  const over = Math.max(0, annual - T.cap);
-  const under = Math.min(annual, T.cap);
-  $('kwhHint').textContent = over > 0
-    ? `Évi ${fmt(annual)} kWh, ebből ${fmt(over)} kWh a 2 523 kWh-s kedvezményes keret felett.`
-    : `Évi ${fmt(annual)} kWh, a 2 523 kWh-s kedvezményes kereten belül.`;
+  const monthCap = T.cap * 30 / 365;
+  $('kwhHint').textContent = `Évi kb. ${fmt(annual)} kWh. A kedvezményes keret évi 2 523 kWh, a D árszabásnál havonta, naparányosan kb. ${fmt(monthCap)} kWh.`;
 
-  // D árszabás: súlyozott tőzsdei átlag
-  let hupx, basis;
-  if (c.period === '30') {
-    const w = weightedHupx(30, c.shift);
-    if (w) { hupx = w.v; basis = `az elmúlt ${w.days} nap tőzsdei árain`; }
-  }
-  if (hupx == null) {
-    hupx = (1 - c.shift) * YEAR.profile + c.shift * YEAR.cheap4;
-    basis = c.period === '30' ? 'az elmúlt 12 hónap árain (30 napos adat most nem elérhető)' : 'az elmúlt 12 hónap árain';
-  }
-  const dUnit = (hupx + T.spread + T.grid) * T.vat;
+  let r = c.period === '30' ? monthModel(c) : null;
+  const fallback = c.period === '30' && !r;
+  if (!r) r = yearModel(c);
+  const yearly = r.unit === 'Ft/év';
 
-  const rezsi = under * T.a1 + over * T.a1Over;
-  const nt = annual * c.shift, rest = annual - nt;
-  const vez = Math.min(nt, T.cap) * T.b + Math.max(0, nt - T.cap) * T.bOver + Math.min(rest, T.cap) * T.a1 + Math.max(0, rest - T.cap) * T.a1Over;
-  const dBill = under * T.a1 + over * dUnit;
-
+  const pctTxt = `${Math.round(c.shift * 100)}%`;
   const rows = [
-    { k: 'rezsi', n: 'Rezsivédett', v: rezsi, note: 'fix ár, napszaktól független' },
-    { k: 'vez', n: 'Vezérelt mérővel', v: vez, note: c.shift > 0 ? `ha a fogyasztás ${Math.round(c.shift * 100)}%-a (bojler, hőszivattyú) külön vezérelt körre kerül` : 'külön mérőkör nélkül nincs különbség' },
-    { k: 'd', n: 'D árszabás, 2027-től', v: dBill, note: over > 0 ? `a keret felett ${fmt1(dUnit)} Ft/kWh (a fix ár 70,1)` : 'a kereten belül a fix árral azonos' },
+    { k: 'rezsi', n: 'Rezsivédett', v: r.rezsi, note: 'fix ár, napszaktól független' },
+    { k: 'vez', n: 'Vezérelt mérővel', v: r.vez, note: c.vshare > 0 ? `ha a fogyasztás ${Math.round(c.vshare * 100)}%-a külön vezérelt körre kerül, a mérő alapdíjával` : 'külön vezérelt kör nélkül nincs különbség' },
+    { k: 'd', n: 'D árszabás, 2027-től', v: r.dBill, note: r.dOver > 0 ? `a keret felett átlagosan ${fmt1(r.dUnit)} Ft/kWh (a fix ár 70,1)` : 'a havi kereten belül a fix árral azonos' },
   ];
-  const minV = Math.min(...rows.map(r => r.v)), maxV = Math.max(...rows.map(r => r.v));
-  const best = rows.find(r => r.v === minV);
-  $('bills').innerHTML = rows.map(r => {
-    const isBest = r === best && maxV - minV >= 500;
+  const minV = Math.min(...rows.map(x => x.v)), maxV = Math.max(...rows.map(x => x.v));
+  const tol = yearly ? 500 : 50;
+  const best = rows.find(x => x.v === minV);
+  $('bills').innerHTML = rows.map(x => {
+    const isBest = x === best && maxV - minV >= tol;
     return `<div class="bill${isBest ? ' is-best' : ''}">
-      <div class="bill-n">${r.n}${isBest ? '<span class="best">Legolcsóbb</span>' : ''}</div>
-      <div class="bill-v">${fmt(r.v)} Ft/év</div>
-      <div class="bill-bar"><i style="width:${(r.v / maxV * 100).toFixed(1)}%"></i></div>
-      <div class="bill-note">${r.note}</div>
+      <div class="bill-n">${x.n}${isBest ? '<span class="best">Legolcsóbb</span>' : ''}</div>
+      <div class="bill-v">${fmt(x.v)} ${r.unit}</div>
+      <div class="bill-bar"><i style="width:${(x.v / maxV * 100).toFixed(1)}%"></i></div>
+      <div class="bill-note">${x.note}</div>
     </div>`;
   }).join('');
 
   // Döntés, egyszerű szavakkal
-  const v = $('verdict');
-  const pctTxt = `${Math.round(c.shift * 100)}%`;
-  const dDiff = dBill - rezsi, vDiff = rezsi - vez;
+  const per = yearly ? 'évi' : 'havi';
+  const kb = n => (yearly ? fmtK(n) : fmt(Math.round(n / 10) * 10));
+  const dDiff = r.dBill - r.rezsi, vDiff = r.rezsi - r.vez;
+  const vezTxt = c.vshare > 0 && vDiff >= tol ? ` Vezérelt mérővel ${per} kb. ${kb(vDiff)} Ft-tal kevesebbet fizetnél. A vezérelt mérő és a D árszabás az MVM feltételei szerint együtt nem választható.` : '';
   let cls = 'neutral', html;
-  if (over === 0) {
-    html = `<strong>Nálad a D árszabás nem változtat semmin.</strong> Évi ${fmt(annual)} kWh-val a kereten belül vagy, a teljes fogyasztásod fix áron megy.`;
-    if (vDiff >= 500) html += ` Vezérelt mérővel évi kb. ${fmtK(vDiff)} Ft-tal kevesebbet fizetnél, ha a bojler vagy más nagy fogyasztó külön körre kerül.`;
-  } else if (dDiff < -500) {
+  if (r.dOver <= 0.5) {
+    html = yearly
+      ? `<strong>Nálad a D árszabás nem változtat semmin.</strong> Egyik hónapban sem lépsz a havi keret fölé, a teljes fogyasztásod fix áron megy.`
+      : `<strong>Ebben a hónapban a D árszabás nem változtatna semmin.</strong> ${fmt(c.kwh)} kWh a havi kb. ${fmt(monthCap)} kWh-s kereten belül van.`;
+  } else if (dDiff < -tol) {
     cls = '';
-    html = `<strong>A D árszabás évi kb. ${fmtK(-dDiff)} Ft-tal olcsóbb lenne</strong> a rezsivédettnél, ha a fogyasztásod ${pctTxt}-át tényleg olcsó órákra teszed. A tőzsdei ár és az árfolyam változik, a különbség hónapról hónapra más lehet.`;
-    if (vez < dBill - 500) html += ` Vezérelt mérővel még ennél is kevesebbet fizetnél, a kettő együtt nem választható.`;
+    html = `<strong>A D árszabás ${per} kb. ${kb(-dDiff)} Ft-tal olcsóbb lehet</strong> a rezsivédettnél, ha a fogyasztásod ${pctTxt}-át tényleg olcsó órákra teszed. A tőzsdei ár és az árfolyam változik, a különbség hónapról hónapra más.`;
   } else {
     cls = 'warn';
-    html = c.shift === 0
-      ? `<strong>Időzítés nélkül a D árszabás évi kb. ${fmtK(dDiff)} Ft-tal drágább lenne.</strong> `
-      : `<strong>A D árszabás így is évi kb. ${fmtK(Math.max(0, dDiff))} Ft-tal drágább lenne</strong> a rezsivédettnél. `;
-    html += `A fogyasztásod átlagos tőzsdei ára ${fmt1(hupx)} Ft/kWh, a D árszabás 18,1 Ft alatt érné meg.`;
-    if (vDiff >= 500) html += ` Vezérelt mérővel viszont évi kb. ${fmtK(vDiff)} Ft-ot spórolhatnál.`;
+    const lead = c.shift === 0 ? 'Időzítés nélkül a D árszabás' : 'A D árszabás így is';
+    html = `<strong>${lead} ${per} kb. ${kb(Math.max(0, dDiff))} Ft-tal drágább lenne</strong> a rezsivédettnél. `;
+    if (yearly && annual <= T.cap) html += `Évesen a kereten belül vagy, de a D árszabásnál a keret havonta számít: ${r.dMonths} hónapban, főleg télen, összesen kb. ${fmt(r.dOver)} kWh megy fölé. `;
+    html += `A keret feletti fogyasztásod átlagos tőzsdei ára ${fmt1(r.dHupx)} Ft/kWh, a D árszabás 18,1 Ft alatt érné meg.`;
   }
+  html += vezTxt;
+  const v = $('verdict');
   v.className = `verdict ${cls}`;
-  v.innerHTML = `${html} <span class="hint">Számítás ${basis}.</span>`;
+  const note = fallback ? 'Az elmúlt 30 nap adata most nem elérhető, ezért a 12 havi árakon számoltunk. ' : '';
+  v.innerHTML = `${html} <span class="hint">${note}Számítás ${r.basis}. ${fxNote()}</span>`;
 
   $('howText').innerHTML = `
-    <p><b>Rezsivédett:</b> 2 523 kWh/év-ig 36,4 Ft/kWh (elosztónként 35,3 és 36,4 Ft között), felette 70,1 Ft.</p>
-    <p><b>Vezérelt:</b> külön mért, az elosztó által kapcsolt körön 23,0 Ft/kWh a saját 2 523 kWh-s keretéig, felette 60,9 Ft. Csak fixen bekötött bojler, hőtárolós kályha, hőszivattyú vagy autótöltő kerülhet rá. Mellette a D árszabás nem választható.</p>
-    <p><b>D árszabás:</b> 2 523 kWh-ig ugyanaz a fix ár. Felette havonta egy egységár: a havi fogyasztásod negyedórás tőzsdei árakkal súlyozott átlaga, plusz 13,70 Ft kereskedői díj és 23,40 Ft hálózati díj, 27% áfával. Akkor olcsóbb a fix árnál, ha a súlyozott tőzsdei átlag 18,1 Ft/kWh alatt van.</p>
-    <p><b>Feltevések:</b> esti csúcsú háztartási fogyasztás; az eltolt rész a nap legolcsóbb 4 órájába kerül. A 12 hónapos számítás az MVM Next 2025. szeptember és 2026. augusztus közötti közzétett árlistáján alapul.</p>
+    <p><b>Rezsivédett:</b> 2 523 kWh/év-ig 36,4 Ft/kWh (elosztónként 35,3 és 36,4 Ft között), felette 70,1 Ft. A keret az éves elszámolásban egyenlítődik ki.</p>
+    <p><b>Vezérelt:</b> külön mért, az elosztó által kapcsolt körön 23,0 Ft/kWh a saját 2 523 kWh-s keretéig, felette 60,9 Ft, plusz évi kb. 600 Ft alapdíj. Jellemzően fixen bekötött bojler, hőtárolós kályha vagy hőszivattyú kerül rá. A kiépítés egyszeri költségével nem számolunk.</p>
+    <p><b>D árszabás:</b> a keretig ugyanaz a fix ár. A keret havonta, a naptári napokkal arányosan számít (évi 2 523 kWh 1/365 része naponta). Hogy az év végén van-e kiegyenlítés, az MVM feltételeiből nem derül ki egyértelműen, ezért a szigorúbb esettel számolunk: a nyáron ki nem használt keret nem segít télen. A keret feletti részre havonta egy egységár jár: a teljes havi fogyasztásod negyedórás tőzsdei árakkal súlyozott átlaga, plusz 13,70 Ft kereskedői díj és 23,40 Ft hálózati díj, 27% áfával. Akkor olcsóbb a fix árnál, ha a súlyozott tőzsdei átlag 18,1 Ft/kWh alatt van.</p>
+    <p><b>Feltevések:</b> télen több, nyáron kevesebb fogyasztás (január és július aránya 1,57); esti csúcsú háztartási profil; az időzített rész a nap legolcsóbb 4 órájába kerül. A tényleges eltolás ennél kisebb szokott lenni, mert a gépek egyben futnak. A profil súlyai nem hivatalosak, egyenletes fogyasztással a D évente kb. 10 000 Ft-tal kedvezőbbnek látszana 4 000 kWh mellett.</p>
     <ul>
-      <li>Okosmérő kell hozzá, 4 000 kWh/év felett az elosztó kötelezően felszereli, egyébként kérésre ingyen.</li>
+      <li>Okosmérő kell hozzá. 4 000 kWh/év felett az elosztó kötelezően lecseréli a mérőt, egyébként felhasználónként egy helyre egyszer ingyen kérhető, a felszerelés akár egy évig is tarthat. Más távleolvasható mérővel a hálózati díj évente több százezer forinttal magasabb lehet, erre a számítás nem vonatkozik.</li>
+      <li>Az MVM feltételei szerint vezérelt (B) vagy H mérő mellett nem választható. A2 (kétzónás) tarifáról előbb A1-re kell váltani.</li>
       <li>2026. szeptember 1-jétől igényelhető, legkorábban 2027. január 1-jétől él.</li>
-      <li>Ha az első 12 hónapban visszalépsz, utána 12 hónapig nem kérheted újra.</li>
-      <li>A kereskedői díjat az MVM 60 napos előzetes hirdetménnyel módosíthatja. Az ár euróban képződik, az árfolyam is hat rá.</li>
+      <li>Ha az első 12 hónapban visszalépsz, utána 12 hónapig nem kérheted újra. Ez nem vonatkozik arra, aki áremelés miatt lép vissza.</li>
+      <li>A kereskedői díjat az MVM 60 nappal előre hirdetményben módosíthatja. Ilyenkor felmondhatsz, vagy visszatérhetsz a fix árra. Az ár euróban képződik, az árfolyam is hat rá.</li>
     </ul>
-    <p>Forrás: <a href="https://www.mvmnext.hu/aram/pages/aloldal.jsp?id=16455187" target="_blank" rel="noopener">MVM Next, D árszabás</a>. Becslés, nem ajánlat.</p>`;
+    <p>Forrás: <a href="https://www.mvmnext.hu/aram/pages/aloldal.jsp?id=16455187" target="_blank" rel="noopener">az MVM Next D árszabása</a>. Becslés, nem ajánlat.</p>`;
 }
 
 // ── Események ────────────────────────────────────────────────────────────
@@ -629,6 +698,9 @@ function bind() {
   $('kwh').addEventListener('input', e => { S.calc.kwh = +e.target.value; savePref('ei.kwh', S.calc.kwh); renderCalc(); });
   document.querySelectorAll('[data-shift]').forEach(b => b.addEventListener('click', () => {
     S.calc.shift = +b.dataset.shift; savePref('ei.shift', S.calc.shift); renderCalc();
+  }));
+  document.querySelectorAll('[data-vshare]').forEach(b => b.addEventListener('click', () => {
+    S.calc.vshare = +b.dataset.vshare; savePref('ei.vshare', S.calc.vshare); renderCalc();
   }));
   document.querySelectorAll('[data-period]').forEach(b => b.addEventListener('click', () => {
     S.calc.period = b.dataset.period; renderCalc();
