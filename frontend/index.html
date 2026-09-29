@@ -7,10 +7,8 @@
   <meta name="description" content="Élő tőzsdei áramár: mikor olcsó az áram, mikor indítsd a gépeidet, és megéri-e neked a D árszabás." />
   <meta name="theme-color" content="#0C1A2E" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230C1A2E'/%3E%3Cpath d='M18 5 8 18h7l-1 9 10-13h-7z' fill='%2312C2B0'/%3E%3C/svg%3E" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
-  <link rel="stylesheet" href="/static/css/style.css?v=20" />
+  <link rel="stylesheet" href="/static/css/fonts.css?v=21" />
+  <link rel="stylesheet" href="/static/css/style.css?v=21" />
 </head>
 <body>
 <div class="app">
@@ -47,6 +45,7 @@
           <span class="now-unit">Ft/kWh</span>
         </div>
         <p class="now-line" id="nowLine">Tőzsdei áramár, negyedóránként.</p>
+        <p class="now-note">Nagykereskedelmi (HUPX) ár, áfa és hálózati díj nélkül. Nem a te számládon szereplő ár.</p>
         <div class="strip" id="strip" aria-label="A következő 12 óra"></div>
         <p class="now-next" id="nowNext"></p>
       </div>
@@ -61,7 +60,7 @@
           <div class="chips" id="devChips"></div>
         </div>
         <ul class="devs" id="devList"></ul>
-        <p class="hint">A következő 24 óra legolcsóbb sávja a gép futásidejére. Fix áras (rezsivédett) tarifán a számládon ez nem látszik, vezérelt vagy D árszabáson igen, és mindig tehermentesíti az esti csúcsot.</p>
+        <p class="hint">A következő 24 óra legolcsóbb sávja a gép futásidejére. Rezsivédett fix áron az időzítés a számládon nem látszik. D árszabáson a keret feletti részre hat. Az esti csúcsot mindig tehermentesíti.</p>
       </div>
 
     </section>
@@ -128,20 +127,29 @@
           <div class="field"><span class="field-l">Mennyit tudsz olcsó órákra tenni?</span></div>
           <div class="chips chips-4" id="shiftChips" role="group" aria-label="Eltolható fogyasztás">
             <button class="chip-b" data-shift="0">Semmit</button>
-            <button class="chip-b" data-shift="0.3">Keveset<small>30%</small></button>
+            <button class="chip-b" data-shift="0.1">Keveset<small>10%</small></button>
+            <button class="chip-b" data-shift="0.25">Negyedét<small>25%</small></button>
             <button class="chip-b" data-shift="0.5">A felét<small>50%</small></button>
-            <button class="chip-b" data-shift="0.7">Szinte mindent<small>70%</small></button>
+          </div>
+          <p class="hint">Egy mosógép és egy mosogatógép rendszeres időzítése a háztartás fogyasztásának kb. 10%-a.</p>
+
+          <div class="field"><span class="field-l">Tehető külön vezérelt körre?</span></div>
+          <div class="chips chips-3" id="vshareChips" role="group" aria-label="Vezérelt körre tehető fogyasztás">
+            <button class="chip-b" data-vshare="0">Nem</button>
+            <button class="chip-b" data-vshare="0.25">Bojler<small>25%</small></button>
+            <button class="chip-b" data-vshare="0.5">Hőszivattyú<small>50%</small></button>
           </div>
 
           <div class="field"><span class="field-l">Melyik időszak árain számoljunk?</span></div>
           <div class="seg seg-full" role="group" aria-label="Időszak">
-            <button class="seg-b" data-period="30" aria-pressed="true">Elmúlt 30 nap</button>
-            <button class="seg-b" data-period="365" aria-pressed="false">Elmúlt 12 hónap</button>
+            <button class="seg-b" data-period="365" aria-pressed="true">Egy év, 12 hónap árain</button>
+            <button class="seg-b" data-period="30" aria-pressed="false">Egy hónap, 30 nap árain</button>
           </div>
         </div>
 
         <div class="verdict" id="verdict" aria-live="polite"></div>
         <div class="card" id="bills"></div>
+        <p class="hint disclaimer">Tájékoztató becslés a megadott feltevések alapján. A tényleges számla a havi naparányos kerettől, a tőzsdei áraktól, az MNB-árfolyamtól és a szolgáltató mindenkori feltételeitől függ. A D árszabásra vonatkozó számítás csak okosmérővel érvényes. Döntés előtt kérj ajánlatot a szolgáltatótól.</p>
 
         <details class="more">
           <summary>Hogyan számolunk?</summary>
@@ -151,7 +159,21 @@
 
     </section>
 
+    <footer class="foot">
+      <p>Az Energia Időzítő független, nem hivatalos tájékoztató eszköz. Nem áll kapcsolatban az MVM Next, a MAVIR, a HUPX és a MEKH szervezetével. Nem ad befektetési, pénzügyi vagy jogi tanácsot. Fizetett megjelenés, ajánlás nincs benne.</p>
+      <p>Beállításaid csak a böngésződben tárolódnak, hozzánk nem jutnak el. Személyes adatot nem kérünk. A kérések IP-címe üzemeltetési célból rövid ideig a szerver naplójában marad (tárhely: Railway, EU régió).</p>
+      <details class="more foot-more">
+        <summary>Források</summary>
+        <div class="more-in">
+          <p><b>Tőzsdei ár:</b> HUPX másnapi piac, negyedórás, az <a href="https://transparency.entsoe.eu" target="_blank" rel="noopener">ENTSO-E</a> átláthatósági platformjáról, az <a href="https://energy-charts.info" target="_blank" rel="noopener">Energy-Charts</a> (Fraunhofer ISE, CC BY 4.0) közvetítésével. Forintra az EKB napi referencia-árfolyamával váltjuk. Az MVM Next az MNB árfolyamával számol, a kettő között kis eltérés lehet.</p>
+          <p><b>Hálózat:</b> <a href="https://www.mavir.hu" target="_blank" rel="noopener">MAVIR</a> 15 perces adatai.</p>
+          <p><b>12 havi átlagok:</b> a 2025. szeptember és 2026. augusztus közötti HUPX árakból számolva; eltérésük az MVM Next közzétett negyedórás árlistájától 0,02% alatt.</p>
+          <p><b>Tarifák (2026. szeptemberi állapot):</b> egyetemes szolgáltatói árak: 4/2011. (I. 31.) NFM rendelet; lakossági piaci ár: 20/2022. (XII. 21.) MEKH rendelet; rendszerhasználati díjak: MEKH H 2995/2025. határozat és 10/2024. (XI. 14.) MEKH rendelet; rugalmas árú szerződés: VET 3. § 52a. pont és 61/A. §; az MVM Next D árszabása: ajánlatminta M.2.2. és a 2026.09.10-i hirdetmény.</p>
+        </div>
+      </details>
+    </footer>
   </main>
+
 
   <nav class="tabs tabs-bottom" aria-label="Nézetek">
     <button class="tab" data-tab="most" aria-current="page">
@@ -166,6 +188,6 @@
   </nav>
 
 </div>
-<script src="/static/js/app.js?v=20"></script>
+<script src="/static/js/app.js?v=21"></script>
 </body>
 </html>

@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from data.entso_fetcher import fetch_day_ahead_prices, fetch_eur_huf_rate, fetch_quarter_hour_prices
+from data.entso_fetcher import fetch_day_ahead_prices, fetch_eur_huf_info, fetch_eur_huf_rate, fetch_quarter_hour_prices
 from data.weather_fetcher import fetch_weather_forecast, get_city_coords, HUNGARIAN_CITIES
 from analysis.price_analyzer import analyze_prices, daily_summary, weekly_pattern
 from analysis.recommender import recommend
@@ -307,7 +307,8 @@ def get_prices_quarterly(
     end = datetime.now(tz=timezone.utc) + timedelta(hours=49)
     start = datetime.now(tz=timezone.utc) - timedelta(days=days)
 
-    eur_huf = fetch_eur_huf_rate()
+    fx = fetch_eur_huf_info()
+    eur_huf = fx["rate"]
     series = fetch_quarter_hour_prices(start, end)
     if series.empty:
         raise HTTPException(status_code=503, detail="Nem sikerült áradatot lekérni.")
@@ -326,6 +327,8 @@ def get_prices_quarterly(
         ],
         "count": len(series),
         "eur_huf_rate": eur_huf,
+        "eur_huf_date": fx["date"],
+        "eur_huf_status": fx["status"],
         "source": "energy-charts.info (Bundesnetzagentur | SMARD.de, CC BY 4.0)",
     }
 
