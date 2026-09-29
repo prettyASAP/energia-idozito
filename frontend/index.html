@@ -4,428 +4,168 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Energia Időzítő</title>
+  <meta name="description" content="Élő tőzsdei áramár: mikor olcsó az áram, mikor indítsd a gépeidet, és megéri-e neked a D árszabás." />
+  <meta name="theme-color" content="#0C1A2E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230C1A2E'/%3E%3Cpath d='M18 5 8 18h7l-1 9 10-13h-7z' fill='%2312C2B0'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="/static/css/style.css?v=14" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="/static/css/style.css?v=20" />
 </head>
 <body>
-<div id="app">
+<div class="app">
 
-  <!-- ── Header ── -->
-  <header class="app-header">
-    <div class="logo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-accent-500)">
-        <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8"/>
-      </svg>
-      Energia Időzítő
+  <header class="top">
+    <div class="top-in">
+      <a class="brand" href="/" aria-label="Energia Időzítő, főoldal">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h6L10 22l8.5-11.5h-6z"/></svg>
+        </span>
+        <span class="brand-name">Energia Időzítő</span>
+      </a>
+      <nav class="tabs tabs-top" aria-label="Nézetek">
+        <button class="tab" data-tab="most" aria-current="page">Most</button>
+        <button class="tab" data-tab="arak">Árak</button>
+        <button class="tab" data-tab="megeri">Megéri?</button>
+      </nav>
+      <span class="fresh" id="fresh" aria-live="polite"></span>
     </div>
-    <span class="tag tag-outline" style="font-size:10px">Élő tőzsdei árak</span>
   </header>
 
-  <!-- ── Content ── -->
-  <main class="app-content">
+  <main class="main">
 
-    <!-- === TAB: MA === -->
-    <div id="tab-ma" class="tab-pane active">
+    <!-- ===================== MOST ===================== -->
+    <section class="view" id="view-most" data-view="most">
 
-      <!-- Hero -->
-      <section>
-        <div class="hero-box" id="heroBox">
-          <div class="hero-status-row">
-            <div id="heroStatusPill" class="tag tag-neutral" style="font-size:10px;letter-spacing:.06em;font-family:var(--font-heading)">Betöltés…</div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div class="live-pill">
-                <span class="live-dot"></span>
-                Élő ár
-              </div>
-              <button id="pushOptInBtn" class="push-bell" onclick="togglePushOptIn()" title="Értesítés olcsó áram esetén" aria-label="Értesítés olcsó áram esetén">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 01-3.46 0"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="hero-price-row">
-            <div class="hero-price" id="heroPrice">—</div>
-            <div class="hero-unit">FT / KWH</div>
-            <div class="hero-trend" id="heroTrend"></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin:2px 0 6px;flex-wrap:wrap">
-            <span style="font-size:11px;opacity:0.6;color:#d6ebff">Mai átlag</span>
-            <span id="heroAvg" style="font-size:11px;font-weight:600;color:#d6ebff">—</span>
-            <span style="opacity:0.3;color:#d6ebff;font-size:10px">·</span>
-            <span id="heroUpdated" style="font-size:10px;opacity:0.45;color:#d6ebff">frissítés…</span>
-          </div>
-          <p class="hero-sub" id="heroSub">Árak betöltése…</p>
-          <p id="heroReason" style="font-size:11.5px;opacity:0.55;color:#d6ebff;margin:4px 0 0;line-height:1.45"></p>
+      <div class="now card-dark" id="nowCard">
+        <div class="now-head">
+          <span class="now-slot" id="nowSlot">Betöltés</span>
+          <span class="chip" id="nowLevel" hidden></span>
         </div>
-      </section>
-
-      <!-- Grid panel -->
-      <section id="gridPanelSection" style="display:none">
-        <div class="section-kicker">A HÁLÓZAT MOST</div>
-        <h2>Mi termeli az áramod?</h2>
-        <div class="heatmap-card" style="padding:16px">
-          <div id="gridMixBar" style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-bottom:10px"></div>
-          <div id="gridMixLegend" style="display:flex;flex-wrap:wrap;gap:8px 14px;font-size:11.5px;margin-bottom:14px"></div>
-          <div id="gridStats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-          <div id="gridSource" class="text-muted" style="font-size:10.5px;margin-top:10px">Forrás: MAVIR, 15 percenként frissül</div>
+        <div class="now-price">
+          <span class="now-num" id="nowPrice">&nbsp;</span>
+          <span class="now-unit">Ft/kWh</span>
         </div>
-      </section>
+        <p class="now-line" id="nowLine">Tőzsdei áramár, negyedóránként.</p>
+        <div class="strip" id="strip" aria-label="A következő 12 óra"></div>
+        <p class="now-next" id="nowNext"></p>
+      </div>
 
-      <!-- Device grid -->
-      <section>
-        <div class="section-kicker">AJÁNLÁS</div>
-        <h2>Mikor kapcsoljam be?</h2>
-        <p id="deviceSummary" style="display:none;font-size:13px;background:var(--good-100);border:1px solid oklch(0.62 0.13 155 / .35);border-radius:10px;padding:10px 12px;margin:0 0 12px;line-height:1.45"></p>
-        <div class="device-grid" id="deviceGrid"></div>
-        <p class="text-muted" style="font-size:11px;margin:10px 2px 0;line-height:1.5">A 🌱 jel azt mutatja, hogy a sávban sok a napenergia — olcsó <em>és</em> zöld. A zöld kártya: most érdemes indítani.</p>
-      </section>
+      <div class="block">
+        <div class="block-head">
+          <h2>Mikor indítsd?</h2>
+          <button class="link" id="devEditBtn" aria-expanded="false" aria-controls="devEdit">Gépek</button>
+        </div>
+        <div class="dev-edit" id="devEdit" hidden>
+          <p class="hint">Válaszd ki, mi van otthon.</p>
+          <div class="chips" id="devChips"></div>
+        </div>
+        <ul class="devs" id="devList"></ul>
+        <p class="hint">A következő 24 óra legolcsóbb sávja a gép futásidejére. Fix áras (rezsivédett) tarifán a számládon ez nem látszik, vezérelt vagy D árszabáson igen, és mindig tehermentesíti az esti csúcsot.</p>
+      </div>
 
-      <!-- CTA -->
-      <section>
-        <button class="btn btn-primary btn-block" onclick="openOnboarding()">
-          Mennyit takaríthatok meg? →
-        </button>
-      </section>
+    </section>
 
-    </div><!-- /tab-ma -->
+    <!-- ===================== ÁRAK ===================== -->
+    <section class="view" id="view-arak" data-view="arak" hidden>
 
-    <!-- === TAB: ÁRAK === -->
-    <div id="tab-arak" class="tab-pane">
-
-      <!-- Heatmap -->
-      <section>
-        <div class="section-kicker">NAPI HŐTÉRKÉP</div>
-        <h2>Óránkénti árak</h2>
-        <div class="heatmap-card">
-          <div class="heatmap-grid" id="heatmapGrid"></div>
-          <div class="hm-detail text-muted" id="heatmapDetail">Koppints egy cellára a részletekhez</div>
-          <div class="hm-legend">
-            <div class="hm-legend-item"><span class="hm-dot" style="background:oklch(0.62 0.13 155)"></span>Olcsó</div>
-            <div class="hm-legend-item"><span class="hm-dot" style="background:#b5d9fd"></span>Átlagos</div>
-            <div class="hm-legend-item"><span class="hm-dot" style="background:oklch(0.58 0.17 25)"></span>Drága</div>
+      <div class="block">
+        <div class="block-head">
+          <h2>Napi árak</h2>
+          <div class="seg" role="group" aria-label="Nap">
+            <button class="seg-b" data-day="0" aria-pressed="true">Ma</button>
+            <button class="seg-b" data-day="1" aria-pressed="false">Holnap</button>
           </div>
         </div>
-      </section>
-
-      <!-- Bar chart -->
-      <section>
-        <div class="section-kicker">TEGNAP · MA · HOLNAP</div>
-        <h2 style="margin-bottom:4px">72 órás grafikon</h2>
-        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Tegnap (szürke) · ma (élénk) · holnap (halvány). Zöld = olcsó óra, piros = drága.</p>
-        <div class="chart-card">
-          <svg id="barChart" viewBox="0 0 720 170" width="100%" height="170" style="display:block"></svg>
-        </div>
-      </section>
-
-      <!-- 30-day trend -->
-      <section>
-        <div class="section-kicker">MERRE TART A PIAC?</div>
-        <h2 style="margin-bottom:4px">30 napos áralakulás</h2>
-        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Napi átlagárak az elmúlt hónapban.</p>
-        <div class="chart-card">
-          <svg id="trendChart" viewBox="0 0 480 150" width="100%" height="150" style="display:block"></svg>
-        </div>
-      </section>
-
-      <!-- Sources -->
-      <section>
-        <p class="sources-footer">
-          Forrás: <a href="https://energy-charts.info" target="_blank" rel="noopener">energy-charts.info</a> (Bundesnetzagentur | SMARD.de, CC BY 4.0) tőzsdei árak ·
-          <a href="https://www.ecb.europa.eu" target="_blank" rel="noopener">EKB</a> EUR/HUF árfolyam ·
-          <a href="https://mekh.hu" target="_blank" rel="noopener">MEKH</a> rezsivédett tarifák ·
-          <a href="https://www.mavir.hu" target="_blank" rel="noopener">MAVIR</a> hálózati adatok
-        </p>
-      </section>
-
-    </div><!-- /tab-arak -->
-
-    <!-- === TAB: SPÓROLÁS === -->
-    <div id="tab-sporolas" class="tab-pane">
-
-      <!-- KPI dark box -->
-      <section>
-        <div class="section-kicker">Megtakarítás</div>
-        <h2>Mennyit takaríthatsz meg?</h2>
-        <p class="text-muted" id="kpiSubtitle" style="font-size:12.5px;margin:0 0 12px">Tipikus háztartás becslése — pontosítsd a saját eszközeiddel.</p>
-        <div class="kpi-dark-box">
-          <div>
-            <div class="kpi-year" id="kpiYear">0</div>
-            <div class="kpi-label">FT / ÉV BECSÜLT MEGTAKARÍTÁS</div>
-          </div>
-          <div class="kpi-ring">
-            <svg width="88" height="88" viewBox="0 0 88 88">
-              <circle cx="44" cy="44" r="37" fill="none" stroke="rgba(181,217,253,.18)" stroke-width="6"/>
-              <circle id="ringCircle" cx="44" cy="44" r="37" fill="none" stroke="oklch(0.85 0.1 155)" stroke-width="6"
-                stroke-linecap="round" stroke-dasharray="232" stroke-dashoffset="232"
-                transform="rotate(-90 44 44)" style="transition:stroke-dashoffset 1s ease"/>
-            </svg>
-            <div class="ring-inner">
-              <div class="ring-pct" id="ringPct">0%</div>
-              <div class="ring-sub">becsült potenciál</div>
-            </div>
+        <div class="card">
+          <div class="readout" id="readout" aria-live="polite"></div>
+          <div class="chart" id="dayChart" tabindex="0" role="img" aria-label="Negyedórás árak"></div>
+          <div class="legend">
+            <span><i class="sw sw-cheap"></i>Olcsó</span>
+            <span><i class="sw sw-mid"></i>Átlagos</span>
+            <span><i class="sw sw-dear"></i>Drága</span>
+            <span class="legend-note">a nap saját árai alapján</span>
           </div>
         </div>
-        <div class="kpi-mini-grid">
-          <div class="kpi-mini">
-            <div class="kpi-mini-val" id="kpiMonth">0</div>
-            <div class="kpi-mini-lbl">FT / HÓ</div>
+        <div class="stats" id="dayStats"></div>
+      </div>
+
+      <div class="block">
+        <h2>Az elmúlt 30 nap</h2>
+        <div class="card">
+          <div class="chart chart-sm" id="trendChart" role="img" aria-label="Napi átlagárak az elmúlt 30 napban"></div>
+          <p class="hint" id="trendNote"></p>
+        </div>
+      </div>
+
+      <div class="block" id="gridBlock" hidden>
+        <h2>Honnan jön most az áram?</h2>
+        <div class="card">
+          <div class="mix" id="mixBar"></div>
+          <div class="mix-legend" id="mixLegend"></div>
+          <p class="grid-line" id="gridLine"></p>
+        </div>
+      </div>
+
+      <p class="src">Árak: HUPX másnapi piac, negyedórás, áfa és hálózati díj nélkül (ENTSO-E adat, <a href="https://energy-charts.info" target="_blank" rel="noopener">energy-charts.info</a>, CC BY 4.0), EKB árfolyamon forintban. Hálózat: <a href="https://www.mavir.hu" target="_blank" rel="noopener">MAVIR</a>, 15 perces adat.</p>
+    </section>
+
+    <!-- ===================== MEGÉRI? ===================== -->
+    <section class="view" id="view-megeri" data-view="megeri" hidden>
+
+      <div class="block">
+        <h2>Melyik tarifa éri meg neked?</h2>
+        <p class="lead">Rezsivédett, vezérelt vagy a 2027-ben induló D árszabás, a saját fogyasztásoddal, valós tőzsdei árakon.</p>
+
+        <div class="card form">
+          <label class="field" for="kwh">
+            <span class="field-l">Havi fogyasztás</span>
+            <span class="field-v"><output id="kwhOut">250</output> kWh</span>
+          </label>
+          <input type="range" id="kwh" min="80" max="800" step="10" value="250" />
+          <p class="hint" id="kwhHint"></p>
+
+          <div class="field"><span class="field-l">Mennyit tudsz olcsó órákra tenni?</span></div>
+          <div class="chips chips-4" id="shiftChips" role="group" aria-label="Eltolható fogyasztás">
+            <button class="chip-b" data-shift="0">Semmit</button>
+            <button class="chip-b" data-shift="0.3">Keveset<small>30%</small></button>
+            <button class="chip-b" data-shift="0.5">A felét<small>50%</small></button>
+            <button class="chip-b" data-shift="0.7">Szinte mindent<small>70%</small></button>
+          </div>
+
+          <div class="field"><span class="field-l">Melyik időszak árain számoljunk?</span></div>
+          <div class="seg seg-full" role="group" aria-label="Időszak">
+            <button class="seg-b" data-period="30" aria-pressed="true">Elmúlt 30 nap</button>
+            <button class="seg-b" data-period="365" aria-pressed="false">Elmúlt 12 hónap</button>
           </div>
         </div>
-      </section>
 
-      <!-- CTA -->
-      <section>
-        <button class="btn btn-primary btn-block" onclick="openOnboarding()">
-          Pontosítom a saját eszközeimmel →
-        </button>
-      </section>
+        <div class="verdict" id="verdict" aria-live="polite"></div>
+        <div class="card" id="bills"></div>
 
-      <!-- HT/NT calculator -->
-      <section>
-        <h2>Éjszakai áram kalkulátor</h2>
-        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">Az éjszakai (vezérelt) áram a kedvezményes sávban kb. 37%-kal olcsóbb (36,4 vs. 23 Ft/kWh).</p>
-        <div class="htnt-card">
-          <div class="field">
-            <label>Havi fogyasztás (kWh)</label>
-            <input class="input" type="number" id="htntKwh" value="200" min="10" max="5000" style="min-height:44px" />
-          </div>
-          <div class="field">
-            <label>Ebből éjszakára áttehető (%)</label>
-            <input class="input" type="number" id="htntPct" value="40" min="0" max="80" style="min-height:44px" />
-          </div>
-          <div class="htnt-result">
-            <div class="htnt-year" id="htntResult">0 Ft / év</div>
-            <div class="htnt-note" id="htntNote"></div>
-          </div>
-          <p class="text-muted" style="font-size:10.5px;margin:0">A mérőcsere ingyenes, az elosztó 1–3 hónapon belül elvégzi. <a href="https://www.mekh.hu" target="_blank" rel="noopener">MEKH ↗</a></p>
-        </div>
-      </section>
+        <details class="more">
+          <summary>Hogyan számolunk?</summary>
+          <div class="more-in" id="howText"></div>
+        </details>
+      </div>
 
-    </div><!-- /tab-sporolas -->
-
-    <!-- === TAB: TERVEK === -->
-    <div id="tab-tervek" class="tab-pane">
-
-      <!-- Segment switcher -->
-      <section>
-        <div class="section-kicker">Napi terv</div>
-        <h2 id="planTitle">Klíma hűtési terv</h2>
-        <div class="seg" style="width:100%">
-          <label class="seg-opt active" id="seg-klima" style="flex:1;justify-content:center" onclick="setPlanTab('klima')">Klíma</label>
-          <label class="seg-opt" id="seg-napelem" style="flex:1;justify-content:center" onclick="setPlanTab('napelem')">Napelem</label>
-        </div>
-      </section>
-
-      <!-- Plan timeline -->
-      <section id="planContent"></section>
-
-      <!-- Advisor CTA -->
-      <section>
-        <h2 style="margin-bottom:4px">Személyes energiaterv</h2>
-        <p class="text-muted" style="font-size:12.5px;margin:0 0 12px">4 kérdés — személyes ajánlások az otthonodhoz.</p>
-        <button class="btn btn-primary btn-block" onclick="openAdvisor()">
-          Kérem a tervemet →
-        </button>
-      </section>
-
-    </div><!-- /tab-tervek -->
+    </section>
 
   </main>
 
-  <!-- ── Tab bar ── -->
-  <nav class="tab-bar">
-    <button class="tab-btn active" id="tbtn-ma" onclick="setTab('ma')">
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8"/>
-      </svg>
-      <span>Ma</span>
+  <nav class="tabs tabs-bottom" aria-label="Nézetek">
+    <button class="tab" data-tab="most" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h6L10 22l8.5-11.5h-6z"/></svg>Most
     </button>
-    <button class="tab-btn" id="tbtn-arak" onclick="setTab('arak')">
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-        <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-      </svg>
-      <span>Árak</span>
+    <button class="tab" data-tab="arak">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M9.3 20V4M14.6 20v-8M20 20V7"/></svg>Árak
     </button>
-    <button class="tab-btn" id="tbtn-sporolas" onclick="setTab('sporolas')">
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23"/>
-        <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-      </svg>
-      <span>Megtakarítás</span>
-    </button>
-    <button class="tab-btn" id="tbtn-tervek" onclick="setTab('tervek')">
-      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="3" y1="8" x2="21" y2="8"/>
-        <path d="M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/>
-      </svg>
-      <span>Tervek</span>
+    <button class="tab" data-tab="megeri">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M16.5 7.5c0-1.9-2-3-4.5-3S7.5 5.6 7.5 7.5 9.5 10.2 12 11s4.5 1.8 4.5 3.8-2 3.2-4.5 3.2-4.5-1.3-4.5-3.2"/></svg>Megéri?
     </button>
   </nav>
 
-  <!-- ── Onboarding sheet ── -->
-  <div class="sheet-overlay hidden" id="onboardingOverlay" onclick="overlayClose(event,'onboardingOverlay')">
-    <div class="sheet" onclick="event.stopPropagation()">
-
-      <!-- Step 1: Devices -->
-      <div id="obs1">
-        <div class="sheet-top">
-          <span class="sheet-step-lbl">1 / 3 · Eszközök</span>
-          <button class="btn btn-ghost btn-icon" onclick="closeOnboarding()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div class="sheet-title">Milyen eszközeid vannak?</div>
-        <div class="chip-grid" id="obsDeviceGrid" style="margin-top:8px"></div>
-        <div class="sheet-nav">
-          <button class="btn btn-block" style="max-width:48%" onclick="closeOnboarding()">Kihagyom</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="obsNext(1)">Tovább</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Tariff + flex -->
-      <div id="obs2" style="display:none">
-        <div class="sheet-top">
-          <span class="sheet-step-lbl">2 / 3 · Tarifa</span>
-          <button class="btn btn-ghost btn-icon" onclick="closeOnboarding()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div class="sheet-title">Milyen tarifán vagy?</div>
-        <div class="chip-row" id="obsTariffGrid" style="margin-top:8px"></div>
-        <div class="sheet-kicker" style="margin-top:14px">HAVI FOGYASZTÁS</div>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-          <input class="input" type="number" id="obsKwh" value="200" min="50" max="2000" step="10" style="max-width:120px;min-height:44px" />
-          <span class="text-muted" style="font-size:13px">kWh / hó <span style="font-size:11.5px">(a számládon találod)</span></span>
-        </div>
-        <div class="sheet-kicker" style="margin-top:14px">RUGALMASSÁG</div>
-        <div class="chip-grid" id="obsFlexGrid" style="margin-top:8px"></div>
-        <div class="sheet-nav">
-          <button class="btn btn-block" style="max-width:48%" onclick="obsBack(2)">Vissza</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="obsNext(2)">Számítsd ki</button>
-        </div>
-      </div>
-
-      <!-- Step 3: Result -->
-      <div id="obs3" style="display:none">
-        <div class="sheet-top">
-          <span class="sheet-step-lbl">3 / 3 · Eredmény</span>
-          <button class="btn btn-ghost btn-icon" onclick="closeOnboarding()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div class="sheet-title">Becsült megtakarítás</div>
-        <div class="result-box">
-          <div class="result-box-amount" id="obsResultAmt">0</div>
-          <div class="result-box-lbl">FT / ÉV BECSÜLT MEGTAKARÍTÁS</div>
-        </div>
-        <p id="obsResultDesc" style="font-size:13px;margin-top:8px;line-height:1.5"></p>
-        <div id="obsTariffCompare" style="margin-top:10px"></div>
-        <p style="font-size:11px;margin-top:8px" class="text-muted">
-          Becslés energy-charts.info (Fraunhofer ISE, SMARD) és MEKH adatok alapján. <a href="https://mekh.hu" target="_blank" rel="noopener">mekh.hu</a>
-        </p>
-        <div class="sheet-nav">
-          <button class="btn btn-block" style="max-width:48%" onclick="obsBack(3)">Vissza</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="obsDone()">Mutasd az időpontokat</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ── Advisor sheet ── -->
-  <div class="sheet-overlay hidden" id="advisorOverlay" onclick="overlayClose(event,'advisorOverlay')">
-    <div class="sheet" onclick="event.stopPropagation()">
-
-      <!-- Shared progress header -->
-      <div class="sheet-top">
-        <span class="sheet-step-lbl" id="advStepLbl">1 / 5</span>
-        <div class="adv-prog-wrap"><div class="adv-prog-fill" id="advProgFill" style="width:20%"></div></div>
-        <button class="btn btn-ghost btn-icon" onclick="closeAdvisor()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-
-      <!-- Step 1: Home -->
-      <div id="adv1">
-        <div class="sheet-title">Az otthonodról</div>
-        <div class="sheet-kicker" style="margin-top:12px">INGATLANTÍPUS</div>
-        <div class="chip-row" id="advHomeGrid" style="margin-top:6px"></div>
-        <div class="sheet-kicker" style="margin-top:12px">ALAPTERÜLET</div>
-        <div class="chip-row" id="advAreaGrid" style="margin-top:6px"></div>
-        <div class="sheet-kicker" style="margin-top:12px">FŰTÉS</div>
-        <div class="chip-row" id="advHeatGrid" style="margin-top:6px"></div>
-        <div class="sheet-nav" style="margin-top:12px">
-          <button class="btn btn-block" style="max-width:48%" onclick="closeAdvisor()">Mégsem</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="advNext(1)">Tovább</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Devices -->
-      <div id="adv2" style="display:none">
-        <div class="sheet-title">Eszközeid</div>
-        <div class="chip-grid" id="advDeviceGrid" style="margin-top:8px"></div>
-        <div class="sheet-nav" style="margin-top:12px">
-          <button class="btn btn-block" style="max-width:48%" onclick="advBack(2)">Vissza</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="advNext(2)">Tovább</button>
-        </div>
-      </div>
-
-      <!-- Step 3: Bill + tariff -->
-      <div id="adv3" style="display:none">
-        <div class="sheet-title">Számla és tarifa</div>
-        <div class="field" style="margin-top:8px">
-          <label>Havi villanyszámla (Ft)</label>
-          <input class="input" type="number" id="advBill" value="15000" min="0" />
-        </div>
-        <div class="sheet-kicker" style="margin-top:12px">TARIFA</div>
-        <div class="chip-row" id="advTariffGrid" style="margin-top:6px"></div>
-        <div class="sheet-nav" style="margin-top:12px">
-          <button class="btn btn-block" style="max-width:48%" onclick="advBack(3)">Vissza</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="advNext(3)">Tovább</button>
-        </div>
-      </div>
-
-      <!-- Step 4: Budget + priority -->
-      <div id="adv4" style="display:none">
-        <div class="sheet-title">Befektetési keret</div>
-        <div class="chip-grid" id="advBudgetGrid" style="margin-top:8px"></div>
-        <div class="sheet-kicker" style="margin-top:12px">PRIORITÁS</div>
-        <div class="chip-row" id="advPriorityGrid" style="margin-top:6px"></div>
-        <div class="sheet-nav" style="margin-top:12px">
-          <button class="btn btn-block" style="max-width:48%" onclick="advBack(4)">Vissza</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="advNext(4)">Eredmények</button>
-        </div>
-      </div>
-
-      <!-- Step 5: Results -->
-      <div id="adv5" style="display:none">
-        <div class="sheet-title">Ajánlásaid</div>
-        <p id="advSummary" style="font-size:13px;margin:4px 0 12px"></p>
-        <div id="advRecsList" style="display:flex;flex-direction:column;gap:10px"></div>
-        <div class="sheet-nav" style="margin-top:12px">
-          <button class="btn btn-block" style="max-width:48%" onclick="advBack(5)">Vissza</button>
-          <button class="btn btn-primary btn-block" style="max-width:48%" onclick="closeAdvisor()">Bezárás</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-</div><!-- /app -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/static/sw.js').catch((err) => {
-        console.warn('Service worker regisztráció sikertelen:', err);
-      });
-    });
-  }
-</script>
-<script src="/static/js/app.js?v=14"></script>
+</div>
+<script src="/static/js/app.js?v=20"></script>
 </body>
 </html>

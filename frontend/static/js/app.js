@@ -1,171 +1,136 @@
 'use strict';
 
-// ── Device definitions (IDs match design exactly) ──────────────────────
-const MAIN_DEV = [
-  { id: 'mosogep',     name: 'Mosógép',     kwh: 1.0, dur: 2, annual: 3000,
-    icon: 'M5 3h14v18H5z M8 6h.01 M11 6h.01 M12 14m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0' },
-  { id: 'mosogatogep', name: 'Mosogatógép', kwh: 1.2, dur: 2, annual: 5000,
-    icon: 'M5 3h14v18H5z M5 8h14 M12 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0' },
-  { id: 'bojler',      name: 'Bojler',       kwh: 6,   dur: 3, annual: 18000,
-    icon: 'M7 2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2H7a2 2 0 0 1 -2 -2V4a2 2 0 0 1 2 -2z M9 20v2 M15 20v2 M9 9c1 -1 2 -1 3 0s2 1 3 0' },
-  { id: 'klima',       name: 'Klíma',        kwh: 2.5, dur: 4, annual: 9000,
-    icon: 'M3 5h18v6H3z M6 8h.01 M17 8h.01 M7 14c0 2 -1 2 -1 4 M12 14c0 2 -1 2 -1 4 M17 14c0 2 -1 2 -1 4' },
-  { id: 'ev',          name: 'E-autó töltő',     kwh: 11,  dur: 4, annual: 30000,
-    icon: 'M13 2 3 14h7l-1 8 10 -12h-7l1 -8' },
-  { id: 'szarito',     name: 'Szárítógép',   kwh: 2.0, dur: 2, annual: 4000,
-    icon: 'M5 3h14v18H5z M12 13m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 13m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0' },
+/* Energia Időzítő
+   Adat: HUPX másnapi negyedórás ár (nettó Ft/kWh) a /api/prices/quarterly végpontról,
+   hálózat: MAVIR a /api/grid/mix és /api/grid/flows végpontról. */
+
+// ── Állandók ─────────────────────────────────────────────────────────────
+const Q_MS = 15 * 60 * 1000;
+const H_MS = 60 * 60 * 1000;
+
+// Tarifák 2026 (4/2011. NFM r., 20/2022. MEKH r., MVM Next D árszabás)
+const T = {
+  cap: 2523,          // kWh/év kedvezményes keret
+  a1: 36.4,           // Ft/kWh bruttó a keretig (elosztónként 35,3 és 36,4 között)
+  a1Over: 70.1,       // Ft/kWh bruttó a keret felett
+  b: 23.0,            // vezérelt, keretig
+  bOver: 60.9,        // vezérelt, keret felett
+  spread: 13.7,       // D kereskedői díj, nettó (hirdetmény 2026.09.10.)
+  grid: 23.4,         // lakossági hálózati díj, nettó
+  vat: 1.27,
+  fixEnergy: 31.8,    // lakossági piaci energiaár, nettó
+};
+const BREAK_EVEN = T.fixEnergy - T.spread; // 18,1 Ft nettó súlyozott tőzsdei átlag
+
+// Az MVM Next 2025.09.01. és 2026.08.31. közötti negyedórás árlistájából (a kereskedői díj nélkül):
+// esti csúcsú háztartási profil súlyozott átlaga és a nap legolcsóbb 4 órájának átlaga, nettó Ft/kWh.
+const YEAR = { profile: 51.14, cheap4: 19.72 };
+
+const DEVICES = [
+  { id: 'mosogep', name: 'Mosógép', h: 2, icon: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 6.5h.01M11 6.5h.01M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
+  { id: 'mosogatogep', name: 'Mosogatógép', h: 2, icon: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM4 8h16M9 13h6M9 16.5h6' },
+  { id: 'szarito', name: 'Szárítógép', h: 2, icon: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM12 18a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM10 13c1-1 3 1 4 0' },
+  { id: 'bojler', name: 'Bojler', h: 3, icon: 'M8 2h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM9 20v2M15 20v2M12 7c-1.5 2-2 3-2 4a2 2 0 0 0 4 0c0-1-.5-2-2-4z' },
+  { id: 'ev', name: 'Elektromos autó', h: 4, icon: 'M5 16h14M6 16l1.5-5.5A2 2 0 0 1 9.4 9h5.2a2 2 0 0 1 1.9 1.5L18 16M5 16v3M19 16v3M8 13h.01M16 13h.01' },
 ];
+const DEFAULT_DEVICES = ['mosogep', 'mosogatogep', 'bojler'];
 
-const EXTRA_DEV = [
-  { id: 'hoszivattyu', name: 'Hőszivattyú', annual: 15000,
-    icon: 'M12 3v18 M5 8l7 -5 7 5 M8 21v-6h8v6' },
-  { id: 'napelemek',   name: 'Napelem',      annual: 12000,
-    icon: 'M4 6h16l2 9H2z M12 15v6 M8 21h8 M8 9h.01 M12 9h.01 M16 9h.01' },
-];
-
-const ALL_DEV = [...MAIN_DEV, ...EXTRA_DEV];
-
-// ── State ──────────────────────────────────────────────────────────────
+// ── Állapot ──────────────────────────────────────────────────────────────
 const S = {
-  tab: 'ma',
-  planTab: 'klima',
-  prices: [],
-  selHour: null,
-  // Onboarding
-  obsStep: 0,
-  obsDevices: ['mosogep', 'bojler', 'klima'],
-  obsTariff: 'htnt',
-  obsFlex: 'magas',
-  obsDone: false,
-  // Advisor
-  advStep: 1,
-  adv: {
-    homeType: 'haz', homeSize: 'medium', heating: 'gaz',
-    devices: ['mosogep', 'klima'], bill: 15000, tariff: 'rezsi',
-    budget: 100000, priority: 'megtakaritas'
-  },
-  savedAmt: 0,
-  // Push notifications
-  pushOptIn: false,
-  pushLastAlertKey: null,
-  // Élő hálózati adatok (MAVIR)
-  grid: { mix: null, renewables: null, flows: null, solarForecastByHour: {} },
+  q: [],               // [{ t: Date, p: nettó Ft/kWh }] időrendben
+  loadedAt: null,
+  loadError: false,
+  mix: null,
+  flows: null,
+  view: 'most',
+  day: 0,
+  sel: null,           // kijelölt negyedóra index a napi grafikonon
+  devices: loadPref('ei.devices', DEFAULT_DEVICES),
+  calc: { kwh: loadPref('ei.kwh', 250), shift: loadPref('ei.shift', 0.3), period: '30' },
 };
 
-// ── Helpers ────────────────────────────────────────────────────────────
-const el = id => document.getElementById(id);
-const fmt = n => Math.round(n).toLocaleString('hu-HU');
-const fmt1 = n => n.toFixed(1).replace('.', ',');
+// ── Segédek ──────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const nf0 = new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmt = n => nf0.format(Math.round(n)).replace('-', '−');
+const fmt1 = n => nf1.format(n).replace('-', '−');
+const fmtK = n => fmt(Math.round(n / 100) * 100); // kerekített, becsült összeg
+const hhmm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+const pad2 = n => String(n).padStart(2, '0');
 
-function svgIcon(path, size = 19) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
+function loadPref(key, fallback) {
+  try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; }
 }
-
-// Price level using sorted indices (design: sorted[7] and sorted[16])
-function level(p, sorted24) {
-  return p <= sorted24[7] ? 'olcso' : p >= sorted24[16] ? 'draga' : 'atlagos';
+function savePref(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* privát mód */ }
 }
-
-function sortedArr(arr) {
-  return [...arr].sort((a, b) => a - b);
+function icon(path) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`;
 }
+function dayStart(offset = 0) {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate() + offset);
+}
+function dayWord(d) {
+  const diff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - dayStart(0)) / 864e5);
+  return diff === 0 ? 'ma' : diff === 1 ? 'holnap' : diff === -1 ? 'tegnap' : `${d.getMonth() + 1}. ${d.getDate()}.`;
+}
+function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : NaN; }
 
-// Extract 48-element array from S.prices: [0..23]=today, [24..47]=tomorrow
-function getPrArr() {
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const pr = [];
-  for (let i = 0; i < 48; i++) {
-    const slot = new Date(dayStart.getTime() + i * 3600000);
-    const found = S.prices.find(p => {
-      const pd = new Date(p.timestamp);
-      return pd.getFullYear() === slot.getFullYear() &&
-             pd.getMonth() === slot.getMonth() &&
-             pd.getDate() === slot.getDate() &&
-             pd.getHours() === slot.getHours();
-    });
-    pr.push(found ? found.price_huf_kwh : null);
+// Egy nap negyedórái
+function dayQ(offset) {
+  const a = dayStart(offset), b = dayStart(offset + 1);
+  return S.q.filter(x => x.t >= a && x.t < b);
+}
+// Szintek a nap saját árai alapján: alsó és felső harmad
+function thresholds(list) {
+  const s = list.map(x => x.p).sort((a, b) => a - b);
+  if (!s.length) return null;
+  return { lo: s[Math.floor(s.length / 3)], hi: s[Math.floor(s.length * 2 / 3)] };
+}
+function level(p, th) {
+  if (!th) return 'mid';
+  return p <= th.lo ? 'cheap' : p >= th.hi ? 'dear' : 'mid';
+}
+const thCache = {};
+function thFor(date) {
+  const k = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  if (!(k in thCache)) {
+    const off = Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - dayStart(0)) / 864e5);
+    const list = dayQ(off);
+    thCache[k] = list.length >= 48 ? thresholds(list) : null;
   }
-  return pr;
+  return thCache[k];
 }
-
-// Extract 72-element array from S.prices: [0..23]=yesterday, [24..47]=today, [48..71]=tomorrow
-function getPrArrWithYesterday() {
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  const pr = [];
-  for (let i = 0; i < 72; i++) {
-    const slot = new Date(dayStart.getTime() + i * 3600000);
-    const found = S.prices.find(p => {
-      const pd = new Date(p.timestamp);
-      return pd.getFullYear() === slot.getFullYear() &&
-             pd.getMonth() === slot.getMonth() &&
-             pd.getDate() === slot.getDate() &&
-             pd.getHours() === slot.getHours();
-    });
-    pr.push(found ? found.price_huf_kwh : null);
+function nowIndex() {
+  const now = Date.now();
+  let idx = -1;
+  for (let i = 0; i < S.q.length; i++) {
+    if (S.q[i].t.getTime() <= now) idx = i; else break;
   }
-  return pr;
+  if (idx >= 0 && now - S.q[idx].t.getTime() >= Q_MS) return -1; // nincs aktuális negyedóra
+  return idx;
 }
 
-// Index-based best window (from design: slides from `from` over 24h)
-function bestWindow(pr, from, dur) {
-  let best = from, bestAvg = 1e9;
-  const limit = Math.min(from + 24 - dur + 1, pr.length - dur + 1);
-  for (let s = from; s < limit; s++) {
-    const slice = pr.slice(s, s + dur);
-    if (slice.some(x => x == null)) continue;
-    const avg = slice.reduce((a, b) => a + b, 0) / dur;
-    if (avg < bestAvg) { bestAvg = avg; best = s; }
+// ── Adat ─────────────────────────────────────────────────────────────────
+async function loadPrices() {
+  try {
+    const r = await fetch('/api/prices/quarterly?days=31', { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    const seen = new Set();
+    S.q = (d.prices || [])
+      .map(x => ({ t: new Date(x.timestamp), p: x.price_huf_kwh }))
+      .filter(x => Number.isFinite(x.p) && !seen.has(+x.t) && seen.add(+x.t))
+      .sort((a, b) => a.t - b.t);
+    for (const k in thCache) delete thCache[k];
+    S.loadedAt = new Date();
+    S.loadError = false;
+  } catch (e) {
+    S.loadError = true;
   }
-  return { start: best, avg: bestAvg < 1e9 ? bestAvg : (pr[from] || 30) };
 }
-
-// Best window excluding 00:00–05:59 (realistic daytime hours)
-function bestWindowDay(pr, from, dur) {
-  let best = null, bestAvg = 1e9;
-  const limit = Math.min(from + 24 - dur + 1, pr.length - dur + 1);
-  for (let s = from; s < limit; s++) {
-    const h = s % 24;
-    if (h < 6 || h >= 22) continue; // only 06:00–21:00 starts
-    const slice = pr.slice(s, s + dur);
-    if (slice.some(x => x == null)) continue;
-    const avg = slice.reduce((a, b) => a + b, 0) / dur;
-    if (avg < bestAvg) { bestAvg = avg; best = s; }
-  }
-  if (best === null) return null;
-  return { start: best, avg: bestAvg };
-}
-
-let _freshnessTimer = null;
-function startFreshness() {
-  const updEl = el('heroUpdated');
-  if (!updEl) return;
-  if (_freshnessTimer) clearInterval(_freshnessTimer);
-  const fetchedAt = Date.now();
-  function tick() {
-    const mins = Math.floor((Date.now() - fetchedAt) / 60000);
-    updEl.textContent = mins === 0 ? 'frissítve most' : `frissítve ${mins} perce`;
-  }
-  tick();
-  _freshnessTimer = setInterval(tick, 60000);
-}
-
-function tariffMult(t) { return t === 'htnt' ? 1.0 : t === 'piaci' ? 1.3 : 0.0; }
-function flexMult(f) { return f === 'kozepes' ? 0.7 : f === 'alacsony' ? 0.4 : 1.0; }
-
-function countUp(elem, target, ms = 900) {
-  const start = performance.now();
-  function step(now) {
-    const t = Math.min(1, (now - start) / ms);
-    const e = 1 - Math.pow(1 - t, 3);
-    elem.textContent = fmt(Math.round(target * e));
-    if (t < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-// ── Élő hálózati adatok (MAVIR) ────────────────────────────────────────
 async function loadGrid() {
   const get = async ep => {
     try {
@@ -175,1140 +140,523 @@ async function loadGrid() {
       return d && d.available ? d : null;
     } catch (e) { return null; }
   };
-  const [mix, renewables, flows] = await Promise.all([get('mix'), get('renewables'), get('flows')]);
-  S.grid.mix = mix;
-  S.grid.renewables = renewables;
-  S.grid.flows = flows;
-
-  // Óránkénti nap-előrejelzés a zöld órákhoz
-  S.grid.solarForecastByHour = {};
-  const fc = renewables?.solar?.series?.forecast_current || [];
-  fc.forEach(pt => {
-    const d = new Date(pt.timestamp);
-    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
-    const cur = S.grid.solarForecastByHour[key];
-    S.grid.solarForecastByHour[key] = cur == null ? pt.value : Math.max(cur, pt.value);
-  });
-
-  renderGridPanel();
-  if (S.prices.length) renderHero(); // magyarázat frissítése valós grid adattal
+  const [mix, flows] = await Promise.all([get('mix'), get('flows')]);
+  S.mix = mix; S.flows = flows;
+  renderGrid();
 }
 
-const MIX_GROUPS = [
-  { key: 'nuclear', label: 'Paks (atom)', color: '#7c6ff0' },
-  { key: 'gas',     label: 'Gáz',         color: '#e0a83c' },
-  { key: '_renew',  label: 'Megújuló',    color: 'oklch(0.62 0.13 155)' },
-  { key: '_other',  label: 'Egyéb',       color: 'var(--color-neutral-300)' },
+// ── Nézetek ──────────────────────────────────────────────────────────────
+function setView(view, push = true) {
+  if (!['most', 'arak', 'megeri'].includes(view)) view = 'most';
+  S.view = view;
+  document.querySelectorAll('.view').forEach(v => { v.hidden = v.dataset.view !== view; });
+  document.querySelectorAll('.tab').forEach(b => {
+    if (b.dataset.tab === view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  if (push && location.hash !== `#${view}`) history.pushState(null, '', `#${view}`);
+  window.scrollTo(0, 0);
+  renderView();
+}
+function renderView() {
+  if (S.view === 'most') { renderNow(); renderDevices(); }
+  if (S.view === 'arak') { renderDay(); renderTrend(); renderGrid(); }
+  if (S.view === 'megeri') renderCalc();
+}
+function renderFresh() {
+  const f = $('fresh');
+  if (!S.loadedAt) { f.textContent = S.loadError ? 'Nincs kapcsolat' : ''; f.classList.toggle('stale', S.loadError); return; }
+  const stale = Date.now() - S.loadedAt > 30 * 60 * 1000 || S.loadError;
+  f.classList.toggle('stale', stale);
+  f.textContent = `Frissítve ${hhmm(S.loadedAt)}`;
+}
+
+// ── MOST ─────────────────────────────────────────────────────────────────
+function renderNow() {
+  renderFresh();
+  const card = $('nowCard');
+  const i = nowIndex();
+  if (i < 0) {
+    card.className = 'now card-dark';
+    $('nowSlot').textContent = S.loadError ? 'Nem sikerült betölteni az árakat' : 'Nincs aktuális ár';
+    $('nowLevel').hidden = true;
+    $('nowPrice').innerHTML = '&nbsp;';
+    $('nowLine').innerHTML = `<span class="err">Próbáld újra pár perc múlva. <button class="btn" id="retryBtn">Újra</button></span>`;
+    $('strip').innerHTML = '';
+    $('nowNext').textContent = '';
+    const rb = $('retryBtn');
+    if (rb) rb.onclick = async () => { await loadPrices(); renderView(); };
+    return;
+  }
+  const cur = S.q[i];
+  const today = dayQ(0);
+  const th = thresholds(today);
+  const lvl = level(cur.p, th);
+  const dayAvg = avg(today.map(x => x.p));
+
+  card.className = `now card-dark lvl-${lvl}`;
+  $('nowSlot').textContent = `Most, ${hhmm(cur.t)}–${hhmm(new Date(+cur.t + Q_MS))}`;
+  const chip = $('nowLevel');
+  chip.hidden = false;
+  chip.className = `chip chip-${lvl}`;
+  chip.textContent = { cheap: 'Olcsó', mid: 'Átlagos', dear: 'Drága' }[lvl];
+  $('nowPrice').textContent = fmt1(cur.p);
+
+  const diff = dayAvg > 1 ? Math.round((cur.p - dayAvg) / dayAvg * 100) : 0;
+  $('nowLine').textContent = Math.abs(diff) < 8
+    ? 'Nagyjából a mai átlag, tőzsdei ár áfa nélkül.'
+    : `A mai átlagnál ${Math.abs(diff)}%-kal ${diff < 0 ? 'olcsóbb' : 'drágább'}.`;
+
+  renderStrip(i);
+  $('nowNext').innerHTML = nextText(i);
+}
+
+// Óránkénti szint: az óra negyedóráinak átlaga a nap saját árai alapján
+function hourLevel(startMs) {
+  const vals = S.q.filter(x => +x.t >= startMs && +x.t < startMs + H_MS).map(x => x.p);
+  if (!vals.length) return null;
+  return { lvl: level(avg(vals), thFor(new Date(startMs))), a: avg(vals) };
+}
+function hourStart(i) { const d = new Date(S.q[i].t); d.setMinutes(0, 0, 0); return +d; }
+
+function renderStrip(i) {
+  const start = hourStart(i);
+  let html = '';
+  for (let k = 0; k < 12; k++) {
+    const a = start + k * H_MS, d = new Date(a), hl = hourLevel(a);
+    const title = hl ? `${pad2(d.getHours())}:00, átlag ${fmt1(hl.a)} Ft/kWh` : `${pad2(d.getHours())}:00, még nincs ár`;
+    html += `<div class="strip-c${k === 0 ? ' is-now' : ''}" title="${title}"><div class="strip-bar ${hl ? hl.lvl : 'none'}"></div><span class="strip-h">${pad2(d.getHours())}</span></div>`;
+  }
+  $('strip').innerHTML = html;
+}
+
+function nextText(i) {
+  const start = hourStart(i);
+  const cur = hourLevel(start);
+  const last = +S.q[S.q.length - 1].t;
+  if (cur && cur.lvl === 'cheap') {
+    let a = start + H_MS;
+    while (a <= last) { const hl = hourLevel(a); if (!hl || hl.lvl !== 'cheap') break; a += H_MS; }
+    const end = new Date(a);
+    return `Az olcsó sáv <b>${dayWord(end) === 'ma' ? '' : dayWord(end) + ' '}${hhmm(end)}-ig</b> tart.`;
+  }
+  for (let a = start + H_MS; a <= last; a += H_MS) {
+    const hl = hourLevel(a);
+    if (hl && hl.lvl === 'cheap') {
+      const t = new Date(a);
+      const hrs = Math.round((a - Date.now()) / H_MS);
+      const inTxt = hrs < 1 ? 'egy órán belül' : `${hrs} óra múlva`;
+      return `Legközelebb olcsó: <b>${dayWord(t)} ${hhmm(t)}-tól</b>, ${inTxt}.`;
+    }
+  }
+  return 'A holnapi árak délután 1 óra körül jelennek meg.';
+}
+
+// Legolcsóbb összefüggő sáv a következő 24 órában
+function bestWindow(i0, hours) {
+  const L = hours * 4;
+  const end = Math.min(S.q.length, i0 + 96);
+  let best = null;
+  for (let s = i0; s + L <= end; s++) {
+    if (+S.q[s + L - 1].t - +S.q[s].t !== (L - 1) * Q_MS) continue;
+    let sum = 0;
+    for (let k = s; k < s + L; k++) sum += S.q[k].p;
+    const a = sum / L;
+    if (!best || a < best.avg - 1e-9) best = { s, avg: a };
+  }
+  return best;
+}
+function windowAvg(s, hours) {
+  const L = hours * 4;
+  if (s + L > S.q.length || +S.q[s + L - 1].t - +S.q[s].t !== (L - 1) * Q_MS) return null;
+  let sum = 0;
+  for (let k = s; k < s + L; k++) sum += S.q[k].p;
+  return sum / L;
+}
+
+function renderDevices() {
+  const chips = $('devChips');
+  chips.innerHTML = DEVICES.map(d =>
+    `<button class="chip-b" data-dev="${d.id}" aria-pressed="${S.devices.includes(d.id)}">${icon(d.icon)}${d.name}</button>`
+  ).join('');
+
+  const list = $('devList');
+  const i = nowIndex();
+  const mine = DEVICES.filter(d => S.devices.includes(d.id));
+  if (!mine.length) { list.innerHTML = '<li class="dev-empty">Nincs kiválasztott gép. Koppints a Gépek gombra.</li>'; return; }
+  if (i < 0) { list.innerHTML = '<li class="dev-empty">Árak nélkül nem tudunk időpontot ajánlani.</li>'; return; }
+
+  list.innerHTML = mine.map(d => {
+    const best = bestWindow(i, d.h);
+    const nowAvg = windowAvg(i, d.h);
+    if (!best) {
+      return `<li class="dev"><span class="dev-ic">${icon(d.icon)}</span><div><div class="dev-name">${d.name}</div><div class="dev-sub">${d.h} óra futás</div></div><div class="dev-when"><b>Később</b><span>még nincs ár</span></div></li>`;
+    }
+    const go = best.s === i || (nowAvg != null && nowAvg <= best.avg + Math.max(0.5, Math.abs(best.avg) * 0.05));
+    const st = S.q[best.s].t, en = new Date(+st + d.h * H_MS);
+    let sub;
+    if (go) sub = `${d.h} óra futás, most van a legolcsóbb sáv`;
+    else if (nowAvg != null && nowAvg > 5) sub = `${d.h} óra futás, ${Math.round((1 - best.avg / nowAvg) * 100)}%-kal olcsóbb, mint most`;
+    else if (nowAvg != null) sub = `${d.h} óra futás, ${fmt1(nowAvg - best.avg)} Ft/kWh-val olcsóbb, mint most`;
+    else sub = `${d.h} óra futás`;
+    const when = go
+      ? `<b>Most</b><span>${hhmm(S.q[i].t)}–${hhmm(new Date(+S.q[i].t + d.h * H_MS))}</span>`
+      : `<b>${hhmm(st)}</b><span>${dayWord(st)}, ${hhmm(en)}-ig</span>`;
+    return `<li class="dev${go ? ' go' : ''}"><span class="dev-ic">${icon(d.icon)}</span><div><div class="dev-name">${d.name}</div><div class="dev-sub">${sub}</div></div><div class="dev-when">${when}</div></li>`;
+  }).join('');
+}
+
+// ── ÁRAK: napi grafikon ──────────────────────────────────────────────────
+function renderDay() {
+  const tomorrow = dayQ(1);
+  const segBtns = document.querySelectorAll('[data-day]');
+  const hasTomorrow = tomorrow.length >= 90;
+  segBtns.forEach(b => {
+    const d = +b.dataset.day;
+    b.setAttribute('aria-pressed', String(d === S.day));
+    if (d === 1) { b.disabled = !hasTomorrow; b.title = hasTomorrow ? '' : 'A holnapi árak délután 1 óra körül jelennek meg'; }
+  });
+  if (S.day === 1 && !hasTomorrow) S.day = 0;
+
+  const list = dayQ(S.day);
+  const box = $('dayChart');
+  if (!list.length) {
+    box.innerHTML = `<svg viewBox="0 0 300 190"><text class="empty" x="150" y="95" text-anchor="middle">Nincs adat erre a napra</text></svg>`;
+    $('readout').innerHTML = ''; $('dayStats').innerHTML = '';
+    return;
+  }
+  const th = thresholds(list);
+  const W = Math.max(280, box.clientWidth || 600), H = box.clientHeight || 190;
+  const padL = 34, padR = 6, padT = 8, padB = 22;
+  const cw = W - padL - padR, ch = H - padT - padB;
+  const vals = list.map(x => x.p);
+  const lo = Math.min(0, ...vals), hi = Math.max(...vals) * 1.05 || 1;
+  const y = v => padT + ch - (v - lo) / (hi - lo) * ch;
+  const slot = cw / 96; // mindig 96 hely, hogy a tengely egységes legyen
+  const t0 = +dayStart(S.day);
+  const xOf = t => padL + ((+t - t0) / Q_MS) * slot;
+
+  const step = niceStep(hi - lo);
+  let g = '';
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+    g += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${padL - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  for (let h = 0; h <= 24; h += 6) {
+    const x = padL + h * 4 * slot;
+    g += `<text class="ax" x="${x}" y="${H - 5}" text-anchor="${h === 0 ? 'start' : h === 24 ? 'end' : 'middle'}">${pad2(h % 24 === 0 && h ? 24 : h)}:00</text>`;
+  }
+  const now = Date.now();
+  const bw = Math.max(1, slot - (slot > 4 ? 1.2 : 0.4));
+  const bars = list.map(q => {
+    const lv = level(q.p, th);
+    const top = Math.min(y(q.p), y(0)), hgt = Math.max(1, Math.abs(y(q.p) - y(0)));
+    const past = S.day === 0 && +q.t + Q_MS <= now ? ' past' : '';
+    return `<rect class="b-${lv}${past}" x="${xOf(q.t).toFixed(2)}" y="${top.toFixed(2)}" width="${bw.toFixed(2)}" height="${hgt.toFixed(2)}" rx="${Math.min(2, bw / 3)}"/>`;
+  }).join('');
+  let marks = '';
+  if (S.day === 0 && now >= t0 && now < t0 + 864e5) {
+    const x = padL + ((now - t0) / Q_MS) * slot;
+    marks += `<line class="nowline" x1="${x}" x2="${x}" y1="${padT}" y2="${padT + ch}"/>`;
+  }
+  if (S.sel != null && list[S.sel]) {
+    const x = xOf(list[S.sel].t) + bw / 2;
+    marks += `<line class="selline" x1="${x}" x2="${x}" y1="${padT}" y2="${padT + ch}"/>`;
+  }
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}${bars}${marks}</svg>`;
+  box._geom = { padL, slot, t0, list };
+
+  renderReadout(list, th);
+  renderDayStats(list);
+}
+function niceStep(range) {
+  const raw = range / 3;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const n = raw / pow;
+  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * pow;
+}
+function renderReadout(list, th) {
+  let q = S.sel != null ? list[S.sel] : null;
+  if (!q && S.day === 0) { const i = nowIndex(); if (i >= 0) q = S.q[i]; }
+  const names = { cheap: 'olcsó', mid: 'átlagos', dear: 'drága' };
+  if (!q) {
+    $('readout').innerHTML = `<span>Válassz egy időpontot a grafikonon.</span>`;
+    return;
+  }
+  const lv = level(q.p, th);
+  const lead = S.sel == null && S.day === 0 ? 'Most, ' : '';
+  $('readout').innerHTML = `<b>${fmt1(q.p)} Ft/kWh</b><span>${lead}${hhmm(q.t)}–${hhmm(new Date(+q.t + Q_MS))}</span><span class="tagc ${lv}">${names[lv]}</span>`;
+}
+function renderDayStats(list) {
+  const mn = list.reduce((a, b) => (b.p < a.p ? b : a));
+  const mx = list.reduce((a, b) => (b.p > a.p ? b : a));
+  const idx0 = S.q.indexOf(list[0]);
+  let best2 = null;
+  for (let s = idx0; s + 8 <= idx0 + list.length; s++) {
+    const a = windowAvg(s, 2);
+    if (a != null && (!best2 || a < best2.a)) best2 = { s, a };
+  }
+  const b2 = best2 ? `${hhmm(S.q[best2.s].t)}–${hhmm(new Date(+S.q[best2.s].t + 2 * H_MS))}` : 'nincs adat';
+  $('dayStats').innerHTML = `
+    <div class="stat stat-wide"><div><div class="stat-l">Legolcsóbb 2 óra</div><div class="stat-v">${b2}</div></div><div class="stat-s">${best2 ? `átlag ${fmt1(best2.a)} Ft/kWh` : ''}</div></div>
+    <div class="stat"><div class="stat-l">Napi átlag</div><div class="stat-v">${fmt1(avg(list.map(x => x.p)))}</div><div class="stat-s">Ft/kWh</div></div>
+    <div class="stat"><div class="stat-l">Legdrágább</div><div class="stat-v">${fmt1(mx.p)}</div><div class="stat-s">${hhmm(mx.t)}-kor</div></div>`;
+}
+function chartPick(ev) {
+  const box = $('dayChart'), g = box._geom;
+  if (!g) return;
+  const rect = box.getBoundingClientRect();
+  const x = (ev.clientX - rect.left) * ((box.clientWidth || rect.width) / rect.width);
+  const t = g.t0 + Math.floor((x - g.padL) / g.slot) * Q_MS;
+  let best = 0, bd = Infinity;
+  g.list.forEach((q, k) => { const d = Math.abs(+q.t - t); if (d < bd) { bd = d; best = k; } });
+  if (S.sel !== best) { S.sel = best; renderDay(); }
+}
+
+// ── ÁRAK: 30 nap ─────────────────────────────────────────────────────────
+function dailyAverages(days) {
+  const out = [];
+  for (let off = -days; off < 0; off++) {
+    const l = dayQ(off);
+    if (l.length >= 80) out.push({ d: dayStart(off), a: avg(l.map(x => x.p)) });
+  }
+  return out;
+}
+function renderTrend() {
+  const box = $('trendChart');
+  const pts = dailyAverages(30);
+  if (pts.length < 3) { box.innerHTML = ''; $('trendNote').textContent = 'Még nincs elég adat.'; return; }
+  const W = Math.max(280, box.clientWidth || 600), H = box.clientHeight || 150;
+  const padL = 34, padR = 10, padT = 10, padB = 22;
+  const cw = W - padL - padR, ch = H - padT - padB;
+  const vals = pts.map(p => p.a);
+  const lo = Math.min(0, Math.min(...vals) * 0.9), hi = Math.max(...vals) * 1.08;
+  const x = k => padL + k / (pts.length - 1) * cw;
+  const y = v => padT + ch - (v - lo) / (hi - lo) * ch;
+  const step = niceStep(hi - lo);
+  let g = '';
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+    g += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${padL - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const lbl = k => `${pts[k].d.getMonth() + 1}. ${pts[k].d.getDate()}.`;
+  [0, Math.floor((pts.length - 1) / 2), pts.length - 1].forEach((k, n) => {
+    g += `<text class="ax" x="${x(k)}" y="${H - 5}" text-anchor="${n === 0 ? 'start' : n === 2 ? 'end' : 'middle'}">${lbl(k)}</text>`;
+  });
+  const line = pts.map((p, k) => `${k ? 'L' : 'M'}${x(k).toFixed(1)},${y(p.a).toFixed(1)}`).join(' ');
+  const area = `${line} L${x(pts.length - 1).toFixed(1)},${y(lo).toFixed(1)} L${x(0).toFixed(1)},${y(lo).toFixed(1)} Z`;
+  const last = pts[pts.length - 1];
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}<path class="trend-area" d="${area}"/><path class="trend-line" d="${line}"/><circle class="trend-dot" cx="${x(pts.length - 1)}" cy="${y(last.a)}" r="4"/></svg>`;
+  const mean = avg(vals);
+  $('trendNote').textContent = `Tegnap átlagosan ${fmt1(last.a)} Ft/kWh, a 30 napos átlag ${fmt1(mean)} Ft/kWh.`;
+}
+
+// ── ÁRAK: hálózat ────────────────────────────────────────────────────────
+const MIX = [
+  { k: 'nuclear', n: 'Paks', c: '#6C63D9' },
+  { k: 'gas', n: 'Gáz', c: '#E0A83C' },
+  { k: 'coal', n: 'Szén', c: '#8A7866' },
+  { k: 'renew', n: 'Nap, szél, biomassza, víz', c: 'var(--cheap)' },
+  { k: 'other', n: 'Egyéb', c: 'var(--mid)' },
 ];
+function renderGrid() {
+  const block = $('gridBlock');
+  if (!block) return;
+  const m = S.mix;
+  if (!m) { block.hidden = true; return; }
+  block.hidden = false;
+  const mx = m.mix || {};
+  const pct = k => mx[k]?.share_pct || 0;
+  const shares = { nuclear: pct('nuclear'), gas: pct('gas'), coal: pct('lignite') + pct('hard_coal'), renew: m.renewable_share_pct || 0 };
+  shares.other = Math.max(0, 100 - shares.nuclear - shares.gas - shares.coal - shares.renew);
+  $('mixBar').innerHTML = MIX.map(g => `<div style="width:${shares[g.k]}%;background:${g.c}" title="${g.n}: ${fmt1(shares[g.k])}%"></div>`).join('');
+  $('mixLegend').innerHTML = MIX.filter(g => shares[g.k] >= 0.5).map(g =>
+    `<span><i class="sw" style="background:${g.c}"></i>${g.n} <b>${fmt(shares[g.k])}%</b></span>`).join('');
 
-function renderGridPanel() {
-  const sec = el('gridPanelSection');
-  if (!sec) return;
-  const mix = S.grid.mix;
-  if (!mix) { sec.style.display = 'none'; return; }
-  sec.style.display = '';
-
-  const m = mix.mix || {};
-  const nuclearPct = m.nuclear?.share_pct ?? 0;
-  const gasPct = m.gas?.share_pct ?? 0;
-  const renewPct = mix.renewable_share_pct ?? 0;
-  const otherPct = Math.max(0, 100 - nuclearPct - gasPct - renewPct);
-  const shares = { nuclear: nuclearPct, gas: gasPct, _renew: renewPct, _other: otherPct };
-
-  el('gridMixBar').innerHTML = MIX_GROUPS.map(g =>
-    `<div style="width:${shares[g.key]}%;background:${g.color}" title="${g.label}: ${fmt1(shares[g.key])}%"></div>`
-  ).join('');
-  el('gridMixLegend').innerHTML = MIX_GROUPS.map(g =>
-    `<span style="display:inline-flex;align-items:center;gap:5px">
-      <span style="width:9px;height:9px;border-radius:3px;background:${g.color};display:inline-block"></span>
-      ${g.label} <strong>${fmt1(shares[g.key])}%</strong>
-    </span>`
-  ).join('');
-
-  const solarMW = S.grid.renewables?.solar?.latest_actual?.value;
-  const windMW = S.grid.renewables?.wind?.latest_actual?.value;
-  const netImp = S.grid.flows?.net_import?.actual?.value;
-  const stat = (lbl, val, unit, sub) => val == null ? '' :
-    `<div style="background:var(--color-neutral-100);border-radius:10px;padding:9px 12px">
-      <div style="font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600)">${lbl}</div>
-      <div style="font-size:17px;font-weight:600;font-family:var(--font-heading)">${fmt(val)} <span style="font-size:11px;font-weight:400">${unit}</span></div>
-      ${sub ? `<div style="font-size:10px;color:var(--color-neutral-600);margin-top:1px">${sub}</div>` : ''}
-    </div>`;
-  el('gridStats').innerHTML =
-    stat('Naptermelés', solarMW, 'MW', 'napelemek most') +
-    stat('Széltermelés', windMW, 'MW', 'szélerőművek most') +
-    stat(netImp != null && netImp >= 0 ? 'Import' : 'Export', netImp != null ? Math.abs(netImp) : null, 'MW',
-      netImp != null && netImp >= 0 ? 'külföldről vesszük' : 'külföldre adjuk') +
-    stat('Hazai termelés', mix.total_mw, 'MW', 'összes erőmű együtt');
+  const prod = m.total_mw;
+  const net = S.flows?.net_import?.actual?.value;
+  const at = m.timestamp ? hhmm(new Date(m.timestamp)) : '';
+  let txt = `A hazai erőművek most <b>${fmt(prod)} MW</b>-ot termelnek`;
+  if (net != null) {
+    txt += net >= 0
+      ? `, és <b>${fmt(net)} MW</b>-ot hozunk be külföldről. A fogyasztás <b>${fmt(net / (prod + net) * 100)}%</b>-a import.`
+      : `, és <b>${fmt(-net)} MW</b>-ot adunk el külföldre.`;
+  } else txt += '.';
+  $('gridLine').innerHTML = `${txt} <span class="hint">MAVIR, ${at}-s adat.</span>`;
 }
 
-// Zöld óra: a nap-előrejelzés az ablak alatt eléri-e a napi csúcs 60%-át
-function isGreenWindow(startIdx, dur) {
-  const map = S.grid.solarForecastByHour;
-  const vals = Object.values(map);
-  if (!vals.length) return false;
-  const dayMax = Math.max(...vals);
-  if (dayMax <= 0) return false;
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let sum = 0, n = 0;
-  for (let i = startIdx; i < startIdx + dur; i++) {
-    const slot = new Date(dayStart.getTime() + i * 3600000);
-    const key = `${slot.getFullYear()}-${slot.getMonth()}-${slot.getDate()}-${slot.getHours()}`;
-    if (map[key] != null) { sum += map[key]; n++; }
+// ── MEGÉRI? ──────────────────────────────────────────────────────────────
+function profileWeight(h) { return h < 6 ? 0.5 : h < 9 ? 1.2 : h < 17 ? 0.8 : h < 22 ? 2.0 : 0.9; }
+
+// A háztartás súlyozott tőzsdei átlaga (nettó Ft/kWh, kereskedői díj nélkül) az elmúlt napokon
+function weightedHupx(days, shift) {
+  let total = 0, n = 0;
+  for (let off = -days; off < 0; off++) {
+    const l = dayQ(off);
+    if (l.length < 80) continue;
+    const ws = l.map(q => profileWeight(q.t.getHours()));
+    const wsum = ws.reduce((a, b) => a + b, 0);
+    const prof = l.reduce((s, q, k) => s + q.p * ws[k], 0) / wsum;
+    const cheap = l.map(q => q.p).sort((a, b) => a - b).slice(0, 16);
+    total += (1 - shift) * prof + shift * avg(cheap);
+    n++;
   }
-  return n > 0 && (sum / n) >= dayMax * 0.6;
+  return n >= 10 ? { v: total / n, days: n } : null;
 }
 
-// ── Tab switching ──────────────────────────────────────────────────────
-function setTab(tab) {
-  ['ma', 'arak', 'sporolas', 'tervek'].forEach(t => {
-    el(`tab-${t}`).classList.toggle('active', t === tab);
-    el(`tbtn-${t}`).classList.toggle('active', t === tab);
-  });
-  S.tab = tab;
-  window.scrollTo({ top: 0 });
-  if (tab === 'arak' && S.prices.length) { renderHeatmap(); renderBarChart(); renderTrendChart(); }
-  if (tab === 'sporolas') { updateKpi(S.savedAmt); updateHtnt(); }
-  if (tab === 'tervek') renderPlan();
-  // Az animáció csak először fusson le — visszaváltásnál ne villogjon
-  const pane = el(`tab-${tab}`);
-  setTimeout(() => pane && pane.classList.add('seen'), 700);
-}
+function renderCalc() {
+  const c = S.calc;
+  $('kwh').value = c.kwh;
+  $('kwhOut').textContent = fmt(c.kwh);
+  document.querySelectorAll('[data-shift]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.shift === c.shift)));
+  document.querySelectorAll('[data-period]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.period === c.period)));
 
-// ── Hero ───────────────────────────────────────────────────────────────
-function renderHero() {
-  const pr = getPrArr();
-  const nowH = new Date().getHours();
-  const todayRaw = pr.slice(0, 24);
-  const todayFilled = todayRaw.map(x => x ?? 30);
-  const sorted = sortedArr(todayFilled);
-  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
+  const annual = c.kwh * 12;
+  const over = Math.max(0, annual - T.cap);
+  const under = Math.min(annual, T.cap);
+  $('kwhHint').textContent = over > 0
+    ? `Évi ${fmt(annual)} kWh, ebből ${fmt(over)} kWh a 2 523 kWh-s kedvezményes keret felett.`
+    : `Évi ${fmt(annual)} kWh, a 2 523 kWh-s kedvezményes kereten belül.`;
 
-  const cur = todayFilled[nowH];
-  const prev = todayFilled[(nowH - 1 + 24) % 24];
-  const lvl = level(cur, sorted);
-  const avg24 = todayFilled.reduce((a, b) => a + b, 0) / 24;
-
-  maybeNotifyCheapPrice(lvl);
-
-  // Status pill
-  const statusMap = {
-    olcso:   ['Most olcsó', 'var(--good-500)', '#fff'],
-    atlagos: ['Átlagos ár', '#d6ebff', '#2c455d'],
-    draga:   ['Most drága', 'var(--bad-500)', '#fff'],
-  };
-  const [statusLabel, statusBg, statusFg] = statusMap[lvl];
-  const pillEl = el('heroStatusPill');
-  pillEl.textContent = statusLabel;
-  pillEl.style.background = statusBg;
-  pillEl.style.color = statusFg;
-  pillEl.style.border = 'none';
-
-  // Price count-up
-  const priceEl = el('heroPrice');
-  const priceColor = lvl === 'olcso' ? 'var(--good-300)' : lvl === 'draga' ? 'var(--bad-300)' : '#d6ebff';
-  priceEl.style.color = priceColor;
-  const startT = performance.now();
-  (function animPrice(now) {
-    const t = Math.min(1, (now - startT) / 900);
-    const e = 1 - Math.pow(1 - t, 3);
-    priceEl.textContent = fmt1(cur * e);
-    if (t < 1) requestAnimationFrame(animPrice);
-  })(performance.now());
-
-  // Trend
-  const deltaPct = ((cur - prev) / prev) * 100;
-  const trendEl = el('heroTrend');
-  trendEl.textContent = `${deltaPct >= 0 ? '▲' : '▼'} ${deltaPct >= 0 ? '+' : '−'}${Math.abs(deltaPct).toFixed(1).replace('.', ',')}%`;
-  trendEl.style.color = deltaPct >= 0 ? 'var(--good-300)' : 'var(--bad-300)';
-
-  // Avg24
-  const avgEl = el('heroAvg');
-  if (avgEl) avgEl.textContent = `${fmt1(avg24)} Ft/kWh`;
-
-  // Freshness timestamp (restarts each render)
-  startFreshness();
-
-  // Sub
-  let nextCheap = 0;
-  for (let h = nowH + 1; h < 48; h++) {
-    const p = pr[h];
-    if (p != null && p < cur * 0.85) { nextCheap = h - nowH; break; }
+  // D árszabás: súlyozott tőzsdei átlag
+  let hupx, basis;
+  if (c.period === '30') {
+    const w = weightedHupx(30, c.shift);
+    if (w) { hupx = w.v; basis = `az elmúlt ${w.days} nap tőzsdei árain`; }
   }
-  el('heroSub').textContent = lvl === 'olcso'
-    ? 'A mai nap egyik legolcsóbb órájában vagyunk. Mosógép, bojler, autótöltés — most éri meg.'
-    : nextCheap
-    ? `Kb. ${nextCheap} óra múlva jön olcsóbb sáv. Addig nézd a lenti tippeket.`
-    : 'Az élő piaci ár alapján mutatjuk, mikor éri meg bekapcsolni.';
-
-  // Why explanation — valós árból, nem órából
-  const reasonEl = el('heroReason');
-  if (reasonEl) {
-    const h = nowH;
-    const diffPct = Math.round(((cur - avg24) / avg24) * 100);
-    const pctStr = `${Math.abs(diffPct)}%-kal ${diffPct >= 0 ? 'a mai átlag felett' : 'a mai átlag alatt'}`;
-    let why;
-    if (diffPct >= 15) {
-      why = h >= 17 && h <= 22
-        ? `Esti csúcsfogyasztás, a naptermelés leállt — az ár ${pctStr} van.`
-        : `Magas kereslet vagy gyenge naptermelés — az ár ${pctStr} van.`;
-    } else if (diffPct <= -15) {
-      why = h >= 9 && h <= 16
-        ? `A napelemek csúcson termelnek — az ár ${pctStr} van.`
-        : `Alacsony kereslet — az ár ${pctStr} van.`;
-    } else {
-      why = 'Az ár a mai átlag közelében mozog.';
-    }
-    // Élő hálózati kontextus, ha van
-    const solarMW = S.grid.renewables?.solar?.latest_actual?.value;
-    const netImp = S.grid.flows?.net_import?.actual?.value;
-    if (solarMW != null && netImp != null) {
-      why += ` Naptermelés most: ${fmt(solarMW)} MW, ${netImp >= 0 ? 'import' : 'export'}: ${fmt(Math.abs(netImp))} MW.`;
-    }
-    reasonEl.textContent = why;
+  if (hupx == null) {
+    hupx = (1 - c.shift) * YEAR.profile + c.shift * YEAR.cheap4;
+    basis = c.period === '30' ? 'az elmúlt 12 hónap árain (30 napos adat most nem elérhető)' : 'az elmúlt 12 hónap árain';
   }
+  const dUnit = (hupx + T.spread + T.grid) * T.vat;
 
-  renderDeviceGrid(pr, sorted, nowH, avg24);
-}
+  const rezsi = under * T.a1 + over * T.a1Over;
+  const nt = annual * c.shift, rest = annual - nt;
+  const vez = Math.min(nt, T.cap) * T.b + Math.max(0, nt - T.cap) * T.bOver + Math.min(rest, T.cap) * T.a1 + Math.max(0, rest - T.cap) * T.a1Over;
+  const dBill = under * T.a1 + over * dUnit;
 
-// ── Device grid ────────────────────────────────────────────────────────
-function renderDeviceGrid(pr, sorted, nowH, avg24) {
-  const grid = el('deviceGrid');
-  if (!grid) return;
-  // Újrarendereléskor ne fusson le megint a belépő animáció (percenként villogna)
-  const rerender = grid.dataset.rendered === '1';
-  grid.dataset.rendered = '1';
-
-  // Összefoglaló: ha a legtöbb gép legjobb ablaka egybeesik, egy sorban a lényeg
-  const summaryEl = el('deviceSummary');
-  if (summaryEl) {
-    const counts = {};
-    MAIN_DEV.forEach(d => {
-      const w = bestWindow(pr, nowH, d.dur);
-      const key = `${w.start}`;
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    const topStart = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
-    if (topStart != null && counts[topStart] >= 3) {
-      const s = parseInt(topStart);
-      const day = s < 24 ? 'ma' : 'holnap';
-      const green = isGreenWindow(s, 2) ? ' — olcsó és 🌱 zöld' : '';
-      summaryEl.innerHTML = `💡 A legtöbb gépet <strong>${day} ${String(s % 24).padStart(2, '0')}:00 körül</strong> éri meg indítani${green}.`;
-      summaryEl.style.display = '';
-    } else {
-      summaryEl.style.display = 'none';
-    }
-  }
-
-  grid.innerHTML = MAIN_DEV.map((d, i) => {
-    const w = bestWindow(pr, nowH, d.dur);
-    const wDay = bestWindowDay(pr, nowH, d.dur);
-    const nowOk = level(pr[nowH] ?? 30, sorted) === 'olcso' || w.start === nowH;
-    const savePerRun = Math.max(0, (avg24 - w.avg) * d.kwh);
-    const winStr = `${String(w.start % 24).padStart(2, '0')}:00–${String((w.start + d.dur) % 24).padStart(2, '0')}:00`;
-    const startDay = w.start < 24 ? 'Ma' : 'Holnap';
-    const tag = nowOk ? 'Indítsd most' : `${startDay} ${String(w.start % 24).padStart(2, '0')}:00`;
-    const tagBg = nowOk ? 'var(--good-500)' : 'var(--color-accent-200)';
-    const tagFg = nowOk ? '#fff' : 'var(--color-accent-800)';
-    const cardStyle = nowOk ? 'background:var(--good-100);border-color:oklch(0.62 0.13 155)' : '';
-    const iconBg = nowOk ? 'var(--good-500)' : 'var(--color-accent-500)';
-
-    const showDay = wDay && wDay.start !== w.start;
-    const dayStr = wDay ? `${String(wDay.start % 24).padStart(2, '0')}:00–${String((wDay.start + d.dur) % 24).padStart(2, '0')}:00` : null;
-    const greenBest = isGreenWindow(w.start, d.dur);
-    const greenDay = showDay && isGreenWindow(wDay.start, d.dur);
-    const leaf = `<span title="Zöld óra — magas naptermelés" style="font-size:11px">🌱</span>`;
-
-    return `<div class="device-card" style="${cardStyle};${rerender ? 'animation:none' : `animation-delay:${i * 60}ms`}">
-      <div class="device-card-top">
-        <div class="device-icon" style="background:${iconBg};color:#fff">${svgIcon(d.icon)}</div>
-        <span class="tag" style="font-size:9.5px;background:${tagBg};color:${tagFg};border:none;letter-spacing:.05em;text-transform:uppercase;font-family:var(--font-heading);white-space:nowrap;padding:2px 7px">${tag}</span>
-      </div>
-      <div class="device-name">${d.name}</div>
-      <div class="device-window">
-        <span class="text-muted">Legolcsóbb sáv</span>
-        <strong>${winStr}${greenBest ? ' ' + leaf : ''}</strong>
-      </div>
-      ${showDay ? `<div class="device-window" style="opacity:0.65;margin-top:3px">
-        <span class="text-muted">Napközben</span>
-        <strong>${dayStr}${greenDay ? ' ' + leaf : ''}</strong>
-      </div>` : ''}
-      <div class="device-save">~${fmt(savePerRun)} Ft tőzsdei árkülönbség alkalmanként (nettó HUPX) · ${fmt(d.annual)} Ft/év becsült potenciál időzítéssel</div>
-    </div>`;
-  }).join('');
-}
-
-// ── Heatmap ────────────────────────────────────────────────────────────
-function renderHeatmap() {
-  const grid = el('heatmapGrid');
-  if (!grid) return;
-
-  const pr = getPrArr();
-  const nowH = new Date().getHours();
-  const today = pr.slice(0, 24).map(x => x ?? 30);
-  const sorted = sortedArr(today);
-  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
-
-  const lvlColors = {
-    olcso:   ['var(--good-500)', '#fff'],
-    atlagos: ['var(--color-accent-200)', 'var(--color-accent-900)'],
-    draga:   ['var(--bad-500)', '#fff'],
-  };
-
-  grid.innerHTML = today.map((p, h) => {
-    const lvl = level(p, sorted);
-    const [bg, fg] = lvlColors[lvl];
-    const isSel = S.selHour === h;
-    const isCur = h === nowH;
-    const outline = isSel
-      ? 'outline:2px solid var(--color-accent-900);outline-offset:-2px'
-      : isCur ? 'outline:2px dashed var(--color-accent-900);outline-offset:-2px' : '';
-    return `<div class="hm-cell" style="background:${bg};color:${fg};${outline};animation-delay:${h * 15}ms" onclick="selectHour(${h},${p},'${lvl}')">
-      <span class="hm-hour">${h}</span>
-      <span class="hm-price">${fmt1(p)}</span>
+  const rows = [
+    { k: 'rezsi', n: 'Rezsivédett', v: rezsi, note: 'fix ár, napszaktól független' },
+    { k: 'vez', n: 'Vezérelt mérővel', v: vez, note: c.shift > 0 ? `ha a fogyasztás ${Math.round(c.shift * 100)}%-a (bojler, hőszivattyú) külön vezérelt körre kerül` : 'külön mérőkör nélkül nincs különbség' },
+    { k: 'd', n: 'D árszabás, 2027-től', v: dBill, note: over > 0 ? `a keret felett ${fmt1(dUnit)} Ft/kWh (a fix ár 70,1)` : 'a kereten belül a fix árral azonos' },
+  ];
+  const minV = Math.min(...rows.map(r => r.v)), maxV = Math.max(...rows.map(r => r.v));
+  const best = rows.find(r => r.v === minV);
+  $('bills').innerHTML = rows.map(r => {
+    const isBest = r === best && maxV - minV >= 500;
+    return `<div class="bill${isBest ? ' is-best' : ''}">
+      <div class="bill-n">${r.n}${isBest ? '<span class="best">Legolcsóbb</span>' : ''}</div>
+      <div class="bill-v">${fmt(r.v)} Ft/év</div>
+      <div class="bill-bar"><i style="width:${(r.v / maxV * 100).toFixed(1)}%"></i></div>
+      <div class="bill-note">${r.note}</div>
     </div>`;
   }).join('');
 
-  updateHeatDetail(today, sorted, nowH);
-}
-
-function updateHeatDetail(today, sorted, nowH) {
-  const lvlNames = { olcso: 'olcsó', atlagos: 'átlagos', draga: 'drága' };
-  const detEl = el('heatmapDetail');
-  if (!detEl) return;
-  if (S.selHour == null) {
-    const cur = today[nowH];
-    detEl.textContent = `Most (${nowH}:00): ${fmt1(cur)} Ft/kWh · ${lvlNames[level(cur, sorted)]}`;
+  // Döntés, egyszerű szavakkal
+  const v = $('verdict');
+  const pctTxt = `${Math.round(c.shift * 100)}%`;
+  const dDiff = dBill - rezsi, vDiff = rezsi - vez;
+  let cls = 'neutral', html;
+  if (over === 0) {
+    html = `<strong>Nálad a D árszabás nem változtat semmin.</strong> Évi ${fmt(annual)} kWh-val a kereten belül vagy, a teljes fogyasztásod fix áron megy.`;
+    if (vDiff >= 500) html += ` Vezérelt mérővel évi kb. ${fmtK(vDiff)} Ft-tal kevesebbet fizetnél, ha a bojler vagy más nagy fogyasztó külön körre kerül.`;
+  } else if (dDiff < -500) {
+    cls = '';
+    html = `<strong>A D árszabás évi kb. ${fmtK(-dDiff)} Ft-tal olcsóbb lenne</strong> a rezsivédettnél, ha a fogyasztásod ${pctTxt}-át tényleg olcsó órákra teszed. A tőzsdei ár és az árfolyam változik, a különbség hónapról hónapra más lehet.`;
+    if (vez < dBill - 500) html += ` Vezérelt mérővel még ennél is kevesebbet fizetnél, a kettő együtt nem választható.`;
   } else {
-    const p = today[S.selHour];
-    detEl.textContent = `${S.selHour}:00–${S.selHour + 1}:00 · ${fmt1(p)} Ft/kWh · ${lvlNames[level(p, sorted)]}`;
+    cls = 'warn';
+    html = c.shift === 0
+      ? `<strong>Időzítés nélkül a D árszabás évi kb. ${fmtK(dDiff)} Ft-tal drágább lenne.</strong> `
+      : `<strong>A D árszabás így is évi kb. ${fmtK(Math.max(0, dDiff))} Ft-tal drágább lenne</strong> a rezsivédettnél. `;
+    html += `A fogyasztásod átlagos tőzsdei ára ${fmt1(hupx)} Ft/kWh, a D árszabás 18,1 Ft alatt érné meg.`;
+    if (vDiff >= 500) html += ` Vezérelt mérővel viszont évi kb. ${fmtK(vDiff)} Ft-ot spórolhatnál.`;
   }
+  v.className = `verdict ${cls}`;
+  v.innerHTML = `${html} <span class="hint">Számítás ${basis}.</span>`;
+
+  $('howText').innerHTML = `
+    <p><b>Rezsivédett:</b> 2 523 kWh/év-ig 36,4 Ft/kWh (elosztónként 35,3 és 36,4 Ft között), felette 70,1 Ft.</p>
+    <p><b>Vezérelt:</b> külön mért, az elosztó által kapcsolt körön 23,0 Ft/kWh a saját 2 523 kWh-s keretéig, felette 60,9 Ft. Csak fixen bekötött bojler, hőtárolós kályha, hőszivattyú vagy autótöltő kerülhet rá. Mellette a D árszabás nem választható.</p>
+    <p><b>D árszabás:</b> 2 523 kWh-ig ugyanaz a fix ár. Felette havonta egy egységár: a havi fogyasztásod negyedórás tőzsdei árakkal súlyozott átlaga, plusz 13,70 Ft kereskedői díj és 23,40 Ft hálózati díj, 27% áfával. Akkor olcsóbb a fix árnál, ha a súlyozott tőzsdei átlag 18,1 Ft/kWh alatt van.</p>
+    <p><b>Feltevések:</b> esti csúcsú háztartási fogyasztás; az eltolt rész a nap legolcsóbb 4 órájába kerül. A 12 hónapos számítás az MVM Next 2025. szeptember és 2026. augusztus közötti közzétett árlistáján alapul.</p>
+    <ul>
+      <li>Okosmérő kell hozzá, 4 000 kWh/év felett az elosztó kötelezően felszereli, egyébként kérésre ingyen.</li>
+      <li>2026. szeptember 1-jétől igényelhető, legkorábban 2027. január 1-jétől él.</li>
+      <li>Ha az első 12 hónapban visszalépsz, utána 12 hónapig nem kérheted újra.</li>
+      <li>A kereskedői díjat az MVM 60 napos előzetes hirdetménnyel módosíthatja. Az ár euróban képződik, az árfolyam is hat rá.</li>
+    </ul>
+    <p>Forrás: <a href="https://www.mvmnext.hu/aram/pages/aloldal.jsp?id=16455187" target="_blank" rel="noopener">MVM Next, D árszabás</a>. Becslés, nem ajánlat.</p>`;
 }
 
-function selectHour(h, price, lvl) {
-  S.selHour = S.selHour === h ? null : h;
-  renderHeatmap();
-}
+// ── Események ────────────────────────────────────────────────────────────
+function bind() {
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setView(b.dataset.tab)));
+  window.addEventListener('popstate', () => setView(location.hash.slice(1) || 'most', false));
 
-// ── Bar chart ──────────────────────────────────────────────────────────
-function renderBarChart() {
-  const svg = el('barChart');
-  if (!svg) return;
-
-  // [0..23]=yesterday, [24..47]=today, [48..71]=tomorrow
-  const pr = getPrArrWithYesterday();
-  const filled = pr.map(x => x ?? 30);
-  const maxP = Math.max(...filled);
-  const todaySorted = sortedArr(filled.slice(24, 48));
-  while (todaySorted.length < 24) todaySorted.push(todaySorted[todaySorted.length - 1]);
-
-  const W = 720, H = 140;
-  svg.setAttribute('viewBox', `0 0 ${W} 170`);
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '170');
-
-  const lvlFill = {
-    olcso:   'var(--good-500)',
-    atlagos: 'var(--color-accent-300)',
-    draga:   'var(--bad-500)',
-  };
-
-  const dayLabels = { 0: 'Tegnap', 24: 'Ma', 48: 'Holnap' };
-
-  svg.innerHTML = filled.map((p, i) => {
-    const h = i % 24;
-    const isYesterday = i < 24;
-    const isTomorrow = i >= 48;
-    const barH = Math.max(2, (p / maxP) * H);
-    const x = i * 10;
-    const y = 155 - barH;
-    // Yesterday: gray/faded, regardless of price level (context only).
-    // Today: full-color, full opacity. Tomorrow: full-color, faded (forecast).
-    const fill = isYesterday ? 'var(--color-neutral-600)' : lvlFill[level(p, todaySorted)];
-    const op = isYesterday ? 0.4 : isTomorrow ? 0.45 : 1;
-    const label = dayLabels[i]
-      ? `<text x="${x}" y="10" font-size="10" font-weight="600" fill="var(--color-neutral-600)" font-family="Barlow">${dayLabels[i]}</text>`
-      : '';
-    const tick = h % 6 === 0
-      ? `<text x="${x}" y="168" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">${h}h</text>`
-      : '';
-    return `${label}<rect x="${x}" y="${y}" width="8" height="${barH}" fill="${fill}" opacity="${op}" style="transform-box:fill-box;transform-origin:bottom;animation:growBar .5s ease both;animation-delay:${i * 8}ms"/>${tick}`;
-  }).join('');
-}
-
-// ── 30 napos trend ─────────────────────────────────────────────────────
-function renderTrendChart() {
-  const svg = el('trendChart');
-  if (!svg || !S.prices.length) return;
-
-  // Napi átlagok az elmúlt 30 napra (a mai napot kihagyva, mert csonka lehet)
-  const byDay = {};
-  // Helyi dátum szerint — a toISOString() UTC-t adna, ami éjfél után a tegnapot is levágná
-  const tNow = new Date();
-  const todayKey = `${tNow.getFullYear()}-${String(tNow.getMonth() + 1).padStart(2, '0')}-${String(tNow.getDate()).padStart(2, '0')}`;
-  S.prices.forEach(p => {
-    const d = new Date(p.timestamp);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (key >= todayKey) return;
-    (byDay[key] = byDay[key] || []).push(p.price_huf_kwh);
+  $('devEditBtn').addEventListener('click', () => {
+    const box = $('devEdit'), open = box.hidden;
+    box.hidden = !open;
+    $('devEditBtn').setAttribute('aria-expanded', String(open));
+    $('devEditBtn').textContent = open ? 'Kész' : 'Gépek';
   });
-  const days = Object.keys(byDay).sort().slice(-30);
-  if (days.length < 2) return;
-
-  const avgs = days.map(k => byDay[k].reduce((a, b) => a + b, 0) / byDay[k].length);
-  const maxA = Math.max(...avgs), minA = Math.min(...avgs);
-  const range = Math.max(1, maxA - minA);
-
-  const W = 480, H = 110, TOP = 14, BOT = 26;
-  const stepX = W / (days.length - 1);
-  const pts = avgs.map((a, i) => {
-    const x = i * stepX;
-    const y = TOP + H - ((a - minA) / range) * H;
-    return [x, y];
+  $('devChips').addEventListener('click', e => {
+    const b = e.target.closest('[data-dev]');
+    if (!b) return;
+    const id = b.dataset.dev;
+    S.devices = S.devices.includes(id) ? S.devices.filter(x => x !== id) : [...S.devices, id];
+    savePref('ei.devices', S.devices);
+    renderDevices();
   });
 
-  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-  const area = `${path} L${pts[pts.length - 1][0].toFixed(1)},${TOP + H + 8} L0,${TOP + H + 8} Z`;
-
-  // Tengelyfeliratok: első, középső, utolsó nap + min/max érték
-  const lbl = i => {
-    const [y, m, d] = days[i].split('-');
-    return `${parseInt(m)}.${parseInt(d)}.`;
-  };
-  const mid = Math.floor(days.length / 2);
-  const lastAvg = avgs[avgs.length - 1];
-  const firstAvg = avgs[0];
-  const trendUp = lastAvg > firstAvg;
-
-  svg.innerHTML = `
-    <path d="${area}" fill="var(--color-accent-200)" opacity="0.35"/>
-    <path d="${path}" fill="none" stroke="var(--color-accent-500)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${pts[pts.length - 1][0]}" cy="${pts[pts.length - 1][1]}" r="3.5" fill="var(--color-accent-500)"/>
-    <text x="0" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">${lbl(0)}</text>
-    <text x="${mid * stepX}" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow" text-anchor="middle">${lbl(mid)}</text>
-    <text x="${W}" y="${TOP + H + 22}" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow" text-anchor="end">${lbl(days.length - 1)}</text>
-    <text x="0" y="10" font-size="10" fill="var(--color-neutral-600)" font-family="Barlow">havi csúcs: ${fmt1(maxA)} Ft</text>
-    <text x="${W}" y="10" font-size="10" font-weight="600" fill="${trendUp ? 'var(--bad-500)' : 'var(--good-500)'}" font-family="Barlow" text-anchor="end">tegnapi átlag: ${fmt1(lastAvg)} Ft ${trendUp ? '▲ emelkedő' : '▼ csökkenő'}</text>
-  `;
-}
-
-// ── KPI (Spórolás) ─────────────────────────────────────────────────────
-function updateKpi(amt) {
-  S.savedAmt = amt;
-  const yearEl = el('kpiYear');
-  if (yearEl) countUp(yearEl, amt);
-
-  const ringEl = el('ringCircle');
-  const pctEl = el('ringPct');
-  if (ringEl) {
-    const pct = Math.min(1, amt / 180000);
-    ringEl.style.strokeDashoffset = 232 * (1 - pct);
-    if (pctEl) pctEl.textContent = Math.round(pct * 100) + '%';
-  }
-
-  const monthEl = el('kpiMonth');
-  if (monthEl) countUp(monthEl, Math.round(amt / 12));
-
-  const subEl = el('kpiSubtitle');
-  if (subEl) {
-    subEl.textContent = S.obsDone
-      ? `A megadott ${S.obsDevices.length} eszközöd és tarifád alapján.`
-      : 'Átlagos háztartás alapján — pontosítsd a saját eszközeiddel.';
-  }
-}
-
-// ── HT/NT calculator ───────────────────────────────────────────────────
-function updateHtnt() {
-  const kwh = parseFloat(el('htntKwh')?.value) || 0;
-  const pct = parseFloat(el('htntPct')?.value) || 0;
-  const saving = kwh * (pct / 100) * (36.4 - 23.0) * 12; // 36,4 Ft rezsivédett − 23,0 Ft NT = 13,4 Ft/kWh megtakarítás
-  const resEl = el('htntResult');
-  const noteEl = el('htntNote');
-  if (resEl) resEl.textContent = `${fmt(saving)} Ft / év`;
-  if (noteEl) noteEl.textContent = `havi ${fmt(saving / 12)} Ft — ha a fogyasztás ${pct}%-a éjszakára kerül`;
-}
-
-// ── Plan tab ───────────────────────────────────────────────────────────
-function setPlanTab(tab) {
-  S.planTab = tab;
-  el('seg-klima').classList.toggle('active', tab === 'klima');
-  el('seg-napelem').classList.toggle('active', tab === 'napelem');
-  const title = el('planTitle');
-  if (title) title.textContent = tab === 'klima' ? 'Klímaterv' : 'Napelemes terv';
-  renderPlan();
-}
-
-function renderPlan() {
-  const container = el('planContent');
-  if (!container) return;
-
-  const pr = getPrArr();
-  const nowH = new Date().getHours();
-  const today = pr.slice(0, 24).map(x => x ?? 30);
-  const sorted = sortedArr(today);
-  while (sorted.length < 24) sorted.push(sorted[sorted.length - 1]);
-
-  const isKlima = S.planTab === 'klima';
-  const planBlocks = [];
-  for (let h = 0; h < 24; h++) {
-    const l = level(today[h], sorted);
-    let phase, bg;
-    if (isKlima) {
-      if (l === 'draga')           { phase = 'Hőtartalékon';    bg = 'var(--color-neutral-800)'; }
-      else if (h >= 10 && h <= 15) { phase = 'Előhűtés';        bg = 'var(--color-accent-500)'; }
-      else if (l === 'olcso')      { phase = 'Bekapcsolhatod';   bg = 'var(--color-accent-200)'; }
-      else                         { phase = 'Hagyd kikapcsolva'; bg = 'var(--color-neutral-200)'; }
-    } else {
-      if (h >= 10 && h <= 15)      { phase = 'Napelem csúcs';       bg = 'var(--color-accent-500)'; }
-      else if (h >= 8 && h <= 17)  { phase = 'Részleges termelés';  bg = 'var(--color-accent-200)'; }
-      else if (l === 'draga')      { phase = 'Kerüld!';             bg = 'var(--bad-500)'; }
-      else if (l === 'olcso')      { phase = 'Olcsó hálózat';       bg = 'var(--color-accent-100)'; }
-      else                         { phase = 'Semleges';             bg = 'var(--color-neutral-200)'; }
+  document.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => {
+    if (b.disabled) return;
+    S.day = +b.dataset.day; S.sel = null; renderDay();
+  }));
+  const chart = $('dayChart');
+  chart.addEventListener('pointerdown', e => { chart.setPointerCapture?.(e.pointerId); chartPick(e); });
+  chart.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) chartPick(e); });
+  chart.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { S.sel = null; renderDay(); } });
+  chart.addEventListener('keydown', e => {
+    const n = dayQ(S.day).length;
+    if (!n) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const base = S.sel ?? (S.day === 0 ? Math.max(0, dayQ(0).indexOf(S.q[nowIndex()])) : 0);
+      S.sel = Math.min(n - 1, Math.max(0, base + (e.key === 'ArrowRight' ? 1 : -1)));
+      renderDay();
     }
-    planBlocks.push({ phase, bg });
-  }
-
-  const planRows = [];
-  planBlocks.forEach((b, h) => {
-    const last = planRows[planRows.length - 1];
-    if (last && last.phase === b.phase) last.end = h + 1;
-    else planRows.push({ phase: b.phase, bg: b.bg, start: h, end: h + 1 });
+    if (e.key === 'Escape') { S.sel = null; renderDay(); }
   });
 
-  const phaseDescs = {
-    'Előhűtés':         'Hűtsd 1–2 fokkal a komfort alá — olcsó a déli áram.',
-    'Bekapcsolhatod':   'Olcsó sáv — mehet a klíma, ha kell.',
-    'Hőtartalékon':     'Kapcsold ki — a lakás hőtartaléka viszi.',
-    'Hagyd kikapcsolva':'Nincs teendő — hűvös éjszakai órák.',
-    'Napelem csúcs':    'Ekkor menjenek a nagy fogyasztók: mosógép, autótöltés.',
-    'Részleges termelés':'Kisebb gépek mehetnek napelemről.',
-    'Olcsó hálózat':    'Éjszakai olcsó áram — EV-töltésre ideális.',
-    'Kerüld!':          'Drága hálózati áram — halaszd későbbre.',
-    'Semleges':         'Nincs teendő.',
-  };
+  $('kwh').addEventListener('input', e => { S.calc.kwh = +e.target.value; savePref('ei.kwh', S.calc.kwh); renderCalc(); });
+  document.querySelectorAll('[data-shift]').forEach(b => b.addEventListener('click', () => {
+    S.calc.shift = +b.dataset.shift; savePref('ei.shift', S.calc.shift); renderCalc();
+  }));
+  document.querySelectorAll('[data-period]').forEach(b => b.addEventListener('click', () => {
+    S.calc.period = b.dataset.period; renderCalc();
+  }));
 
-  const tip = isKlima
-    ? 'Tipp: 11:00–15:00 között hűts 1–2 fokkal a komfort alá, 17:00–21:00 között kapcsold ki — a falak hőtárolása kitart.'
-    : 'Tipp: mosógépet, mosogatót 11:00–15:00 közé, az autótöltést éjszakára vagy délre időzítsd.';
-
-  const timeStr = r => `${String(r.start).padStart(2, '0')}:00–${String(r.end % 24).padStart(2, '0')}:00`;
-
-  // Aktuális és következő szakasz
-  const curIdx = planRows.findIndex(r => nowH >= r.start && nowH < r.end);
-  const cur = planRows[curIdx];
-  const next = planRows[curIdx + 1] || null;
-
-  // 24 órás idősáv szegmensekkel + "most" jelölő
-  const segs = planRows.map(r =>
-    `<div style="flex:${r.end - r.start};background:${r.bg}" title="${r.phase} (${timeStr(r)})"></div>`
-  ).join('');
-  const nowPct = ((nowH + new Date().getMinutes() / 60) / 24 * 100).toFixed(1);
-  const ticks = [0, 6, 12, 18, 24].map(h =>
-    `<span style="position:absolute;left:${h / 24 * 100}%;transform:translateX(${h === 24 ? '-100%' : h === 0 ? '0' : '-50%'});font-size:9.5px;color:var(--color-neutral-600)">${h}</span>`
-  ).join('');
-
-  const timeline = `
-    <div style="position:relative;padding-top:12px;margin-bottom:6px">
-      <div style="position:absolute;top:0;left:${nowPct}%;transform:translateX(-50%);font-size:9px;font-weight:600;font-family:var(--font-heading);letter-spacing:.05em;color:var(--color-accent-800)">▼ MOST</div>
-      <div style="display:flex;height:22px;border-radius:8px;overflow:hidden">${segs}</div>
-      <div style="position:relative;height:14px;margin-top:3px">${ticks}</div>
-    </div>`;
-
-  // Jelmagyarázat — csak a ma előforduló fázisok
-  const seen = [...new Set(planRows.map(r => r.phase))];
-  const legend = `<div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11px;margin-bottom:14px">${
-    seen.map(ph => {
-      const bg = planRows.find(r => r.phase === ph).bg;
-      return `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:3px;background:${bg};display:inline-block"></span>${ph}</span>`;
-    }).join('')
-  }</div>`;
-
-  const bigCard = (kicker, r, accent) => r ? `
-    <div style="background:${accent ? 'var(--color-accent-100)' : 'var(--color-neutral-100)'};border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
-      <div style="width:6px;align-self:stretch;border-radius:3px;background:${r.bg}"></div>
-      <div style="flex:1">
-        <div style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600)">${kicker}</div>
-        <div style="font-size:15.5px;font-weight:600;font-family:var(--font-heading)">${r.phase}</div>
-        <div style="font-size:12px;color:var(--color-neutral-600);line-height:1.4">${phaseDescs[r.phase] || ''}</div>
-      </div>
-      <div style="font-size:12.5px;font-weight:600;font-family:var(--font-heading);white-space:nowrap">${timeStr(r)}</div>
-    </div>` : '';
-
-  container.innerHTML = `<div class="plan-card" style="padding:16px">
-    ${timeline}
-    ${legend}
-    ${bigCard('Most', cur, true)}
-    ${bigCard('Következő', next, false)}
-    <p class="plan-tip text-muted">${tip}</p>
-  </div>`;
-}
-
-// ── Sheet utilities ────────────────────────────────────────────────────
-function overlayClose(e, id) {
-  if (e.target.id === id) {
-    if (id === 'onboardingOverlay') closeOnboarding();
-    else closeAdvisor();
-  }
-}
-
-// ── Onboarding sheet ───────────────────────────────────────────────────
-function openOnboarding() {
-  S.obsStep = 0;
-  S.obsDevices = ['mosogep', 'bojler', 'klima'];
-  S.obsTariff = 'rezsi';
-  S.obsFlex = 'magas';
-  buildObsDeviceGrid();
-  buildObsTariffGrid();
-  buildObsFlexGrid();
-  showObsStep(0);
-  el('onboardingOverlay').classList.remove('hidden');
-}
-
-function closeOnboarding() {
-  el('onboardingOverlay').classList.add('hidden');
-}
-
-function obsNext(currentStep) {
-  if (currentStep === 1) {
-    const amt = calcOnboardingSavings();
-    S.savedAmt = amt;
-    el('obsResultAmt').textContent = fmt(amt);
-    // Őszinte, tarifa-specifikus magyarázat: mikor számít az ár és mikor nem
-    const descs = {
-      rezsi: 'Rezsivédett tarifán az egységár napszaktól függetlenül fix — az időzítés a jelenlegi tarifán nem csökkenti közvetlenül a számlát. Vezérelt (éjszakai) vagy dinamikus tarifán ez az összeg valóban megjelenne.',
-      htnt:  'Éjszakai (vezérelt) áramkörre kötött gépeknél a kedvezményes ár közvetlenül a számládon jelentkezik — a fenti összeg ebből jön.',
-      piaci: 'D árszabáson a keret feletti kWh ára a havi fogyasztásod tőzsdei árral súlyozott átlagából jön. Minden olcsó sávba tolt kWh ezt az átlagot húzza le, ezért az időzítés közvetlenül a számládon jelenik meg.',
-    };
-    el('obsResultDesc').textContent = descs[S.obsTariff] || '';
-
-    // Melyik tarifa éri meg? — éves számla becslés mindhárom opcióra
-    const cmpEl = el('obsTariffCompare');
-    if (cmpEl) {
-      const kwhMonth = Math.max(50, parseInt(el('obsKwh')?.value) || 200);
-      const annualKwh = kwhMonth * 12;
-      const flexShare = 0.3 * flexMult(S.obsFlex); // a fogyasztás mozgatható hányada
-
-      // 30 napos HUPX átlag a betöltött árakból (nettó Ft/kWh, csak historikus)
-      const hist = S.prices.filter(p => !p.is_forecast).map(p => p.price_huf_kwh);
-      const spot30 = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : 45;
-      // Az MVM Next 2025.09–2026.08 közzétett negyedórás árlistájából számolt profilszorzók:
-      //   esti csúcsú lakossági profil súlyozott átlaga = 1,13 × egyszerű átlag
-      //   a nap legolcsóbb 4 órájának átlaga = 0,43 × egyszerű átlag
-      const profileAvg = spot30 * 1.13;
-      const cheapAvg = spot30 * 0.43;
-
-      // 2026-os lakossági egységárak (MVM Next üzletszabályzat M.1. 3.1., 4/2011. NFM rendelet 2. melléklet):
-      //   A1 (rezsivédett): 35,3–36,4 Ft/kWh keretig elosztónként, 70,104 Ft/kWh felett (= (31,8 + 23,4) × 1,27)
-      //   RHD 23,4 = elosztói forgalmi 18,56 + átviteli 4,84 (lakosságra 2025-ös szinten befagyasztva, 350/2025. Korm. r.;
-      //   a 2026-os határozat 20,01 + 3,39 bontása ugyanezt az összeget adja)
-      //   Vezérelt B Alap: (1,90 energia + 16,18 RHD) × 1,27 = 22,96 ≈ 23,0; keret felett 60,935 (20/2022. MEKH r.)
-      //   D árszabás (MVM Next ajánlatminta M.2.2., hirdetmény 2026.09.10.):
-      //     havi súlyozott HUPX átlag a TELJES fogyasztásra + kereskedői díj 13,70 Ft nettó,
-      //     ez az egységár a keret feletti kWh-ra, plusz RHD 23,4 Ft (elosztói 20,01 + átviteli 3,39), × 1,27 áfa
-      const CAP = 2523, REZSI = 36.4, PIACI = 70.1, NT = 23.0, NT_PIACI = 60.9, VAT = 1.27;
-      const SPREAD = 13.7, RHD = 23.4, FIX_E = 31.8; // nettó Ft/kWh
-      // NT_PIACI: B alap (vezérelt) tarifa 2523 kWh-es kereten felüli ára (MVM Next 2026: 60.935 Ft)
-      const rezsiBill = Math.min(annualKwh, CAP) * REZSI + Math.max(0, annualKwh - CAP) * PIACI;
-      const ntKwh = annualKwh * flexShare;
-      const htntBill =
-        Math.min(ntKwh, CAP) * NT + Math.max(0, ntKwh - CAP) * NT_PIACI +
-        Math.min(annualKwh * (1 - flexShare), CAP) * REZSI +
-        Math.max(0, annualKwh * (1 - flexShare) - CAP) * PIACI;
-      // D árszabás: az első 2523 kWh/év rezsivédett áron. A keret feletti kWh egységára a háztartás
-      // TELJES havi fogyasztásának HUPX-súlyozott átlaga + kereskedői díj + RHD, × áfa.
-      // Az időzítés a súlyozott átlagot húzza le: a mozgatott hányad az olcsó sávba, a többi a profil szerint.
-      const overCap = Math.max(0, annualKwh - CAP);
-      const underCap = Math.min(annualKwh, CAP);
-      const hupxWeighted = (1 - flexShare) * profileAvg + flexShare * cheapAvg;
-      const dynUnit = (hupxWeighted + SPREAD + RHD) * VAT;   // bruttó Ft/kWh a keret felett
-      const dynBill = underCap * REZSI + overCap * dynUnit;
-      const breakEvenHupx = FIX_E - SPREAD;                  // 18,1 Ft nettó: ez alatt olcsóbb a D a fix árnál
-      // D árszabáson az időzítés tényleges haszna: a keret feletti kWh × a súlyozott átlag csökkenése × áfa
-      const dynSave = Math.round(overCap * flexShare * (profileAvg - cheapAvg) * VAT);
-      if (S.obsTariff === 'piaci') { S.savedAmt = dynSave; el('obsResultAmt').textContent = fmt(dynSave); }
-
-      const opts = [
-        { key: 'rezsi', name: 'Rezsivédett', bill: rezsiBill },
-        { key: 'htnt',  name: 'Éjszakai áram (vezérelt)', bill: htntBill },
-        { key: 'piaci', name: 'Dinamikus D tarifa (2027-től)', bill: dynBill },
-      ];
-      const best = opts.reduce((a, b) => (b.bill < a.bill ? b : a));
-      const mineOpt = opts.find(o => o.key === S.obsTariff) || opts[0];
-      const savedBySwitch = Math.round(mineOpt.bill - best.bill);
-
-      // Ha a fogyasztás a kereten belül van, a D tarifa ugyanannyit ér mint a rezsivédett
-      const dynNote = annualKwh <= CAP
-        ? ` (${annualKwh} kWh/év — te a ${CAP} kWh-es kereten belül vagy, a D tarifa esetén neked is rezsivédett ár érvényes a teljes fogyasztásra.)`
-        : ` (A keret feletti ${fmt(overCap)} kWh-ra érvényes a tőzsdei ár.)`;
-      const verdict = best.key === S.obsTariff
-        ? `✅ Jó helyen vagy: a mostani tarifád a legolcsóbb.${mineOpt.key === 'piaci' ? ' A D árszabás 2027. január 1-jén lép hatályba, addig rezsivédett áron is optimalizálhatsz.' : annualKwh <= CAP ? ' A D árszabás a te fogyasztásoddal nem hoz különbséget (kereten belül vagy).' : mineOpt.key === 'rezsi' ? ` A D árszabás a te fogyasztásoddal nem érné meg: a súlyozott tőzsdei átlagod ${fmt1(hupxWeighted)} Ft, a fedezeti pont ${fmt1(breakEvenHupx)} Ft/kWh.` : ' A D árszabás vezérelt mérő mellett nem is választható.'}`
-        : best.key === 'piaci'
-          ? `💡 A <strong>D árszabás</strong> lenne a legolcsóbb — ${fmt(savedBySwitch)} Ft/év megtakarítás a keret feletti ${fmt(overCap)} kWh-on. A súlyozott tőzsdei átlagod ${fmt1(hupxWeighted)} Ft, a fedezeti pont ${fmt1(breakEvenHupx)} Ft/kWh.${overCap > 0 ? ' 2026. szept. 1-jétől igényelhető, 2027. jan. 1-jén lép hatályba.' : ''} Az ár euróban képződik, az árfolyam is befolyásolja a számlát.`
-          : `💡 Neked a(z) <strong>${best.name}</strong> tarifa lenne a legolcsóbb — váltással évente kb. <strong>${fmt(savedBySwitch)} Ft</strong>-tal kevesebbet fizetnél.`;
-
-      const maxBill = Math.max(...opts.map(o => o.bill));
-      cmpEl.innerHTML = `
-        <div class="cmp-verdict" style="font-size:13px;line-height:1.5;background:var(--color-accent-100);border-radius:10px;padding:10px 12px;margin-bottom:14px;animation:fadeUp .4s ease both">${verdict}</div>
-        <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-heading);color:var(--color-neutral-600);margin-bottom:8px">Éves villanyszámla havi ${fmt(kwhMonth)} kWh fogyasztással</div>` +
-        opts.map((o, i) => {
-          const isBest = o === best;
-          const mine = o.key === S.obsTariff;
-          const diff = Math.round(o.bill - best.bill);
-          const dynCapNote = o.key === 'piaci' && annualKwh <= CAP
-            ? ` <span style="font-size:10px;color:var(--color-neutral-600)">(${annualKwh} kWh/év — kereten belül, teljes fogyasztás rezsivédett áron)</span>`
-            : '';
-          return `<div style="padding:7px 0;animation:fadeUp .4s ease both;animation-delay:${200 + i * 150}ms">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:4px">
-              <span${isBest ? ' style="font-weight:600"' : ''}>${isBest ? '🏆 ' : ''}${o.name}${mine ? ' <span style="font-size:10px;color:var(--color-accent-800)">— a tiéd</span>' : ''}${dynCapNote}</span>
-              <span>
-                <strong class="cmp-count" data-target="${Math.round(o.bill)}" style="font-family:var(--font-heading);font-size:15px">0</strong>
-                <span style="font-size:11px;color:var(--color-neutral-600)"> Ft/év</span>
-                ${!isBest ? `<span style="font-size:10.5px;color:var(--bad-500);font-weight:600" title="Ennyivel drágább évente a legjobb opciónál"> +${fmt(diff)} Ft drágább</span>` : ''}
-              </span>
-            </div>
-            <div style="height:14px;border-radius:7px;background:var(--color-neutral-200);overflow:hidden">
-              <div class="cmp-fill" data-w="${(o.bill / maxBill * 100).toFixed(1)}"
-                style="width:0%;height:100%;border-radius:7px;transition:width 1s cubic-bezier(.22,1,.36,1) ${300 + i * 150}ms;background:${isBest
-                  ? 'linear-gradient(90deg, oklch(0.62 0.13 155), oklch(0.72 0.14 155))'
-                  : 'linear-gradient(90deg, var(--color-accent-300), var(--color-accent-200))'}"></div>
-            </div>
-          </div>`;
-        }).join('') +
-        `<p class="text-muted" style="font-size:11px;margin-top:10px;line-height:1.45;animation:fadeUp .4s ease both;animation-delay:.8s">Közelítő becslés. Rezsivédett: 36,4 Ft/kWh a 2523 kWh/év keretig, felette 70,1 Ft (4/2011. NFM rendelet, 2026). Vezérelt (NT): ~23 Ft. D árszabás: 2523 kWh-ig rezsivédett ár, felette (havi súlyozott tőzsdei átlag ${fmt1(hupxWeighted)} Ft + 13,7 Ft kereskedői díj + 23,4 Ft rendszerhasználati díj) × 1,27 áfa = ${fmt1(dynUnit)} Ft/kWh. A 30 napos tőzsdei átlag most ${fmt1(spot30)} Ft. Igényelhető 2026. szept. 1-jétől, hatályba lép 2027. jan. 1-jén (<a href="https://www.mvmnext.hu/aram/pages/aloldal.jsp?id=16455187" target="_blank" style="color:inherit;text-decoration:underline">mvmnext.hu, D árszabás</a>). A tőzsdei ár euróban képződik, az MNB napi árfolyamán váltva, árfolyamkockázat terheli (az app az EKB napi árfolyamával közelít). A 30 napos átlag szezonális, az éves átlag ettől eltérhet. A kereskedői díjat az MVM 60 napos előzetes hirdetménnyel módosíthatja. A rezsivédett ár elosztói területtől függően 35,3 és 36,4 Ft között van. A mozgatható hányad D árszabáson időzítést, vezérelten külön mérőkört jelent; a kettő ugyanazon a helyen nem kombinálható.</p>`;
-
-      // Animációk indítása: sávok kinövése + számlálók felpörgése.
-      // setTimeout fallback is fut, mert rejtett fülön a rAF szünetel.
-      const startBars = () => cmpEl.querySelectorAll('.cmp-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
-      requestAnimationFrame(startBars);
-      setTimeout(startBars, 80);
-      cmpEl.querySelectorAll('.cmp-count').forEach((c, i) => {
-        const target = parseInt(c.dataset.target);
-        const t0 = performance.now() + 300 + i * 150;
-        (function tick(now) {
-          const t = Math.min(1, Math.max(0, (now - t0) / 1000));
-          const e = 1 - Math.pow(1 - t, 3);
-          c.textContent = fmt(Math.round(target * e));
-          if (t < 1) requestAnimationFrame(tick);
-        })(performance.now());
-        // Végérték garantálva akkor is, ha az animáció nem fut le
-        setTimeout(() => { c.textContent = fmt(target); }, 1600 + i * 150);
-      });
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (S.view === 'arak') { renderDay(); renderTrend(); } }, 120); });
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && (!S.loadedAt || Date.now() - S.loadedAt > 5 * 60 * 1000)) {
+      await loadPrices(); renderView();
     }
-    // A nagy szám is számlálóval pörögjön fel
-    const amtEl = el('obsResultAmt');
-    if (amtEl) countUp(amtEl, amt, 1000);
-    updateKpi(amt);
-  }
-  showObsStep(currentStep + 1);
+  });
 }
 
-function obsBack(currentStep) { showObsStep(currentStep - 1); }
-
-function showObsStep(step) {
-  [0, 1, 2].forEach(s => el(`obs${s + 1}`).style.display = s === step ? '' : 'none');
-  S.obsStep = step;
-}
-
-function obsDone() {
-  S.obsDone = true;
-  closeOnboarding();
-  setTab('ma');
-}
-
-function calcOnboardingSavings() {
-  return Math.round(
-    S.obsDevices.reduce((sum, id) => {
-      const d = ALL_DEV.find(d => d.id === id);
-      return sum + (d ? d.annual : 0);
-    }, 0) * tariffMult(S.obsTariff) * flexMult(S.obsFlex)
-  );
-}
-
-function buildObsDeviceGrid() {
-  const grid = el('obsDeviceGrid');
-  grid.innerHTML = ALL_DEV.map(d => {
-    const sel = S.obsDevices.includes(d.id);
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="toggleObs('${d.id}')" style="display:flex;align-items:center;gap:8px">
-      ${svgIcon(d.icon, 17)}
-      <span>${d.name}</span>
-    </button>`;
-  }).join('');
-}
-
-const TARIFF_INFO = {
-  rezsi: 'A normál lakossági áram — ezt fizeti szinte mindenki, fix kedvezményes egységáron.',
-  htnt:  'Az „éjszakai áram": külön mért áramkör bojlerhez, hőszivattyúhoz, EV-töltőhöz — a szolgáltató éjjel és napközbeni sávokban kapcsolja, kedvezményes áron. Bárki igényelheti, de külön mérőkör szükséges.',
-  piaci: 'Negyedóránként változó tőzsdei ár, távleolvasott okosmérő kell hozzá. 2026. szeptember 1-jétől igényelhető az MVM Next-nél (D árszabás), 2027. január 1-jén lép hatályba. A keret feletti kWh ára a havi fogyasztás tőzsdei árral súlyozott átlaga plusz 13,7 Ft kereskedői díj. Az ár euróban képződik (EUR/MWh), a forintra váltás az MNB napi árfolyamán történik, az euró erősödése a számlát is emeli. Visszaváltás után 12 hónapig nem választható újra. Vezérelt (B) vagy H mérővel rendelkező felhasználási helyre nem választható.',
-};
-
-function buildObsTariffGrid() {
-  const opts = [
-    { id: 'rezsi', label: 'Rezsivédett (normál)' },
-    { id: 'htnt',  label: 'Éjszakai áram (vezérelt)' },
-    { id: 'piaci', label: 'Dinamikus (okosmérős)' },
-  ];
-  el('obsTariffGrid').innerHTML = opts.map(o => {
-    const sel = S.obsTariff === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setObsTariff('${o.id}')">${o.label}</button>`;
-  }).join('') + `<p id="obsTariffInfo" class="text-muted" style="font-size:11.5px;line-height:1.45;margin:8px 0 0;flex-basis:100%">${TARIFF_INFO[S.obsTariff] || ''}</p>`;
-}
-
-function buildObsFlexGrid() {
-  const opts = [
-    { id: 'magas',    label: 'Előre tervezem' },
-    { id: 'kozepes',  label: 'Néha igen' },
-    { id: 'alacsony', label: 'Nehézkes' },
-  ];
-  el('obsFlexGrid').innerHTML = opts.map(o => {
-    const sel = S.obsFlex === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setObsFlex('${o.id}')">${o.label}</button>`;
-  }).join('');
-}
-
-function toggleObs(id) {
-  S.obsDevices = S.obsDevices.includes(id)
-    ? S.obsDevices.filter(x => x !== id)
-    : [...S.obsDevices, id];
-  buildObsDeviceGrid();
-}
-
-function setObsTariff(v) { S.obsTariff = v; buildObsTariffGrid(); }
-function setObsFlex(v) { S.obsFlex = v; buildObsFlexGrid(); }
-
-// ── Advisor sheet ──────────────────────────────────────────────────────
-function openAdvisor() {
-  S.advStep = 1;
-  S.adv.devices = [];
-  buildAdvStep1();
-  buildAdvStep2();
-  buildAdvStep3Tariff();
-  buildAdvStep4();
-  showAdvStep(1);
-  el('advisorOverlay').classList.remove('hidden');
-}
-
-function closeAdvisor() { el('advisorOverlay').classList.add('hidden'); }
-
-function advNext(step) {
-  if (step === 4) buildAdvResults();
-  showAdvStep(step + 1);
-}
-
-function advBack(step) { showAdvStep(step - 1); }
-
-function showAdvStep(step) {
-  [1, 2, 3, 4, 5].forEach(s => el(`adv${s}`).style.display = s === step ? '' : 'none');
-  S.advStep = step;
-  el('advStepLbl').textContent = `${step} / 5`;
-  el('advProgFill').style.width = `${step * 20}%`;
-}
-
-function buildAdvStep1() {
-  const a = S.adv;
-  const homes = [
-    { id: 'haz',         label: 'Ház' },
-    { id: 'lakas_tegla', label: 'Téglaházi lakás' },
-    { id: 'lakas_panel', label: 'Panellakás' },
-  ];
-  el('advHomeGrid').innerHTML = homes.map(o => {
-    const sel = a.homeType === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('homeType','${o.id}')">${o.label}</button>`;
-  }).join('');
-
-  const sizes = [
-    { id: 'small',  label: '60 m² alatt' },
-    { id: 'medium', label: '60–100 m²' },
-    { id: 'large',  label: '100–150 m²' },
-    { id: 'xlarge', label: '150 m² felett' },
-  ];
-  el('advAreaGrid').innerHTML = sizes.map(o => {
-    const sel = a.homeSize === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('homeSize','${o.id}')">${o.label}</button>`;
-  }).join('');
-
-  const heats = [
-    { id: 'gaz',         label: 'Gázkazán' },
-    { id: 'hoszivattyu', label: 'Hőszivattyú' },
-    { id: 'elektromos',  label: 'Elektromos' },
-    { id: 'tavfutes',    label: 'Távfűtés' },
-  ];
-  el('advHeatGrid').innerHTML = heats.map(o => {
-    const sel = a.heating === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('heating','${o.id}')">${o.label}</button>`;
-  }).join('');
-}
-
-function buildAdvStep2() {
-  const a = S.adv;
-  el('advDeviceGrid').innerHTML = ALL_DEV.map(d => {
-    const sel = a.devices.includes(d.id);
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="toggleAdv('${d.id}')" style="display:flex;align-items:center;gap:8px">
-      ${svgIcon(d.icon, 17)}
-      <span>${d.name}</span>
-    </button>`;
-  }).join('');
-}
-
-function buildAdvStep3Tariff() {
-  const opts = [
-    { id: 'rezsi', label: 'Rezsivédett' },
-    { id: 'htnt',  label: 'HT/NT kétmérős' },
-    { id: 'piaci', label: 'Dinamikus / Piaci' },
-  ];
-  const grid = el('advTariffGrid');
-  if (!grid) return;
-  grid.innerHTML = opts.map(o => {
-    const sel = S.adv.tariff === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('tariff','${o.id}')">${o.label}</button>`;
-  }).join('');
-}
-
-function buildAdvStep4() {
-  const a = S.adv;
-  const budgets = [
-    { val: 0,       label: 'Semmit',       sub: 'csak ingyenes lépések' },
-    { val: 100000,  label: '~100 ezer Ft', sub: 'kisebb eszközök' },
-    { val: 500000,  label: '~500 ezer Ft', sub: 'közepes projekt' },
-    { val: 5000000, label: 'Bármennyit',   sub: 'napelem, hőszivattyú' },
-  ];
-  el('advBudgetGrid').innerHTML = budgets.map(o => {
-    const sel = a.budget === o.val;
-    return `<button class="chip-btn budget-chip ${sel ? 'sel' : ''}" onclick="setAdv('budget',${o.val})">
-      <strong>${o.label}</strong><span class="sub">${o.sub}</span>
-    </button>`;
-  }).join('');
-
-  const prios = [
-    { id: 'megtakaritas', label: 'Minél nagyobb megtakarítás' },
-    { id: 'gyors',        label: 'Azonnali eredmény' },
-    { id: 'kornyezet',    label: 'Környezetbarát' },
-    { id: 'kenyelem',     label: 'Kényelem, automatizálás' },
-  ];
-  el('advPriorityGrid').innerHTML = prios.map(o => {
-    const sel = a.priority === o.id;
-    return `<button class="chip-btn ${sel ? 'sel' : ''}" onclick="setAdv('priority','${o.id}')">${o.label}</button>`;
-  }).join('');
-}
-
-function buildAdvResults() {
-  const a = S.adv;
-  const has = id => a.devices.includes(id);
-  const billMult = Math.min(2.5, Math.max(0.5, a.bill / 15000));
-  const devSave = a.devices.reduce((s, id) => {
-    const d = ALL_DEV.find(d => d.id === id);
-    return s + (d ? d.annual : 0);
-  }, 0) * tariffMult(a.tariff) * billMult;
-
-  const cands = [
-    { t: 'Eszközök időzítése olcsó órákra',
-      d: 'A mosást, bojlert, töltést told az éjszakai és déli olcsó sávokba — ehhez csak ez az app kell.',
-      cost: 0, save: Math.max(devSave, 5000), eco: 1, fast: 1, ok: a.tariff !== 'rezsi' },
-    { t: 'Vezérelt (éjszakai) tarifa igénylése',
-      d: 'Ingyenesen igényelhető az elosztódtól; a kedvezményes sávban kb. 37%-kal olcsóbb az éjszakai áram (23 vs. 36,4 Ft/kWh).',
-      cost: 0, save: 45000 * billMult,
-      ok: a.tariff !== 'htnt' && (has('bojler') || has('ev') || has('hoszivattyu')), fast: 1 },
-    { t: 'Öko programok és teli gép',
-      d: 'A mosó- és mosogatógép öko programja alkalmanként 20–40%-kal kevesebb energiát használ.',
-      cost: 0, save: 8000, ok: has('mosogep') || has('mosogatogep'), eco: 1, fast: 1 },
-    { t: 'Okoskonnektorok időzítéssel',
-      d: 'Okosdugalj automatikusan a legolcsóbb órában indítja a gépeket.',
-      cost: 25000, save: 12000, ok: a.devices.length >= 2, comfort: 1, fast: 1 },
-    { t: 'Bojler időzítő beépítése',
-      d: 'A bojler csak éjszaka fűtsön — a háztartás egyik legnagyobb fogyasztója.',
-      cost: 15000, save: 18000 * billMult, ok: has('bojler') },
-    { t: 'Okos termosztát a gázkazánhoz',
-      d: 'Ütemezett, helyiségenkénti fűtés — 10–15% megtakarítás.',
-      cost: 60000, save: 25000, ok: a.heating === 'gaz', comfort: 1 },
-    { t: 'Inverteres klímára csere',
-      d: 'Inverteres klíma 30–50%-kal kevesebb áramot fogyaszt a régi, fixfordulatú gépeknél.',
-      cost: 350000, save: 20000, ok: has('klima') },
-    { t: 'Napelemes rendszer (~4 kWp)',
-      d: 'Állami támogatással (50-60%) kb. 10–14 év megtérülés, támogatás nélkül ~20–25 év (bruttó elszámolás, 2024 óta nincs nettó elszámolás). Utána évtizedekig termel.',
-      cost: 3500000, save: 130000, ok: !has('napelemek') && a.homeType === 'haz', eco: 1 },
-    { t: 'Hőszivattyú a gáz kiváltására',
-      d: 'Hosszú távon a legnagyobb megtakarítás — és a legzöldebb fűtés.',
-      cost: 4500000, save: 250000,
-      ok: ['gaz', 'elektromos'].includes(a.heating) && a.homeType === 'haz', eco: 1, comfort: 1 },
-  ].filter(c => (c.ok ?? true) && c.cost <= a.budget);
-
-  const p = a.priority;
-  cands.sort((x, y) =>
-    p === 'megtakaritas' ? y.save - x.save :
-    p === 'gyors'        ? (x.cost - y.cost) || ((y.fast || 0) - (x.fast || 0)) :
-    p === 'kornyezet'    ? ((y.eco || 0) - (x.eco || 0)) || (y.save - x.save) :
-                           ((y.comfort || 0) - (x.comfort || 0)) || (y.save - x.save)
-  );
-  const recs = cands.slice(0, 5);
-
-  const totalSave = recs.reduce((s, r) => s + r.save, 0);
-  el('advSummary').textContent = recs.length
-    ? `${recs.length} ajánlás a válaszaid alapján — együtt akár ${fmt(totalSave)} Ft megtakarítás évente.`
-    : 'Nincs ajánlás a megadott szempontokra.';
-
-  el('advRecsList').innerHTML = recs.map((r, i) => {
-    const costTag = r.cost === 0
-      ? 'Ingyenes'
-      : r.cost < 1e6
-      ? `~${fmt(Math.round(r.cost / 1000))}e Ft`
-      : `~${(r.cost / 1e6).toFixed(1).replace('.', ',')} M Ft`;
-    return `<div class="rec-card">
-      <div class="rec-card-top">
-        <strong>${i + 1}. ${r.t}</strong>
-        <span class="tag tag-acc" style="white-space:nowrap;font-size:10px">${costTag}</span>
-      </div>
-      <p class="rec-desc">${r.d}</p>
-      <div class="rec-save">~${fmt(Math.round(r.save))} Ft megtakarítás / év</div>
-    </div>`;
-  }).join('');
-}
-
-function setAdv(key, val) {
-  S.adv[key] = val;
-  if (['homeType', 'homeSize', 'heating'].includes(key)) buildAdvStep1();
-  if (key === 'tariff') buildAdvStep3Tariff();
-  if (key === 'budget' || key === 'priority') buildAdvStep4();
-}
-
-function toggleAdv(id) {
-  S.adv.devices = S.adv.devices.includes(id)
-    ? S.adv.devices.filter(x => x !== id)
-    : [...S.adv.devices, id];
-  buildAdvStep2();
-}
-
-// ── Push notifications ────────────────────────────────────────────────
-// Placeholder VAPID public key — base64url-encoded random bytes, NOT a
-// real elliptic-curve key. It lets pushManager.subscribe() run so the
-// bell opt-in works end-to-end in the browser, but no server can use it
-// to actually deliver push messages yet. Before wiring up real
-// server-sent push, generate a genuine pair with the `web-push` library
-// (`npx web-push generate-vapid-keys`), swap the public key in here, and
-// keep the private key on the backend only — never ship it to the client.
-const VAPID_PUBLIC_KEY = 'BAjrt03nfBKUDZb0jl1U-MvABcBPj8TQFX94rEwj0ZYFGl5UTxsiHuwz7wwnOO9m6qoJobnvQr1YUC_rmmN3McI';
-
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64);
-  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
-}
-
-function updatePushBellUI() {
-  const btn = el('pushOptInBtn');
-  if (!btn) return;
-  const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
-  btn.style.display = supported ? '' : 'none';
-  btn.classList.toggle('active', supported && Notification.permission === 'granted' && S.pushOptIn);
-}
-
-function initPushUI() {
-  if (!('Notification' in window)) return;
-  S.pushOptIn = Notification.permission === 'granted';
-  updatePushBellUI();
-}
-
-async function togglePushOptIn() {
-  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-    alert('A böngésződ nem támogatja az értesítéseket.');
-    return;
-  }
-
-  if (Notification.permission === 'denied') {
-    alert('Az értesítések le vannak tiltva — engedélyezd a böngésző beállításaiban.');
-    return;
-  }
-
-  if (Notification.permission !== 'granted') {
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') { updatePushBellUI(); return; }
-  }
-
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-    }
-    S.pushOptIn = true;
-    S.pushLastAlertKey = null;
-    if (S.prices.length) renderHero();
-  } catch (e) {
-    console.warn('Push feliratkozás sikertelen:', e);
-    S.pushOptIn = false;
-  }
-  updatePushBellUI();
-}
-
-function maybeNotifyCheapPrice(lvl) {
-  if (!S.pushOptIn || lvl !== 'olcso') return;
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-  const now = new Date();
-  const alertKey = `${now.toDateString()}-${now.getHours()}`;
-  if (S.pushLastAlertKey === alertKey) return; // already notified for this hour
-  S.pushLastAlertKey = alertKey;
-
-  const title = 'Energia Időzítő';
-  const body = 'Most olcsó — indítsd a mosógépet!';
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, tag: 'price-alert', renotify: true }));
-  } else {
-    new Notification(title, { body });
-  }
-}
-
-// ── Data loading ───────────────────────────────────────────────────────
-async function loadPrices() {
-  try {
-    const res = await fetch('/api/forecast?history_days=31&forecast_days=2');
-    if (!res.ok) throw new Error('API error');
-    const data = await res.json();
-    S.prices = data.prices || [];
-    return S.prices;
-  } catch (e) {
-    // Nincs demo fallback — hibaállapotot mutatunk valós adat helyett
-    S.prices = [];
-    const sub = el('heroSub');
-    if (sub) sub.textContent = 'Nem sikerült áradatot betölteni. Próbáld újra pár perc múlva.';
-    const pill = el('heroStatusPill');
-    if (pill) pill.textContent = 'Nincs adat';
-    return S.prices;
-  }
-}
-
-// ── Boot ───────────────────────────────────────────────────────────────
+// ── Indulás ──────────────────────────────────────────────────────────────
 async function init() {
-  ['htntKwh', 'htntPct'].forEach(id => {
-    const inp = el(id);
-    if (inp) inp.addEventListener('input', updateHtnt);
-  });
-
-  initPushUI();
-
+  // A korábbi verzió service workerét eltávolítjuk
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+  }
+  bind();
+  setView(location.hash.slice(1) || 'most', false);
   await loadPrices();
+  renderView();
+  loadGrid();
 
-  if (S.prices.length) renderHero();
-
-  loadGrid(); // háttérben — nem blokkolja az árakat
-
-  // Default savings from design's initial onboarding state
-  const defaultSave = calcOnboardingSavings();
-  updateKpi(defaultSave);
-  updateHtnt();
-  renderPlan();
-
-  setInterval(async () => {
-    await loadPrices();
-    if (S.prices.length) renderHero();
-    if (S.tab === 'arak') { renderHeatmap(); renderBarChart(); renderTrendChart(); }
-    if (S.tab === 'tervek') renderPlan();
-  }, 60000);
-
-  setInterval(loadGrid, 15 * 60000); // MAVIR adatok 15 percenként
+  setInterval(renderView, 60 * 1000);                                   // aktuális negyedóra
+  setInterval(async () => { await loadPrices(); renderView(); }, 10 * 60 * 1000);
+  setInterval(loadGrid, 15 * 60 * 1000);
 }
-
 document.addEventListener('DOMContentLoaded', init);
