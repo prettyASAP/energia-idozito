@@ -375,3 +375,18 @@ input[type="range"] { width: 100%; height: 32px; accent-color: var(--cheap); cur
 .foot { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); }
 .foot p { font-size: 12.5px; color: var(--ink-3); line-height: 1.55; margin: 0 0 8px; max-width: 75ch; }
 .foot-more { margin-top: 4px; }
+
+/* Nappali és éjszakai mód váltó */
+.theme-btn {
+  margin-left: -6px; width: 36px; height: 36px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink-2); cursor: pointer;
+}
+.theme-btn:hover { color: var(--ink); }
+.theme-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme-btn .ic-sun { display: none; }
+:root[data-theme="dark"] .theme-btn .ic-sun { display: block; }
+:root[data-theme="dark"] .theme-btn .ic-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-btn .ic-sun { display: block; }
+  :root:not([data-theme="light"]) .theme-btn .ic-moon { display: none; }
+}

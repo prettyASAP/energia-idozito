@@ -660,6 +660,21 @@ function bind() {
   document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setView(b.dataset.tab)));
   window.addEventListener('popstate', () => setView(location.hash.slice(1) || 'most', false));
 
+  // Nappali és éjszakai mód: alapból a rendszer beállítása, a gomb felülírja
+  const isDark = () => (document.documentElement.dataset.theme
+    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+  const syncTheme = () => {
+    $('themeBtn').setAttribute('aria-label', isDark() ? 'Váltás nappali módra' : 'Váltás éjszakai módra');
+    document.querySelector('meta[name="theme-color"]').content = isDark() ? '#0A121C' : '#F3F5F8';
+  };
+  $('themeBtn').addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    savePref('ei.theme', next);
+    syncTheme();
+  });
+  syncTheme();
+
   $('devEditBtn').addEventListener('click', () => {
     const box = $('devEdit'), open = box.hidden;
     box.hidden = !open;
