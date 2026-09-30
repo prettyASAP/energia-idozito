@@ -7,6 +7,6 @@
 - A projekt Redis és Postgres szolgáltatása nincs használatban a kódban.
 
 ## Szakmai alapok
-- **Minden szakmai állítás, szám és felületi szöveg forrása a `docs/szakmai-alapok.md`** (fogyasztók, szabályozás, árak, D árszabás, mérés, HMKE, fogyasztóvédelem, jogszabályhelyekkel és forrásokkal). Új szám vagy szabály csak forrással kerülhet bele; ellentmondásnál a 16. fejezet dönt.
+- **Minden szakmai állítás, szám és felületi szöveg forrása a `docs/szakmai-alapok.md`** (fogyasztók, szabályozás, árak, D árszabás, mérés, HMKE, fogyasztóvédelem, jogszabályhelyekkel és forrásokkal). Új szám vagy szabály csak forrással kerülhet bele; ellentmondásnál a 16. fejezet dönt. A szakértői (auditori és jogi) értelmezés a 19. fejezetben, az app és a források megfeleltetése a 18. fejezetben van; az app állandóinak változtatásakor a 18.5 mátrixot és a 21. fejezet változásnaplóját frissíteni kell.
 - D árszabás képlete és díjai: MVM Next ajánlatminta M.2.2., hirdetmény 2026.09.10 (kereskedői díj 13,70 Ft/kWh nettó), lakossági RHD 23,40 Ft/kWh, áfa 27%. A rugalmas árú szerződés fogalma: VET 3. § 52a.; a 2 523 kWh-s keret: 4/2011. NFM r. 6. § (1).
 - Nyelv a felületen és az anyagokban: nincs gondolatjel, nincs emoji az új szövegekben, tömör magyar.

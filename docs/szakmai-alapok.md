@@ -2,9 +2,13 @@
 
 A magyar lakossági villamosenergia-piac forrásolt tényanyaga az Energia Időzítő projekt számára. Minden szakmai állítás, szám és felületi szöveg ebből a dokumentumból induljon ki.
 
-- **Állapot:** 2026. szeptember 29.
+- **Verzió:** 1.1
+- **Dátum és állapot:** 2026. szeptember 29.
+- **Felelős:** a projekt. Jóváhagyás: a projekt, a változásnapló bejegyzésével (21. fejezet).
+- **Felülvizsgálat:** negyedévente, a kereskedői díj negyedéves felülvizsgálatához igazítva; soron kívül, ha az alábbiak bármelyike változik: kereskedői díj hirdetmény, 2027-es rendszerhasználati díj (MEKH határozat), NFM r. vagy MEKH r. módosítás, rezsivédelmi kijelölés (236/2025. Korm. r.), MVM ÁSZF vagy ajánlatminta.
 - **Hatókör:** lakossági és egyetemes szolgáltatásban lévő mikrovállalkozói fogyasztók; egyetemes szolgáltatás, rezsivédelem, D árszabás, mérés, HMKE, aggregálás, fogyasztóvédelem.
-- **Jelölés:** **E** elsődleges forrás (jogszabály, MEKH, MAVIR, KSH, Eurostat, ACER, a szolgáltató vagy az elosztó saját dokumentuma, a szöveget ténylegesen megnéztük). **M** másodlagos forrás (sajtó, szakportál, iparági közlés, vagy csak összefoglalóból ismert). **Sz** saját számítás a megjelölt forrásokból.
+- **Jelölés, forrás minősége:** **E** elsődleges forrás (jogszabály, MEKH, MAVIR, KSH, Eurostat, ACER, a szolgáltató vagy az elosztó saját dokumentuma, a szöveget ténylegesen megnéztük). **M** másodlagos forrás (sajtó, szakportál, iparági közlés, vagy csak összefoglalóból ismert). **Sz** saját számítás a megjelölt forrásokból. **Ellenőrizendő:** az állítást elsődleges forrásból még nem igazoltuk.
+- **Jelölés, jogforrási szint** (a szabálytáblák „Szint” oszlopa): **J1** törvény, **J2** kormányrendelet, **J3** miniszteri rendelet, **J4** MEKH elnöki rendelet, **H** hatósági határozat, **SZ** szolgáltatói szerződéses feltétel (üzletszabályzat, ÁSZF, ajánlatminta, hirdetmény), **T** tájékoztató vagy weboldal, **EU** uniós jog. Az E jelölés a forrás elérhetőségéről szól, a szint a kötelező erőről. Jogszabály és SZ ütközésénél a jogszabály az irányadó; az SZ csak a jogszabályi minimum felett ad többet vagy tölt ki szabályozatlan kérdést.
 - **Szabály:** ahol két forrás ellentmond, mindkettő szerepel. Ahol nincs adat, a dokumentum ezt kimondja. Becslést nem töltünk be hiányzó adat helyére.
 
 A forrásjegyzék a dokumentum végén van, a hivatkozások `[S1]` formában mutatnak rá.
@@ -29,24 +33,25 @@ A forrásjegyzék a dokumentum végén van, a hivatkozások `[S1]` formában mut
 16. [Ellentmondások és ismert hibák a nyilvános forrásokban](#16-ellentmondások-és-ismert-hibák-a-nyilvános-forrásokban)
 17. [Adathiányok](#17-adathiányok)
 18. [Következmények az appra](#18-következmények-az-appra)
-19. [Forrásjegyzék](#19-forrásjegyzék)
+19. [Szakértői értelmezés](#19-szakértői-értelmezés)
+20. [Forrásjegyzék](#20-forrásjegyzék)
+21. [Változásnapló](#21-változásnapló)
 
 ## 1. Kulcsszámok
 
-| Mutató | Érték | Év | Forrás |
-|---|---|---|---|
-| Háztartási villamosenergia-felhasználási helyek | 5 334 855 | 2024 | KSH [S30] E |
-| Háztartások | 4 044 811, átlagosan 2,3 fő | 2024 | KSH [S31] E |
-| Háztartási fogyasztás | 12 626 GWh | 2024 | KSH [S30] E |
-| Átlagos fogyasztás felhasználási helyenként | 2 419 kWh/év | 2024 | KSH [S30] E |
-| Kedvezményes lakossági sávhatár | 2 523 kWh/év/mérési pont | hatályos | 4/2011. NFM r. 6. § (1) [S4] E |
-| Keret felett fogyasztó helyek aránya | 19 és 25% között, forrásonként eltér | 2022 és 2026 között | lásd 3. fejezet, M |
-| Okosmérők | kb. 670 ezer (2024. július); közel 750 ezer (2026. szeptember, forrás nélkül) | 2024, 2026 | [S40] M, [S41] M |
-| Napelemes HMKE | 322 338 db, 2 913,4 MW | 2025. december 31. | MAVIR [S36] E |
-| Lakossági áramár adókkal, 2 500 és 4 999 kWh/év sáv | 0,1082 EUR/kWh, az EU legalacsonyabbja (EU27: 0,2896) | 2025 második félév | Eurostat [S35] E |
-| Rezsivédelmi kompenzáció 2026 első három negyedévében | 526,6 milliárd Ft | 2026 | [S44] M |
-| D árszabás kereskedői díja | 13,70 Ft/kWh nettó | 2026. szeptember 10-től | MVM hirdetmény [S18] E |
-| D árszabás indulása | igénylés 2026. szeptember 1-jétől, elszámolás legkorábban 2027. január 1-jétől | 2026 | [S19] [S22] E |
+| Mutató | Érték | Bázis | Év | Forrás |
+|---|---|---|---|---|
+| Háztartási villamosenergia-felhasználási helyek | 5 334 855 | felhasználási hely | 2024 | KSH [S30] E |
+| Háztartások | 4 044 811, átlagosan 2,3 fő | háztartás | 2024 | KSH [S31] E |
+| Háztartási fogyasztás | 12 626 GWh | összes | 2024 | KSH [S30] E |
+| Átlagos fogyasztás felhasználási helyenként | 2 367 kWh/év (12 626 GWh / 5 334 855); a KSH közölt értéke 2 419, az eltérés oka ellenőrizendő (lásd 3.2 sor) | felhasználási hely | 2024 | Sz az [S30] adataiból |
+| Kedvezményes lakossági sávhatár | 2 523 kWh/év/mérési pont; D árszabásnál havonta naparányosan, 30 napos hónapban kb. 207 kWh | mérési pont | hatályos | 4/2011. NFM r. 6. § (1), (4), 7/A. § (2) [S4] E, J3 |
+| Napelemes HMKE | 322 338 db, 2 913,4 MW | termelő egység | 2025. december 31. | MAVIR [S36] E |
+| Lakossági áramár adókkal, 2 500 és 4 999 kWh/év sáv | 0,1082 EUR/kWh, az EU legalacsonyabbja (EU27: 0,2896) | fogyasztási sáv | 2025 második félév | Eurostat [S35] E |
+| D árszabás kereskedői díja | 13,70 Ft/kWh nettó | kWh | 2026. szeptember 10-től | MVM hirdetmény [S18] E, SZ |
+| D árszabás indulása | igénylés 2026. szeptember 1-jétől, elszámolás legkorábban 2027. január 1-jétől | szerződés | 2026 | [S19] [S22] E, SZ |
+
+A táblában csak elsődleges forrásból vett (E) és abból számolt (Sz) érték szerepel. A másodlagos számok a fejezetekben vannak: a keret felett fogyasztó helyek aránya a 3.10 és 3.12 közötti sorokban (nagyságrendileg minden negyedik vagy ötödik hely), az okosmérő-állomány az 5.1 és 5.4 sorban, a 2026-os rezsivédelmi kompenzáció a 7.13 sorban.
 
 ## 2. Fogyasztói bázis
 
@@ -74,14 +79,16 @@ Nincs adat: csak áramot vevő MVM ügyfelek száma, egyetemes szolgáltatásban
 | # | Állítás | Szám | Év | Forrás |
 |---|---|---|---|---|
 | 3.1 | Háztartási villamos energia, KSH (GWh) | 2019: 11 162; 2020: 11 734; 2021: 12 284; 2022: 11 678; 2023: 12 442; 2024: 12 626 | 2019 és 2024 között | [S30] E |
-| 3.2 | Egy háztartási felhasználási helyre jutó fogyasztás, KSH (kWh/év) | 2019: 2 171; 2020: 2 271; 2021: 2 361; 2022: 2 226; 2023: 2 371; 2024: 2 419 | 2019 és 2024 között | [S30] E |
-| 3.3 | Háztartási nettó fogyasztás, MEKH (GWh) | 2019: 11 162; 2020: 11 734; 2021: 12 198; 2022: 11 678; 2023: 11 883; 2024: 11 788 | 2019 és 2024 között | [S33] 7.3. és 10.9. tábla E, 2021-től eltér a KSH-tól |
+| 3.2 | Egy háztartási felhasználási helyre jutó fogyasztás, KSH közölt értéke (kWh/év). A 3.1 és 2.1 sor hányadosa ennél kisebb: 2019: 2 166; 2021: 2 351; 2022: 2 217; 2023: 2 346; 2024: 2 367. A rés 2019-ben 0,2%, 2024-ben 2,2%, tehát nő; a KSH valószínűleg más nevezőt (például éves átlagos helyszámot) használ, a módszertani megjegyzés ellenőrizendő. Az anyagokban a hányadost (2 367) használjuk Sz jelöléssel, vagy a KSH értéket a bázis megnevezésével. | 2019: 2 171; 2020: 2 271; 2021: 2 361; 2022: 2 226; 2023: 2 371; 2024: 2 419 | 2019 és 2024 között | [S30] E; hányados Sz |
+| 3.3 | Háztartási nettó fogyasztás, MEKH (GWh) | 2019: 11 162; 2020: 11 734; 2021: 12 198; 2022: 11 678; 2023: 11 883; 2024: 11 788 | 2019 és 2024 között | [S33] 7.3. és 10.9. tábla E; 2019-ben, 2020-ban és 2022-ben egyezik a KSH-val, 2021-ben, 2023-ban és 2024-ben eltér |
 | 3.4 | Egyetemes szolgáltatásban lakossági fogyasztóknak eladott mennyiség (GWh) | 2021: 12 579; 2022: 12 401; 2023: 11 327; 2024: 11 516 | 2021 és 2024 között | [S33] 8.2. tábla E |
 | 3.5 | ACER átlagos háztartási fogyasztás | 2,36 MWh/év | 2024 | [S32] E |
 | 3.6 | 2022-es visszaesés | MEKH szerint −4,3%; KSH szerint −4,9%, egy helyre vetítve −5,7% | 2022 | Sz a 3.1 és 3.3 sorból |
 | 3.7 | A profilos (háztartási jellegű) fogyasztás éves változása | 2022: +1,6%; 2023: −2,8%; 2024: −3,1% | 2022 és 2024 között | [S33] 7.2A ábra E |
 
-A 2025-ös lakossági adat a KSH 2025. október 31-i frissítéséig nem jelent meg. A három hivatalos idősor (KSH, MEKH háztartási, MEKH egyetemes értékesítés) 2021-től eltér egymástól; az appban és az anyagokban a KSH idősort használjuk, és a forrást megnevezzük.
+A 2025-ös lakossági adat a KSH 2025. október 31-i frissítéséig nem jelent meg. A három hivatalos idősor (KSH, MEKH háztartási, MEKH egyetemes értékesítés) több évben eltér egymástól. A KSH és a MEKH háztartási idősor 2019-ben, 2020-ban és 2022-ben egyezik, 2021-ben, 2023-ban és 2024-ben nem; 2024-ben a rés 838 GWh (7,1%), és a 2024-es irány is ellentétes (KSH +1,5%, MEKH −0,8%, Sz). Az eltérés oka a forrásokból nem derül ki, ellenőrizendő. Az anyagokban a KSH idősort használjuk a forrás megnevezésével; ahol a trend számít, mindkét idősort sávként közöljük.
+
+A 2. és 3. fejezet számainak bázisa eltér: felhasználási hely (KSH), háztartás (KSH), mérési pont (ACER), fogyasztó (ITM), fogyasztási hely (MVM). Ezek csak azonos bázison vethetők össze; a sorokban a bázist megnevezzük.
 
 ### 3.2 Eloszlás, keret feletti fogyasztók
 
@@ -94,15 +101,15 @@ A 2025-ös lakossági adat a KSH 2025. október 31-i frissítéséig nem jelent 
 | 3.12 | MVM közlés: a fogyasztási helyek kb. 19%-a lépi túl a rezsicsökkentett mennyiséget | 81% alatta | 2026. szeptember | [S41] M, ellentmond a 3.10 és 3.11 sornak |
 | 3.13 | Települések, ahol az átlagos háztartási fogyasztás meghaladja a 2 523 kWh-t | 1 430 település, a települések kb. fele | 2020-as KSH TEIR adat | [S50] M |
 | 3.14 | Területi mintázat: magasabb fogyasztás középen és északnyugaton, alacsonyabb északkeleten és délnyugaton | leírás | 2020 | [S50] M |
-| 3.15 | Havi átlagfogyasztás vármegyénként | Győr-Moson-Sopron 205,9 (legmagasabb), Zala 132,3 (legalacsonyabb), Budapest 173,5, országos 174,5 kWh/háztartás/hó | 2013, utolsó elérhető év | [S51] E |
+| 3.15 | Havi átlagfogyasztás vármegyénként | Győr-Moson-Sopron 205,9 (legmagasabb), Zala 132,3 (legalacsonyabb), Budapest 173,5, országos 174,5 kWh/háztartás/hó | 2013, utolsó elérhető év | [S51] E, régi adat, nem döntési adat |
 
-A keret feletti arány a projekt anyagaiban így szerepeljen: „19 és 25 százalék között, forrásonként eltérően”. A három forrás bázisa is eltér (fogyasztó, háztartás, fogyasztási hely), mindhárom másodlagos. A 4 000 és az 5 000 kWh/év feletti helyek számáról nincs nyilvános adat.
+A keret feletti arány a projekt anyagaiban így szerepeljen: „nagyságrendileg minden negyedik vagy ötödik hely (19 és 25 százalék között, forrásonként eltérően)”. A három forrás bázisa eltér (fogyasztó, háztartás, fogyasztási hely), mindhárom másodlagos, ezért statisztikailag nem összemérhetők, és ügyfélpotenciál számítására nem alkalmasak. A 4 000 és az 5 000 kWh/év feletti helyek számáról nincs nyilvános adat.
 
 ### 3.3 Napi és éves profil
 
 | # | Állítás | Szám | Év | Forrás |
 |---|---|---|---|---|
-| 3.16 | Szezonalitás: a profilos fogyasztás havi összege | januárban kb. 1 570 GWh, júniusban kb. 1 000 GWh (grafikonról leolvasva) | 2024 | [S33] 7.2B ábra E |
+| 3.16 | Szezonalitás: a profilos fogyasztás havi összege | januárban kb. 1 570 GWh, júniusban kb. 1 000 GWh (grafikonról leolvasva, pontosság kb. ±50 GWh); arányuk kb. 1,57 | 2024 | [S33] 7.2B ábra E |
 | 3.17 | Napi lakossági profil: esti csúcs 18 és 21 óra között, éjszakai minimum 2 és 5 óra között | leírás | 2026 | [S52] M |
 | 3.18 | Időzítéssel elérhető lakossági csúcscsökkentés (mosógép, mosogatógép, szárító) | 2,2 és 3,6% között, télen 205 MW, nyáron 166 MW; költségcsökkenés legfeljebb 6,1% | modell, 2024 | Hartvig és Szabó, idézi a KSH Statisztikai Szemle [S53] M |
 
@@ -147,11 +154,11 @@ Nincs adat: pontos B tarifás felhasználószám, A1 és A2 megoszlás, friss el
 | 5.14 | Okosmérő: távlehívható mérő, amely távoli utasítást képes fogadni. Távlehívható mérő: a kiegyenlítő energia elszámolási mérési időintervallumának megfelelő gyakorisággal (ma negyedóra) tárol és továbbít adatot. | VET 3. § 48a., 56a. | hatályos | [S1] E |
 | 5.15 | Az elosztó okosmérőt szerel fel 3×80 A-ig: új hely 3×32 A-tól; teljesítménybővítés 3×32 A fölé; új HMKE; HMKE mérő hitelességének lejárta; új külön mért, nem vezérelt áramkör | Vhr. 14/B. § (1) | hatályos | [S3] E |
 | 5.16 | Kötelező csere 1 éven belül, ha a profilos kisfeszültségű fogyasztás az éves elszámolásban eléri a 4 000 kWh-t (korábban 5 000). A határidő az elszámolási időszak utolsó napjától fut; a 2026. január 1. és 2027. január 1. között lezárt időszakokra 2027. december 31. | Vhr. 14/B. § (2) a), 128/D. § (2), (3), módosította a 131/2026. Korm. r. 9. § | 2026. augusztus 29. | [S3] [S11] E |
-| 5.17 | A felhasználó egy választott helyén, egy mérőre, egy alkalommal, nyilatkozat alapján okosmérőt kérhet, az elosztó 1 éven belül telepít. Feltételek: hatályos hálózathasználati szerződés, legfeljebb 3×80 A, nincs már okosmérő-kompatibilis elosztói mérő, és nem áll fenn a (2) bekezdés szerinti kötelező csere. Előre fizetős és indirekt mérésű helyen nem kérhető. Az elosztó igazolja, ha a jogot még nem használták fel. | Vhr. 14/B. § (2a), (2b) | 2026. augusztus 29. | [S3] [S11] E |
+| 5.17 | A felhasználó egy választott helyén, egy mérőre, egy alkalommal, nyilatkozat alapján okosmérőt kérhet, az elosztó 1 éven belül telepít. Feltételek: hatályos hálózathasználati szerződés, legfeljebb 3×80 A, nincs már okosmérő-kompatibilis elosztói mérő, és nem áll fenn a (2) bekezdés szerinti kötelező csere. Előre fizetős és indirekt mérésű helyen nem kérhető. A jog a felhasználót illeti, összes felhasználási helye közül egy általa választott helyen, egy mérőre, egyszer ((2b)); az elosztó igazolja, ha a jogot még nem használták fel. | Vhr. 14/B. § (2a), (2b) | 2026. augusztus 29. | [S3] [S11] E |
 | 5.18 | A (2a) szerinti első okosmérő felszerelése vagy cseréje díjmentes | 10/2024. MEKH r. 33. § (1) 12., a 8/2026. MEKH r. 12. §-a iktatta be | 2026. augusztus 30. | [S11] E |
 | 5.19 | Egyéb igény esetén a felszerelés határideje 4 hónap; a 131/2026. törölte a díjfizetésre utaló szövegrészt, a költségviselés nem egyértelmű | Vhr. 14/B. § (3) | 2026. augusztus 29. | [S3] [S11] E |
-| 5.20 | Az (1) b), (2), (3) és (3a) bekezdés szerint felszerelt mérővel a mérőpont a felszerelés rögzítését követő második hónap 1. napjától minősül távlehívható mérővel rendelkezőnek; a (2a) szerinti kérésre felszerelt mérőt a szabály nem említi | Vhr. 14/B. § (7) | hatályos | [S3] E |
-| 5.21 | A2 árszabású egyetemes pontot úgy kell kezelni, mintha nem lenne távlehívható mérője | Vhr. 14/B. § (3c) | hatályos | [S3] E |
+| 5.20 | Az (1) b), (2), (3) és (3a) bekezdés szerint felszerelt mérővel a mérőpont a felszerelés rögzítését követő második hónap 1. napjától minősül távlehívható mérővel rendelkezőnek; a (2a) szerinti kérésre felszerelt mérőt a szabály nem említi. Ez joghézag: analógia útján valószínűleg ugyanez a kezdőnap alkalmazandó, ami a D kezdését a felszereléstől számítva 1 és 2 hónap közötti idővel tolja. A D kezdésének számításánál ezt a konzervatív feltevést használjuk; MEKH vagy elosztói állásfoglalás kérendő (19. fejezet). | Vhr. 14/B. § (7) | hatályos | [S3] E |
+| 5.21 | A2 árszabású egyetemes pontot úgy kell kezelni, mintha nem lenne távlehívható mérője; okosmérővel sem kérhető így D, az A2-es felhasználónak előbb A1-re kell váltania | Vhr. 14/B. § (3c) | hatályos | [S3] E |
 | 5.22 | 2026. december 31-ig a 14/B. § (1) és (3) közötti szabályok nem alkalmazhatók külön mért áramkört mérő mérőre; az ilyen okosmérős pont nem távlehívhatóként kezelendő | Vhr. 125. § (2), (3) | hatályos | [S3] E |
 | 5.23 | Új felhasználási hely csatlakozásakor a Vhr.-ben meghatározott esetekben okosmérőt kell szerelni | VET 45. § | 2026. július 31. | [S1] [S2] E |
 
@@ -179,8 +186,8 @@ Nincs adat: pontos B tarifás felhasználószám, A1 és A2 megoszlás, friss el
 | 6.18 | Klímás lakások aránya: KSH népszámlálás, szakértő idézésében | 28% | 2022 | [S72] M |
 | 6.19 | Klímás lakások egy másik forrás szerint | 1,5 millió a 4,6 millió lakásból, kb. 30% | 2025 | [S73] M |
 | 6.20 | MAVIR előrejelzés: további klímák 2030-ig | 0,5 és 1 millió között, összesen kb. 2,4 millió | 2025 | [S72] M |
-| 6.21 | Villanybojlerrel rendelkező háztartások aránya | 43% | 2004, régi adat | KSH [S74] E |
-| 6.22 | Gázfűtés mellett villanybojlerrel melegítenek vizet, ebből 48,4% nappali áramon | 857 ezer háztartás | 2008, régi adat | KSH [S75] E |
+| 6.21 | Villanybojlerrel rendelkező háztartások aránya | 43% | 2004, régi adat | KSH [S74] E, nem döntési adat |
+| 6.22 | Gázfűtés mellett villanybojlerrel melegítenek vizet, ebből 48,4% nappali áramon | 857 ezer háztartás | 2008, régi adat | KSH [S75] E, nem döntési adat |
 
 Nincs adat: szaldó és bruttó elszámolású HMKE-k teljes megoszlása, ténylegesen telepített otthoni akkumulátorok, otthoni töltők száma, villanybojler aránya 2020 után.
 
@@ -193,7 +200,7 @@ Nincs adat: szaldó és bruttó elszámolású HMKE-k teljes megoszlása, tényl
 | 7.3 | Nem tudja megfelelően fűteni a lakását, % | 2019: 5,4; 2020: 4,1; 2021: 5,4; 2022: 4,6; 2023: 7,1; 2024: 6,0; 2025: 5,8 | 2019 és 2025 között | Eurostat ilc_mdes01 [S34b] E |
 | 7.4 | Ugyanez az EU27-ben; szegénységi küszöb alatt Magyarországon és az EU-ban | EU27: 8,8%; küszöb alatt HU 16,8%, EU 19,6% | 2025 | [S34b] E |
 | 7.5 | Lakossági áramár adókkal, 2 500 és 4 999 kWh/év sáv, EUR/kWh | 2024 első félév 0,1094; második 0,1032; 2025 első félév 0,1040; második 0,1082 | 2024 és 2025 | Eurostat nrg_pc_204 [S35] E |
-| 7.6 | Ugyanez forintban; EU27 átlag | HU: 42,06 Ft/kWh (2025 első félév), 42,31 Ft/kWh (második félév); EU27: 0,2879 és 0,2896 EUR/kWh | 2025 | [S35] E |
+| 7.6 | Ugyanez forintban; EU27 átlag | HU: 42,06 Ft/kWh (2025 első félév), 42,31 Ft/kWh (második félév); EU27: 0,2879 és 0,2896 EUR/kWh. Az átszámítás árfolyama nincs megadva; a hányados 404,4, illetve 391 Ft/EUR (Sz), az Eurostat HUF-sor megjelölése ellenőrizendő. | 2025 | [S35] E |
 | 7.7 | Vásárlóerő-paritáson | HU 0,1510, EU27 0,2906 PPS/kWh | 2025 második félév | [S35] E |
 | 7.8 | Magyarország az EU legolcsóbb tagállama; utána Málta (0,1282) és Bulgária (0,1355) | 0,1082 EUR/kWh | 2025 második félév | [S35] E |
 | 7.9 | ACER: átlagos lakossági egységár; éves háztartási áramszámla | 9,0 eurócent/kWh (−7%); 212 EUR/év | 2024 | [S32] E |
@@ -214,7 +221,7 @@ Az áram és gáz szerinti kompenzáció bontása és a 2026-os Rezsivédelmi Al
 | 8.3 | Lakossági fogyasztó: saját háztartás, egy felhasználási hely, jövedelemszerző gazdasági tevékenység nélkül | VET 3. § 42. | hatályos | [S1] E |
 | 8.4 | Az egyetemes szolgáltató szerződéskötésre köteles, határozatlan idejű szerződésre, ÁSZF szerint; ellenőrizheti a jogosulatlan igénybevételt | VET 48. §, 50. § (1a), (2) | hatályos | [S1] E |
 | 8.5 | Rezsivédelmi szolgáltatás: állami közfeladat a 145. § (3), (3a) és (3b) szerinti áron; az egyetemes szolgáltató a nettó ráfordításáig ellentételezést kap | VET 50/B. § | hatályos | [S1] E |
-| 8.6 | Villamos energiában a rezsivédelmi szolgáltatásra az országos engedélyes egyetemes szolgáltató van kijelölve, 2027. december 31-ig | 236/2025. (VII. 31.) Korm. r. 1. § (1) b) | 2026. március 6-i időállapot | [S14] E |
+| 8.6 | Villamos energiában a rezsivédelmi szolgáltatásra az országos engedélyes egyetemes szolgáltató van kijelölve, 2027. december 31-ig. A rendelet csak a kijelölést és a rezsivédelmi szerződés keretét adja; a szerződést a felek minden év szeptember 30-ig felülvizsgálják. A kedvezményes árat és a sávhatárt nem ez a rendelet adja, hanem a VET 50/B. §, 145. § (3) és az NFM r. 6. §, 2. melléklet, lejárati nap nélkül. A 2027 utáni kockázatot lásd a 15.2 sorban. | 236/2025. (VII. 31.) Korm. r. 1. § (1) b), (4) | 2026. március 6-i időállapot, frissítése ellenőrizendő | [S14] E |
 | 8.7 | Az ellentételezés módszertanában az MVM Next Zrt. szerepel: 2025-re és 2026-ra 10 855 335 MWh indokolt áras mennyiség | 4/2011. NFM r. 8. § és 4. melléklet | hatályos | [S4] E |
 | 8.8 | Árszabások: A1 (egyzónás), A2 (kétzónás), B (időszakos, vezérelt), H (idényjellegű). Egyetemes szolgáltatói egyedi árszabás MEKH jóváhagyással lehet (B Komfort, B Geo). | NFM r. 4. § (1), 5. § (2); VET 145. § (4) | hatályos | [S4] [S1] E |
 | 8.9 | A2 csak zónaidőnkénti méréssel választható; A1 mellé A2 akkor, ha a felhasználó évente igazolja, hogy elektromos autót tart üzemben | NFM r. 4. § (3), (5a), (5b) | hatályos | [S4] E |
@@ -224,15 +231,15 @@ Az áram és gáz szerinti kompenzáció bontása és a 2026-os Rezsivédelmi Al
 | 8.13 | H árszabás: legalább 3,4 SCOP hőszivattyú vagy megújuló hőt hasznosító berendezés külön mért áramkörön (2020. január 1-jéig üzembe helyezett hőszivattyúnál legalább 3). Fűtési idény: október 15. és április 15. között. Az idényes ár nem lehet magasabb a legalacsonyabb B Alap árnál. | NFM r. 5. § (4), (6), 10. § (3); MEKH r. 26. § (7) | hatályos | [S4] [S5] E |
 | 8.14 | Sávhatár: A1, A2, B Alap és H esetén árszabásonként 2 523 kWh/év/mérési pont. H esetén a kedvezményes mennyiség a fűtési idényen kívül érvényes; a fűtési idényben H-ra nincs sávhatár, ott a rendeleti egységár alkalmazandó. | NFM r. 6. § (1), (6) | 2025. augusztus 1-jétől (20/2025. EM r.) | [S4] E |
 | 8.15 | Rezsiév: a kedvezményes mennyiség augusztus 1. és július 31. közötti időszakra vonatkozik | NFM r. 6. § (3) | hatályos | [S4] E |
-| 8.16 | Naparányos elszámolás: a sávhatár 1/365 része (szökőévben 1/366) szorozva a számlázási napokkal; a feletti mennyiség lakossági piaci áron, nem lakossági felhasználónál versenypiaci áron | NFM r. 6. § (4); VET 145. § (3a), (3b) | hatályos | [S4] [S1] E |
+| 8.16 | Naparányos elszámolás: a sávhatár 1/365 része (szökőévben 1/366) szorozva a számlázási napokkal; a feletti mennyiség lakossági piaci áron, nem lakossági felhasználónál versenypiaci áron. Éves elszámolásnál (A1, B) a keret az éves számlában, havi elszámolásnál (D) havonta érvényesül, lásd 10.8 | NFM r. 6. § (4); VET 145. § (3a), (3b) | hatályos | [S4] [S1] E |
 | 8.17 | Előre fizetős mérőnél a kedvezményes mennyiség kiosztása után jön a piaci ár | NFM r. 6. § (7) | hatályos | [S4] E |
 | 8.18 | Mikrovállalkozói sáv: 4 606 kWh/év az összes felhasználási hely együttes fogyasztásáig; több árszabásnál a kiszámlázott mennyiségek arányában oszlik meg | NFM r. 6. § (2) | hatályos | [S4] E |
-| 8.19 | A sávhatár feletti lakossági piaci árat a MEKH elnöke rendeletben állapítja meg; a mikrovállalkozói versenypiaci ár hirdetményben, nem lehet alacsonyabb a lakossági piaci árnál | VET 145. § (3a), (3b) | hatályos | [S1] E |
+| 8.19 | A sávhatár feletti lakossági piaci árat a MEKH elnöke rendeletben állapítja meg; a mikrovállalkozói versenypiaci ár hirdetményben, nem lehet alacsonyabb a lakossági piaci árnál. A lakossági piaci ár nem legmagasabb ár (141. § (6)), hanem olyan hatósági ár, amelynél alacsonyabbat szerződésben érvényesen kikötni nem lehet (141. § (7)); a D sáv feletti rugalmas árával való viszonyát lásd a 10.34 sorban. | VET 145. § (3a), (3b), 141. § (6), (7) | hatályos | [S1] E |
 | 8.20 | Fogyatékossággal élők a sávhatár felett további kedvezményes mennyiségre jogosultak | VET 64. § (4a) | hatályos | [S1] E |
 | 8.21 | Minden felhasználási helyre külön szerződés kell | Vhr. 2. melléklet 2.6. | hatályos | [S3] E |
 | 8.22 | Az egyetemes szolgáltatási ár nem tartalmazza a rendszerhasználati díjat, a VET 147. § szerinti pénzeszközöket, az áfát és a jövedéki adót | NFM r. 3. § (2) | hatályos | [S4] E |
 
-**Jogalapváltozás:** a 2 523 kWh-s keretet eredetileg a 259/2022. (VII. 21.) Korm. rendelet vezette be. Ezt a 2025. évi L. törvény 249. § (2) bekezdése 2025. augusztus 1-jével hatályon kívül helyezte; a keret ma a 4/2011. NFM rendelet 6. § (1) bekezdésében van [S4] E, [S15] M. A projekt anyagaiban a hatályos helyre hivatkozunk.
+**Jogalapváltozás:** a 2 523 kWh-s keretet eredetileg a 259/2022. (VII. 21.) Korm. rendelet vezette be. Ezt a 2025. évi L. törvény (a veszélyhelyzeti rendeletek törvényi szintre emeléséről) 249. § (2) bekezdése 2025. augusztus 1-jével hatályon kívül helyezte; a keret ma a 4/2011. NFM rendelet 6. § (1) bekezdésében van (a 20/2025. EM r. iktatta be) [S4] E, [S15] M. A törvény címe összhangban van ezzel, a 249. § (2) szövege elsődleges forrásból ellenőrizendő. A projekt anyagaiban a hatályos helyre hivatkozunk.
 
 ## 9. Árak 2026
 
@@ -253,7 +260,7 @@ Lakossági piaci ár (sávhatár felett), nettó energiaár: 31,80 Ft/kWh [S23] 
 
 ### 9.2 Rendszerhasználati díj (hálózati díj), 2026
 
-Forrás: MEKH H 2995/2025. határozat, az E.ON kivonata alapján [S12] E; maga a határozat nem volt elérhető.
+Forrás: MEKH H 2995/2025. határozat, az E.ON kivonata alapján [S12] E, kivonatból; maga a határozat nem volt elérhető, beszerzése nyitott. Jogforrási szint: a rendszerhasználati díj MEKH határozattal megállapított hatósági ár (H; VET 141. § (1), 142. §), a módszertan MEKH elnöki rendelet (J4; 2026. augusztus 31-től a 7/2026. MEKH r.).
 
 | Tétel | Érték |
 |---|---|
@@ -269,7 +276,8 @@ Forrás: MEKH H 2995/2025. határozat, az E.ON kivonata alapján [S12] E; maga a
 - A hálózati díj ma időben nem differenciált: az okosmérős felhasználónak sem olcsóbb éjjel.
 - A D árszabáshoz távlehívható mérő kell. Ha ez nem a Vhr. 14/B. § szerinti okosmérő, a KIF III kategória a magas alapdíj és teljesítménydíj miatt lényegesen drágább; ezért a D árszabást okosmérővel (KIF IV) érdemes számolni.
 - A 350/2025. (XI. 12.) Korm. rendelet 1. §-a annyit mondott ki, hogy a 2026-os díjmegállapítás nem növelheti a lakossági rendszerhasználati díjat. Konkrét Ft-értéket nem rögzít, és az 5. § szerint 2026. január 1-jén hatályát vesztette [S10] E. A 23,40 és a 16,18 Ft a H 2995/2025. határozat tételeiből adódik. A 2025-ös tételek (átviteli 4,84, KIF I 18,56, KIF II 11,34) ugyanezt az összeget adták.
-- Az MVM lakossági árlapja az elosztói alapdíjat havi tételként közli: A1 120,50 Ft/hó, B 39,50 Ft/hó nettó [S16] E.
+- Az MVM lakossági árlapja az elosztói alapdíjat havi tételként közli: A1 120,50 Ft/hó, B 39,50 Ft/hó nettó [S16] E. Az árlap 2022-es keltezésű, ma is aktuálisként közölve.
+- A KIF II alapdíj bruttó értéke 474 × 1,27 = 602 Ft/év (Sz); az app ezt a vezérelt kör alapdíjaként számolja (18. fejezet).
 
 ### 9.3 Bruttó végfelhasználói árak
 
@@ -281,7 +289,7 @@ Forrás: MEKH H 2995/2025. határozat, az E.ON kivonata alapján [S12] E; maga a
 | B Alap, MVM Démász | (1,90 + 16,18) × 1,27 | 22,962 Ft/kWh | [S16] E |
 | B Alap és B Komfort lakossági piaci ár | (31,80 + 16,18) × 1,27 | 60,935 Ft/kWh | [S6] E |
 
-A 20/2022. MEKH rendelet szövege még a hatályon kívül helyezett 259/2022. Korm. rendeletre hivatkozik [S6] E.
+A 20/2022. MEKH rendelet szövege még a hatályon kívül helyezett 259/2022. Korm. rendeletre hivatkozik [S6] E. Ez jogalkalmazási hiba, nem érvénytelenség: a lakossági piaci ár alapja a VET 145. § (3a), ezért hatályos marad.
 
 ### 9.4 Adók és pénzeszközök
 
@@ -301,18 +309,18 @@ A 20/2022. MEKH rendelet szövege még a hatályon kívül helyezett 259/2022. K
 | # | Szabály | Jogszabályhely | Hatály | Forrás |
 |---|---|---|---|---|
 | 10.1 | Rugalmas villamosenergia-árat tartalmazó szerződés: az azonnali piacok (másnapi és napon belüli) árváltozását legalább a piaci elszámolás gyakoriságával azonos időközönként tükrözi | VET 3. § 52a. (módosította a 2026. évi XXXVI. tv. 5. §) | 2026. július 31. | [S1] [S2] E |
-| 10.2 | A felhasználó ajánlattételi felhívására, távlehívható mérős ponton minden kereskedő köteles rugalmas árú ajánlatot tenni; ügyfélszám-küszöb nincs | VET 61/A. § (1) | a kötelezettség 2026. augusztus 31-től, VET 178. § (1) | [S1] [S2] E |
+| 10.2 | A felhasználó ajánlattételi felhívására, távlehívható mérős ponton minden kereskedő köteles rugalmas árú ajánlatot tenni; ügyfélszám-küszöb nincs. A 178. § (1) kifejezetten a villamosenergia-kereskedőt és az egyetemes szolgáltatót kötelezi, tehát az MVM Next egyetemes szolgáltatóként is kötelezett. A törvény csak a 10.3 sor két kivételét ismeri; a további MVM kizáró okok (10.21, 10.22) nem törvényből fakadnak. | VET 61/A. § (1), 178. § (1) | a kötelezettség 2026. augusztus 31-től | [S1] [S2] E |
 | 10.3 | Nincs ajánlattételi kötelezettség előre fizetős mérőnél, illetve szaldóban elszámolt ponton | VET 61/A. § (2) | 2026. július 31. | [S1] E |
 | 10.4 | A 200 000-nél több felhasználót ellátó kereskedő (az egyetemes szolgáltatót nem ideértve) kérésre legalább egyéves fix áras ajánlatot köteles tenni; semmis az elosztói rugalmassági szolgáltatást kizáró kikötés | VET 61/A. § (3), (4) | 2026. július 31. | [S1] E |
 | 10.5 | Tájékoztatás: teljes ellenérték díjelemenként, fix vagy rugalmas ár, egyszeri díjak, kedvezmények | VET 61. § (4) | hatályos | [S1] E |
 | 10.6 | A szerződésben szerepelnie kell, hogy fix vagy rugalmas az ár, rugalmas árnál a képletnek vagy módszertannak is | VET 62. § (1) d) | hatályos | [S1] E |
-| 10.7 | Az egyetemes szolgáltató a sávhatárig legfeljebb az A1 fix árat alkalmazhatja; az egységár akkor minősül rezsivédelmi árnak, ha az alkalmazandó fix árral azonos mértékű | VET 145. § (4a), (4b) | 2026. július 31. | [S1] E |
-| 10.8 | A sávhatár D esetén is 2 523, illetve 4 606 kWh, naparányosan; a feletti rész rugalmas áron | NFM r. 7/A. § (1), (2), 1. § (1a), beiktatta a 4/2026. (VIII. 28.) GEM r. 2. és 3. § | 2026. augusztus 29. | [S4] [S11] E |
+| 10.7 | Az 50/B. § szerinti közfeladatot ellátó egyetemes szolgáltató a sávhatárig legfeljebb az A1 fix árat alkalmazhatja; az egységár akkor minősül rezsivédelmi árnak, ha az alkalmazandó fix árral azonos mértékű. A (4a) a fix árakra a 141. § (2) és az (5) és (9) közötti bekezdések alkalmazását rendeli el, ebből: a sáv alatti A1 ár legmagasabb hatósági ár, attól csak lefelé lehet eltérni (141. § (6)); az A1 ár változása szerződésmódosítás nélkül a D szerződés részévé válik (141. § (8)). A szabály alanya csak az 50/B. § szerinti kijelölt szolgáltató (2027 utáni kockázat: 15.2). | VET 145. § (4a), (4b), 141. § (6), (8) | 2026. július 31. | [S1] E |
+| 10.8 | A sávhatár D esetén is 2 523, illetve 4 606 kWh, naparányosan (6. § (4)); a feletti rész rugalmas áron. Mivel a D elszámolási időszaka a naptári hónap (10.28), és a képletben Q_K az adott hónapban kedvezményes áron elszámolt mennyiség, a keret havonta 2 523 × napok száma / 365 kWh: 30 napos hónapban kb. 207, 31 naposban kb. 214 kWh. A források nem említenek éves (rezsiéves) kiegyenlítést; a ki nem használt nyári keret jó eséllyel nem vihető át a télre. Ez jogértelmezés, az MVM írásbeli megerősítése kell (19. fejezet). Következményét lásd a 10.32 sorban. | NFM r. 7/A. § (1), (2), 6. § (4), 1. § (1a), beiktatta a 4/2026. (VIII. 28.) GEM r. 2. és 3. §; M.2.2 4.2., 8.1. | 2026. augusztus 29. | [S4] [S11] [S19] E; a havi keret következtetés Sz |
 | 10.9 | Miniszteri felhatalmazás külön rugalmas sávhatár megállapítására | VET 170. § (2a) | hatályos | [S1] E |
 | 10.10 | A kereskedő honlapján és ügyfélszolgálatán tájékoztat: lehetőség, igénylés módja, költségek, kockázatok, mérőfeltétel | Vhr. 27/F. § (1) | 2026. augusztus 29. | [S3] [S11] E |
 | 10.11 | Rugalmas árra csak a felhasználó hozzájárulásával lehet áttérni | Vhr. 27/F. § (2) | 2026. augusztus 29. | [S3] E |
 | 10.12 | A 116/2007. GKM r. szerinti munkavállalói kedvezmény rugalmas áron vételezett mennyiségre nem vehető igénybe | 116/2007. GKM r. 11. § (2) b), módosította a 4/2026. GEM r. 1. § | 2026. augusztus 29. | [S11] E |
-| 10.13 | A MEKH évente jelentést tesz közzé a rugalmas árú szerződésekről: ajánlatok, számlahatás, áringadozás, visszaélések | VET 159. § (1) 12. | hatályos | [S1] [S2] E |
+| 10.13 | A MEKH évente jelentést tesz közzé a rugalmas árú szerződésekről: ajánlatok, számlahatás, áringadozás, visszaélések. A 159. §-ban két „12.” pont szól erről közel azonos szöveggel: az (1) bekezdésben (rugalmas villamosenergia-árat tartalmazó szerződések, felhasználók) és a (3) bekezdésben (rugalmas árszabást tartalmazó szerződések, fogyasztók); melyik a hivatkozandó, ellenőrizendő. | VET 159. § (1) 12., (3) 12. | hatályos | [S1] [S2] E |
 | 10.14 | Uniós alap: okosmérős felhasználó dinamikus árú szerződést kérhet legalább egy kereskedőtől és minden 200 000 ügyfél feletti kereskedőtől; kockázati tájékoztatás, hozzájárulás | 2019/944 irányelv 11. cikk, módosította a 2024/1711 | | [S24] [S25] M |
 
 ### 10.2 Az MVM Next D árszabása
@@ -339,26 +347,61 @@ A súlyozott átlag a teljes havi fogyasztásra számolódik; a sáv feletti men
 
 **Bruttó egységár a keret felett** (Sz): `(P_HUPX + 13,70 + 23,40) × 1,27`.
 
-**Fedezeti pont** (Sz): a 20/2022. MEKH rendelet a lakossági piaci árat bruttó végfelhasználói árként rögzíti (A1 és A2: 70,104 Ft/kWh, hálózati díjjal és áfával együtt); a 31,80 Ft nettó energiaár ebből levezetett érték (MVM árlap). Ha a 2027-es hálózati díj változik és a rendeletet nem módosítják, a 31,80 és a fedezeti pont is változik. A mai értékekkel: a hálózati díj és az áfa a fix és a D áron azonos, ezért a D árszabás a keret felett akkor olcsóbb, ha `P_HUPX + 13,70 < 31,80`, vagyis a havi súlyozott tőzsdei átlag 18,10 Ft/kWh nettó alatt van. 363 Ft/EUR mellett ez kb. 50, 400 Ft/EUR mellett kb. 45 EUR/MWh.
+**Fedezeti pont** (Sz): a 20/2022. MEKH rendelet a lakossági piaci árat bruttó végfelhasználói árként rögzíti (A1 és A2: 70,104 Ft/kWh, hálózati díjjal és áfával együtt); a 31,80 Ft nettó energiaár ebből levezetett érték (MVM árlap). Ha a 2027-es hálózati díj változik és a rendeletet nem módosítják, a 31,80 és a fedezeti pont is változik. A mai értékekkel: a hálózati díj és az áfa a fix és a D áron azonos, ezért a D árszabás a keret felett akkor olcsóbb, ha `P_HUPX + 13,70 < 31,80`, vagyis a havi súlyozott tőzsdei átlag 18,10 Ft/kWh nettó alatt van. Általánosan: fedezeti pont = 70,104 / 1,27 − hálózati díj − kereskedői díj (Sz). Érzékenységét a 10.3 szakasz táblája mutatja.
 
 | # | Szabály | Hely | Forrás |
 |---|---|---|---|
 | 10.15 | Negyedórás egységár = HUPX + kereskedői díj, két tizedesre kerekítve; a havi egységár a negyedórás összegek összege osztva a havi kWh-val; rövidebb elszámolási időszakra arányosan | M.2.2 4.3. a) és h) között | [S19] E |
 | 10.16 | Kereskedői díj 13,70 Ft/kWh nettó, egységes; közzétéve 2026. szeptember 10., „2026. szeptember 10. napjától alkalmazandó” | hirdetmény HVEKD1 | [S18] E |
-| 10.17 | Az ÁSZF és a hirdetmény szerint a kereskedői díj minden változását legalább 60 nappal előre hirdetményben kell közzétenni; az ajánlatminta 9.3. pontja csak „haladéktalan” közzétételt ír, a 60 napot a 9.4. pont emelésre írja elő. Negyedéves felülvizsgálat, a MEKH tájékoztatása, jóváhagyás nem kell. | ÁSZF 16.4.; M.2.2 9.3., 9.4.; hirdetmény | [S21] [S19] E |
+| 10.17 | Az ÁSZF és a hirdetmény szerint a kereskedői díj minden változását legalább 60 nappal előre hirdetményben kell közzétenni; az ajánlatminta 9.3. pontja csak „haladéktalan” közzétételt ír, a 60 napot a 9.4. pont emelésre írja elő. Negyedéves felülvizsgálat, a MEKH tájékoztatása; az MVM szerint jóváhagyás nem kell, ez a VET 73. § (2) előzetes hozzájárulási szabályával feszültségben van. A jogszabályi minimumot a 10.31 sor adja, az MVM vállalása e felett érvényes. | ÁSZF 16.4.; M.2.2 9.3., 9.4.; hirdetmény | [S21] [S19] E |
 | 10.18 | A hirdetmény fenntartja a jogot, hogy a díj „akár a közzétételt követően, de az alkalmazás megkezdése előtt” módosuljon | hirdetmény | [S18] E |
 | 10.19 | Díjemelés esetén a felhasználó 30 napon belül felmondhat (legalább 30 napos felmondási idővel), vagy visszaléphet A1-re | M.2.2 9.4. | [S19] E |
 | 10.20 | A képletet az MVM egyoldalúan módosíthatja, ha az index vagy a platform legalább 30 napig nem áll rendelkezésre, vagy megszűnik | ÁSZF 16.5.; M.2.2 9.5. | [S21] E |
-| 10.21 | Feltételek: egyetemes jogosultság; hálózathasználati szerződés; a POD-lap szerint távlehívható mérő vagy okosmérő és havi idősoros elszámolás; nem ideiglenes csatlakozás; nincs előre fizetős mérő; nincs tartozás a folyószámlán; nincs C tarifa | ÁSZF 16.1. a)-tól e)-ig, valamint i) és j) | [S21] E |
-| 10.22 | Kizáró ok: a felhasználási helyen nem lehet B vezérelt mérő, sem külön mért, nem vezérelt (H) eszköz | ÁSZF 16.1. f), g) | [S21] E |
+| 10.21 | Feltételek: egyetemes jogosultság; hálózathasználati szerződés; a POD-lap szerint távlehívható mérő vagy okosmérő és havi idősoros elszámolás; nem ideiglenes csatlakozás; nincs előre fizetős mérő; nincs tartozás a folyószámlán; nincs C tarifa. Az a), b), c) és e) pontnak van törvényi háttere (VET 50. § (3), 61/A. § (1), (2)). A d) (ideiglenes csatlakozás), i) (tartozás) és j) (C tarifa) kizárás SZ: a VET 61/A. § (2) csak az előre fizetős mérőt és a szaldós elszámolást ismeri kivételként, ezért jogalapjuk a 61/A. § (2)-n túl vitatható. A j) mögött részben jogszabály áll: a munkavállalói kedvezmény rugalmas áron vételezett mennyiségre nem vehető igénybe (10.12), de a teljes kizárás ennél tágabb. | ÁSZF 16.1. a)-tól e)-ig, valamint i) és j) | [S21] E |
+| 10.22 | Kizáró ok: a felhasználási helyen nem lehet B vezérelt mérő, sem külön mért, nem vezérelt (H) eszköz. SZ, törvényi alapja a 61/A. § (2)-n túl vitatható; MEKH állásfoglalás kérendő (19. fejezet). | ÁSZF 16.1. f), g) | [S21] E |
 | 10.23 | HMKE esetén csak bruttó elszámolással kérhető | ÁSZF 16.1. h), 6.37. | [S21] E |
-| 10.24 | A szerződés az aláírás napján lép hatályba, ha az MVM határidőben kézhez vette, és a 16.1. a) és j) közötti feltételek egyszerre teljesülnek; a feltételeket az MVM a teljes időtartam alatt ellenőrzi | ÁSZF 16.2., 16.3. | [S21] E |
+| 10.24 | A szerződés az aláírás napján lép hatályba, ha az MVM határidőben kézhez vette, és a 16.1. a) és j) közötti feltételek egyszerre teljesülnek; a feltételeket az MVM a teljes időtartam alatt ellenőrzi. Az ajánlatminta 5.2.3. pontja szerint viszont a szerződés az MVM kézhezvételével jön létre; szerződés nem léphet hatályba a létrejötte előtt, a kettő ellentmond (16.18). | ÁSZF 16.2., 16.3.; M.2.2 5.2.3. | [S21] [S19] E |
 | 10.25 | Kezdés: ha az aláírt ajánlat a hónap 1. és 15. napja között érkezik vissza, a második hónap 1. napján, ha később, a harmadik hónap 1. napján indul, de legkorábban 2027. január 1-jén; addig A1 és lakossági piaci ár szerint számolnak | M.2.2 5.4.1., 5.4.2. | [S19] [S22] E |
-| 10.26 | Visszalépés: ha a felhasználó az 5.4.2. pont szerinti időponttól (a forrás szövege a szerződés létrejöttét és a rugalmas ár kezdetét is említi, a kezdőpont kétértelmű) számított 12 hónapon belül felmond, a szerződés megszűnik vagy A1-re vált, ugyanarra a helyre 12 hónapig nem köthet újra D árszabást. A1-re váltás: 5-éig beadott kérelemnél a következő hónap 1. napján | M.2.2 9.1. | [S19] E |
-| 10.27 | Negatív havi energiadíj esetén a számlán 0 szerepel; a lakossági felhasználó a szerződésben választ: kifizetést kér vagy beszámítást. Nem lakossági felhasználónak számlát kell kiállítania. | ÁSZF 6.34. és 6.36. között; M.2.2 8.3. és 8.8. között | [S21] [S19] E |
+| 10.26 | Visszalépés: ha a felhasználó az 5.4.2. pont szerinti időponttól számított 12 hónapon belül felmond, a szerződés megszűnik vagy A1-re vált, ugyanarra a helyre 12 hónapig nem köthet újra D árszabást. Kivétel: a tilalom nem alkalmazandó, ha a felhasználó a 9.3. és 9.4. pont szerinti, rá hátrányos módosítás (díjemelés) miatt lép ki. A 12 hónapos ablak kezdőpontja kétértelmű, mert az 5.4.2. pont két időpontot nevez meg (a szerződés létrejöttét és a rugalmas ár kezdetét); a Ptk. 6:86. § szerint a fogyasztóra kedvezőbb olvasat a korábbi (létrejötte), az app szövegében a konzervatív, később záruló olvasatot közöljük. Az újrakötési tilalom a) és b) esetben a megszűnés napjától, c) esetben (A1-re váltás) az A1 alkalmazásának kezdetétől fut. A1-re váltás: 5-éig beadott kérelemnél a következő hónap 1. napján. SZ; a tilalom a VET 61/A. § (1) ajánlattételi kötelezettségével ellentétes lehet, MEKH állásfoglalás kérendő. A Ptk. hely ellenőrizendő. | M.2.2 9.1., 5.4.2. | [S19] E |
+| 10.27 | Negatív havi energiadíj esetén a számlán 0 szerepel, az MVM tartozásáról a felhasználó külön tájékoztatást kap; a lakossági felhasználó a szerződésben választ: kifizetést kér vagy beszámítást (lejárt tartozásába vagy a következő hónapok elszámolásába). Nem lakossági felhasználónak számlát kell kiállítania. Csak az energiadíj nullázódik: a rendszerhasználati díj és az áfa továbbra is jár. A beszámítás polgári jogi alapja a Ptk. 6:49. § (ellenőrizendő). Gyakorlatilag kivételes: a sáv alatti rész pozitív, így negatív havi végösszeghez a teljes havi fogyasztással súlyozott tőzsdei átlagnak −13,70 Ft/kWh alá, a sáv alatti rész fedezete miatt ennél is lejjebb kellene esnie (Sz). Az app ezt nem modellezi. | ÁSZF 6.34. és 6.36. között; M.2.2 8.3. és 8.8. között | [S21] [S19] E |
 | 10.28 | D esetén csak elszámoló számla és végszámla van, részszámla nincs; elszámolási időszak a naptári hónap, a negyedórás elosztói adatokból | ÁSZF 6.11.; M.2.2 8.1., 8.2. | [S21] [S19] E |
 | 10.29 | Az MVM közzétette a 2025. szeptember 1. és 2026. augusztus 31. közötti negyedórás rugalmas egységárakat (35 040 érték, nettó, a kereskedői díjjal) | D árszabás oldal, letölthető lista | [S22] E |
-| 10.30 | A 12 havi listából: átlag 59,08 Ft/kWh nettó (tőzsdei rész 45,38); a negyedórák 11,0%-a volt a 31,80-as fedezeti szint alatt; nyáron 17,1%, télen 1,2%; legolcsóbb óra (13 óra) átlaga 37,4, legdrágább (19 óra) 89,1; esti csúcsú háztartási profil súlyozott tőzsdei átlaga 51,14, a nap legolcsóbb 4 órájáé 19,72 | a 10.29 sor listájából | Sz, független újraszámolással ellenőrizve |
+| 10.30 | A 12 havi listából: átlag 59,08 Ft/kWh nettó (tőzsdei rész 45,38); a negyedórák 11,0%-a volt a 31,80-as fedezeti szint alatt; nyáron (május és augusztus között) 17,1%, télen (november és február között) 1,2%; legolcsóbb óra (13 óra) átlaga 37,4, legdrágább (19 óra) 89,1; esti csúcsú háztartási profil (10.3 szakasz) súlyozott tőzsdei átlaga 51,14, a nap legolcsóbb 4 órájáé 19,72. Független újraszámolás (HUPX másnapi ár az Energy-Charts adatából, EKB napi árfolyammal, kb. 35 040 negyedóra): 45,37; 59,07; 11,0%; 17,1%; 1,2%; 37,4; 89,1; 51,08; 19,68. Az eltérés 0,1 Ft/kWh alatt van. Tágabb évszakhatárral (április és szeptember között, illetve október és március között) 17,8% és 4,2%. | a 10.29 sor listájából | Sz, független újraszámolással ellenőrizve; a letöltött MVM lista archiválása (fájlnév, hash, letöltési idő) nyitott |
+| 10.31 | Kógens VET minimum a díj egyoldalú módosítására, amely az MVM feltételeinél erősebb: az egyetemes szolgáltató a módosítás hatálybalépése előtt 30 nappal közzéteszi, és az érintetteket írásban értesíti a módosításról és a felmondás lehetőségéről (62. § (2)); egyetemes szolgáltatásra jogosultakat érintő egyoldalú módosításhoz a Hivatal előzetes hozzájárulása kell (73. § (2)); az ellenérték módosítása lényeges módosítás (73. § (3)); legalább 30 napos értesítés a felmondás feltételeivel (73. § (4)); hátrányos módosításnál 45 naptári napon belül jogkövetkezmény nélküli felmondás (73. § (6)); díjcsökkentésnél a 30 napos értesítési határidő nem kötelező (73. § (7)); árváltozásnál közzététel 3 munkanapon belül és személyre szóló tájékoztatás legkésőbb az új áras számlán (145. § (6), (7)). A megsértése lakossági ügyben a fogyasztóvédelmi hatóság elé tartozik (57. §). Ahol az MVM feltétele ennél kevesebbet ad (például csak honlapi közzététel, 30 napos felmondás), a VET az irányadó. | VET 62. § (2), 73. § (2), (3), (4), (6), (7), 145. § (6), (7), 57. § | [S1] E |
+| 10.32 | A havi naparányos keret (10.8) következménye szezonális fogyasztásnál: nyáron a havi fogyasztás a havi keret alatt marad, a ki nem használt keret elvész, télen a keret felett a rugalmas ár jár. Ezért a keret közelében is van sáv feletti mennyiség. Az app modellje (havi szorzó 1 + 0,2218 · cos(2π(m − 1)/12), 12 havi árak, eltolás nélkül) szerint a D többlete a rezsivédett árhoz képest: 2 400 kWh/év: kb. 9 300 Ft/év (5 hónapban kb. 122 kWh a keret felett, éves kerettel 0); 2 700 kWh/év: kb. 16 500 Ft/év; 4 000 kWh/év: kb. 61 600 Ft/év. A 2 400 és 2 700 kWh/év közötti sávban tehát évi kb. 8 000 és 16 500 Ft közötti többlet adódik (az auditor független modellje 2 400 kWh-nál kb. 8 000 és 9 300 Ft között). Ha az MVM éves kiegyenlítést alkalmaz, ez a többlet nagyrészt eltűnik. | NFM r. 6. § (4), 7/A. § (2); M.2.2 8.1. | Sz, az app 1e51a42 modelljével és az auditor audit.py számolásával |
+| 10.33 | A 3. § 52a. szerinti „tükrözés” a D képletében: a negyedórás árak csak a teljes havi fogyasztással súlyozott havi átlagon keresztül hatnak, és csak a sáv feletti hányadra (Q_P/Q_N). Egy kWh negyedórás eltolása ezért a két negyedóra árkülönbségének csak Q_P/Q_N részét hozza; a havi átlagolás csökkenti az időzítés értékét. Hogy ez „tükrözi-e” a negyedórás árváltozást, értelmezhető, de vitatható (19. fejezet). | VET 3. § 52a.; M.2.2 4.2. | [S1] [S19] E; értelmezés Sz |
+| 10.34 | A sáv feletti rugalmas ár és a VET 141. § (7) viszonya: a törvény tiltja a lakossági piaci árnál alacsonyabb ár kikötését, a rugalmas ár ez alóli kivételét törvény nem, csak miniszteri rendelet mondja ki (NFM r. 7/A. § (2)); a 170. § (2a) felhatalmazás csak a sávhatárra szól. A jogász álláspontja: a 61/A. § (1) és a 145. § (4a) rendszertani értelmezése alapján jogszerű, de formailag nem tiszta; a felhasználó kockázata csekély. MEKH állásfoglalás kérendő. | VET 141. § (7), 145. § (4a), 170. § (2a), 61/A. § (1); NFM r. 7/A. § (2) | [S1] [S4] E; értelmezés |
+
+### 10.3 Számítási feltevések és érzékenység
+
+**Fedezeti pont érzékenysége** (Sz; képlet: 70,104 / 1,27 − hálózati díj − kereskedői díj; az EUR/MWh érték 18,10 Ft/kWh átszámítva):
+
+| Változó | Érték | Fedezeti pont, nettó Ft/kWh |
+|---|---|---|
+| Alapeset (hálózati díj 23,40, kereskedői díj 13,70) | | 18,10 |
+| Hálózati díj +10% | 25,74 | 15,76 |
+| Hálózati díj −10% | 21,06 | 20,44 |
+| Kereskedői díj +2 Ft | 15,70 | 16,10 |
+| Kereskedői díj −2 Ft | 11,70 | 20,10 |
+| Lakossági piaci ár +10% | 77,11 bruttó | 23,62 |
+| Árfolyam 350 Ft/EUR | | 51,7 EUR/MWh |
+| Árfolyam 367 Ft/EUR (EKB, 2026. szeptember 28.: 367,1) | | 49,3 EUR/MWh |
+| Árfolyam 374,8 Ft/EUR (EKB átlag, 2025. szeptember 1. és 2026. augusztus 31. között) | | 48,3 EUR/MWh |
+| Árfolyam 400 Ft/EUR | | 45,3 EUR/MWh |
+
+**Háztartási profil** (az app feltevése, nem hivatalos terhelési profil): óránkénti súlyok 0 és 6 óra között 0,5; 6 és 9 óra között 1,2; 9 és 17 óra között 0,8; 17 és 22 óra között 2,0; 22 és 24 óra között 0,9. Az elosztói vagy MAVIR lakossági terhelési profil (SLP) használata nyitott.
+
+| Profil | Súlyozott tőzsdei átlag, nettó Ft/kWh (12 hónap) |
+|---|---|
+| Egyenletes (minden negyedóra azonos súlyú) | 45,37 |
+| Az app esti csúcsú profilja | 51,08 |
+| A nap legolcsóbb 4 órája (felső korlát az időzítésre) | 19,68 |
+
+A két profil különbsége 5,71 Ft/kWh nettó; 4 000 kWh/év fogyasztásnál (kb. 1 477 kWh a keret felett) ez kb. ±10 700 Ft/év bruttó bizonytalanság (Sz). A legolcsóbb 4 óra 16 nem feltétlenül összefüggő negyedóra, utólagos tökéletes tudással választva, ezért optimista felső korlát. A dokumentum saját forrása szerint a lakossági időzítéssel elérhető csúcscsökkentés 2,2 és 3,6% között van (3.18), ezért az app alapértelmezett eltolása 10%.
+
+**Árforrás:** a szerződéses index a HUPX DAM negyedórás elszámolóár. Az app és az újraszámolás az Energy-Charts (Fraunhofer ISE, CC BY 4.0) HU zóna másnapi árát használja, amely piac-összekapcsolás mellett ugyanez; az MVM listától való eltérés az auditor ellenőrzése szerint 0,02% alatt van. Havi ellenőrzés: az MVM közzétett havi listájának átlaga és az app havi átlaga összevetve.
+
+**Árfolyam:** a szerződés az MNB napi hivatalos árfolyamát írja (M.2.2 4.3. c)), az app az EKB referencia-árfolyamát. Az eltérés tipikusan 0,3% alatti (az auditor feltevése, MNB adat nélkül, ellenőrizendő), 4 000 kWh/év mellett 250 Ft/év alatt.
 
 A D árszabás iránti érdeklődésről (igénylők száma) 2026. szeptember 29-ig nincs nyilvános MVM közlés.
 
@@ -422,9 +465,9 @@ A lakossági részvétel a MAVIR rendszerszintű termékeiben (aFRR, mFRR) üzle
 | 14.5 | Előre fizetős mérő minden igénylő szociálisan rászorulónak jár; részletfizetés 4, 10, illetve 12 hónap, kamatmentesen | Vhr. 32. § körüli rész (2) és (6) között | [S3] E |
 | 14.6 | Panasz: előbb az engedélyeshez; lakossági ügyben a számlázás, mérés és kikapcsolás a fogyasztóvédelmi hatósághoz, egyéb ügy a MEKH-hez; elévülés 5 év; panasz alatt nincs kikapcsolás | VET 57. § (1) és (10) között | [S1] E |
 | 14.7 | Békéltető testület a fogyasztóvédelmi törvény 18. §-a szerint; a számlán fel kell tüntetni a bíróságon kívüli vitarendezés elérhetőségét | Vhr. 21/A. § (3b) c) | [S3] E, a Fgytv. M |
-| 14.8 | Egyoldalú szerződésmódosítás: egyetemes szolgáltatásban MEKH előzetes hozzájárulással, lényeges hátrány nélkül; értesítés 30 nappal (egyetemes szolgáltató), illetve 14 nappal (kereskedő) előtte, felmondási joggal | VET 73. § (2), (3), 62. § (2) | [S1] E |
+| 14.8 | Egyoldalú szerződésmódosítás: egyetemes szolgáltatásban MEKH előzetes hozzájárulással, lényeges hátrány nélkül; értesítés 30 nappal (egyetemes szolgáltató), illetve 14 nappal (kereskedő) előtte, felmondási joggal. Az egyetemes szolgáltató legalább 30 nappal előre értesít a felmondás feltételeivel (73. § (4)); hátrányos módosításnál 45 naptári napon belül jogkövetkezmény nélkül felmondható (73. § (6)); ha a módosítással kizárólag díj csökken, a 30 napos értesítési határidő nem kötelező (73. § (7)). A D díjára alkalmazva lásd 10.31. | VET 73. § (2), (3), (4), (6), (7), 62. § (2) | [S1] E |
 | 14.9 | Árváltozás: közzététel 3 munkanapon belül; személyre szóló tájékoztatás legkésőbb az új áras számlán | VET 145. § (6), (7) | [S1] E |
-| 14.10 | Kereskedőváltás díjmentes; szerződésmegszüntetési díj lakossággal és kisvállalkozással szemben nem alkalmazható | VET 47/B. § (1) és (4) között | [S1] E |
+| 14.10 | Kereskedőváltás díjmentes. Szerződésmegszüntetési díj csak lakossági fogyasztónak és kisvállalkozásnak nem minősülő felhasználóval szemben, határozott idejű és rögzített áras szerződés lejárat előtti felmondásánál számítható fel (47/B. § (2)); lakossággal szemben tehát nem. A D 12 hónapos újrakötési tilalma (10.26) nem díj, ezért ebbe nem ütközik, a 61/A. § (1)-gyel viszont igen lehet. | VET 47/B. § (1) és (4) között | [S1] E |
 | 14.11 | Okosmérő-adatok: az elosztó díjmentesen hozzáférhetővé teszi a hitelesített negyedórás és a közel valós idejű adatokat a felhasználónak és meghatalmazott harmadik félnek, interfészen keresztül | Vhr. 14/C. § (3), (4) | [S3] E |
 | 14.12 | Kereskedőnek csak a rendszerhasználó hozzájáruló nyilatkozatával adhatók át mérési adatok; az adatkezelést az elosztói és a kereskedelmi szabályzat külön fejezete rendezi | VET 33/B. §; Vhr. 14/C. § (2) | [S1] [S3] E |
 | 14.13 | Az energetikai adatszolgáltató platform hozzáfér a mérési adatokhoz, az aktív felhasználó együttműködik vele | VET 43. § (4), 45/A. § | [S1] E |
@@ -434,9 +477,9 @@ A lakossági részvétel a MAVIR rendszerszintű termékeiben (aFRR, mFRR) üzle
 
 | # | Állítás | Forrás |
 |---|---|---|
-| 15.1 | A lakossági hálózati díj befagyasztása csak 2026-ra szólt; a 350/2025. rendelet 2026. január 1-jén megszűnt. 2027-re jogszabályi befagyasztás nem található. Az új díjmódszertan 2026. augusztus 31-től hatályos (7/2026. MEKH r.). | [S10] [S11] E |
-| 15.2 | A rezsivédelmi kijelölés 2027. december 31-ig szól. A rezsicsökkentés megszüntetéséről hivatalos tervezet nem található; a Pénzügyminisztérium 2026 szeptemberében érdemben nem nyilatkozott. | [S14] E, [S29] M |
-| 15.3 | Az MVM D árszabása 2027. január 1-jén indul. A díjváltozás 60 napos közzétételi szabálya miatt 2026. november 1. után közölt díj legkorábban 2027 januárjában alkalmazható. | [S18] [S21] E, a következtetés Sz |
+| 15.1 | A lakossági hálózati díj befagyasztása csak 2026-ra szólt; a 350/2025. rendelet 2026. január 1-jén megszűnt. 2027-re jogszabályi befagyasztás nem található. Az új díjmódszertan 2026. augusztus 31-től hatályos (7/2026. MEKH r., J4). A 2027-es lakossági díjat MEKH határozat (H) állapítja meg, befagyasztó jogszabály nélkül; a változás a 31,80 Ft-os nettó energiarészt és a 18,10 Ft-os fedezeti pontot is elmozdítja (10.3). | [S10] [S11] E |
+| 15.2 | A rezsivédelmi kijelölés 2027. december 31-ig szól. A rezsicsökkentés megszüntetéséről hivatalos tervezet nem található; a Pénzügyminisztérium 2026 szeptemberében érdemben nem nyilatkozott. A kijelölés lejárta önmagában nem szünteti meg a kedvezményes árat és a sávhatárt (VET 50/B. §, 145. § (3), NFM r. 6. §, határozatlan időre). Megszűnik viszont az ellentételezés jogalapja, és a VET 145. § (4a), (4b), valamint az NFM r. 7/A. § alanya („az 50/B. § szerinti közfeladatot ellátó egyetemes szolgáltató”) sem létezik; a D sáv alatti A1 kötése kiesik a törvényi keretből. Kockázat, nem előrejelzés: 2027 végéig új kijelölés vagy módosítás kell, különben a D rezsivédett része jogilag bizonytalanná válik. | [S14] [S1] [S4] E, [S29] M; értelmezés |
+| 15.3 | Az MVM D árszabása 2027. január 1-jén indul. A díjváltozást „legalább az alkalmazását megelőző 60. napon” kell közzétenni, ezért 2026. november 2-ig közzétett módosítás 2027. január 1-jétől alkalmazható, a később közzétett csak ennél később. A 2026. szeptember 10-i hirdetmény azonnali alkalmazandósága a jogász szerint nem sérti a 60 napos szabályt: első díjmegállapítás, és rugalmas árat 2027. január 1. előtt senki nem fizet. | [S18] [S21] E, a következtetés Sz |
 | 15.4 | Uniós átültetés: a 2024/1711 irányelv általános határideje 2025. január 17.; a kereskedőválasztási és energiamegosztási rendelkezéseké 2026. július 17.; energiamegosztás ügyében kötelezettségszegési eljárás indult | [S24] M, [S26] E |
 | 15.5 | 2 kWh feletti meglévő tárolók bejelentési és távvezérelhetőségi határideje 2027. június 30. | [S11] E |
 | 15.6 | A 4 000 kWh feletti helyek okosmérő-cseréjének határideje a 2026-ban lezárt elszámolásoknál 2027. december 31. | [S11] E |
@@ -448,7 +491,7 @@ Nyitott pontok: a H 2995/2025. határozat teljes szövege; a MEKH 2026-os lakoss
 
 | # | Ellentmondás | Mit használjunk |
 |---|---|---|
-| 16.1 | Az MVM D árszabás oldala szerint a külön mért áramkörök „változatlanul működnek tovább”, az ÁSZF 16.1. f) és g) pontja szerint B vezérelt mérő vagy H eszköz a helyen kizárja a D árszabást [S22] [S21] | Az ÁSZF-et: vezérelt vagy H mellett a D nem választható. Bemutatón kérdésként is érdemes felvetni. |
+| 16.1 | Az MVM D árszabás oldala szerint a külön mért áramkörök „változatlanul működnek tovább”, az ÁSZF 16.1. f) és g) pontja szerint B vezérelt mérő vagy H eszköz a helyen kizárja a D árszabást [S22] [S21] | Az ÁSZF-et (SZ): az MVM szerződési feltétele szerint vezérelt vagy H mellett a D nem választható. Indok: a feleket a szerződés köti, amelynek az üzletszabályzat és az ÁSZF része (M.2.2 10.1.; Ptk. 6:78. §, ellenőrizendő); a weboldal a Vhr. 27/F. § (1) szerinti tájékoztatás (T), nem szerződési feltétel. A weboldal mondata úgy is olvasható, hogy a külön mért kör fizikai áramkörként működik tovább, ami nem mond ellent az ÁSZF-nek. Maga a kizárás törvényi alapja vitatható (10.22). MVM írásbeli állásfoglalás kérendő (19. fejezet). |
 | 16.2 | Az MVM D árszabás oldala még 5 000 kWh-s okosmérő-küszöböt ír, a Vhr. 14/B. § (2) a) 2026. augusztus 29-től 4 000 kWh-t [S22] [S3] | A Vhr.-t: 4 000 kWh. |
 | 16.3 | A rugalmas árú szerződés fogalmát több másodlagos forrás a VET 3. § 52b. pontjára teszi, a hatályos szöveg szerint 52a. [S1] | 52a. |
 | 16.4 | A 2 523 kWh-s keretet sok forrás még a 259/2022. Korm. rendeletre vezeti vissza, amely 2025. augusztus 1. óta nem hatályos [S15] | 4/2011. NFM r. 6. § (1). |
@@ -463,8 +506,9 @@ Nyitott pontok: a H 2995/2025. határozat teljes szövege; a MEKH 2026-os lakoss
 | 16.13 | A Villanylap „kötelező” D árszabás-bevezetést ír 2027. január 1-jére; az MVM szerint önkéntes [S79] [S19] | Önkéntes. |
 | 16.14 | A Vhr. 5. § (5e) a 4/2011. NFM r. 2. melléklet „4. sorára” hivatkozik a HMKE átvételi árnál, a táblázatban az A1 a 3. sor | Az MVM gyakorlata: A1 elosztói ár. |
 | 16.15 | HMKE-s ponton választható árszabás: az üzletszabályzat 8.5.2. szerint A árszabás, B és H nem; a D árszabás ÁSZF 6.37. szerint csak egyzónaidős, tehát A2 sem [S23] [S21] | D árszabásnál az ÁSZF-et. |
-| 16.16 | Kereskedői díj módosítása: az ÁSZF 16.4. és a hirdetmény minden változásra 60 napot ír, az ajánlatminta 9.3. csak „haladéktalan” közzétételt, 60 napot csak emelésre (9.4.) [S21] [S19] [S18] | A szigorúbbat: 60 nap. |
-| 16.17 | Az M.2.2 ajánlatminta a 4/2011. NFM rendeletet „(I. 29.)” dátummal idézi (helyesen I. 31.), és a képletmagyarázatban „XY rendelet” helyőrző maradt [S19] | A helyes jogszabályhely: 4/2011. (I. 31.) NFM r. 7/A. §. |
+| 16.16 | Kereskedői díj módosítása: az ÁSZF 16.4. és a hirdetmény minden változásra 60 napot ír, az ajánlatminta 9.3. csak „haladéktalan” közzétételt, 60 napot csak emelésre (9.4.) [S21] [S19] [S18] | Először a jogszabályt, felette az MVM vállalását. Jogszabályi minimum (10.31): 30 nappal előbb közzététel és írásbeli egyéni értesítés, MEKH előzetes hozzájárulás, hátrányos módosításnál 45 napos jogkövetkezmény nélküli felmondás, személyre szóló tájékoztatás legkésőbb az új áras számlán. Felette az MVM vállalása: 60 napos előzetes közzététel (ÁSZF 16.4., hirdetmény; az ajánlatmintában emelésre 9.4.). |
+| 16.17 | Az M.2.2 ajánlatminta a 4/2011. NFM rendeletet „(I. 29.)” dátummal idézi (helyesen I. 31.), a képletmagyarázatban „XY rendelet” helyőrző maradt, és a 4.1. pont a sávhatárt a „Vet. 3. § 29a. vagy 29/b.” pontra vezeti vissza, holott a hatályos jelölés 29a. és 29b. [S19] | A helyes jogszabályhely: 4/2011. (I. 31.) NFM r. 7/A. §; a sávhatár fogalma VET 3. § 29a. és 29b. |
+| 16.18 | Az ÁSZF 16.2. szerint a D szerződés a felhasználó aláírásának napján lép hatályba, az M.2.2 5.2.3. szerint az MVM hiánytalan kézhezvételével jön létre. Szerződés nem léphet hatályba a létrejötte előtt [S21] [S19] | Az ajánlatmintát a létrejöttre (kézhezvétel); a 12 hónapos ablak kezdőpontjánál (10.26) a kétértelműséget MVM-től kell tisztázni. |
 
 ## 17. Adathiányok
 
@@ -481,24 +525,150 @@ Nyilvános forrásban 2026. szeptember 29-ig nem található:
 
 ## 18. Következmények az appra
 
-A jelenlegi app (frontend/static/js/app.js) ezekkel a pontokkal egyezik, és ezeket kell megtartani:
+Az app állapota: commit 1e51a42, 2026. szeptember 29. (frontend/static/js/app.js, frontend/index.html). A „Szint” jelölés a dokumentum elején leírt jogforrási szint: ahol SZ áll, a felületen „az MVM feltételei szerint” fordulattal hivatkozunk.
 
-- **Tarifaállandók:** A1 36,4 Ft/kWh (elosztónként 35,3 és 36,4 között, a felületen jelölve), keret felett 70,1; vezérelt 23,0 és 60,9; kereskedői díj 13,70; hálózati díj 23,40; áfa 27%; lakossági piaci energiaár 31,80; fedezeti pont 18,10.
-- **D árszabás képlete:** a teljes havi fogyasztás súlyozott tőzsdei átlaga plusz kereskedői díj, a keret feletti mennyiségre.
-- **Vezérelt és D:** a D árszabás vezérelt (B) vagy H mérő mellett nem választható (ÁSZF 16.1. f), g)).
-- **Okosmérő:** 4 000 kWh/év felett kötelező csere, kérésre egyszer ingyen (Vhr. 14/B. § (2) a), (2a); 10/2024. MEKH r. 33. § (1) 12.).
-- **Indulás:** igénylés 2026. szeptember 1-jétől, legkorábban 2027. január 1-jétől él; első 12 hónapon belüli visszalépés után 12 hónapig nem köthető újra.
-- **Hálózati díj:** ma nem függ a napszaktól, ezért az időzítés hatása kizárólag az energiaáron keresztül jelentkezik.
+### 18.1 Egyezik a forrásokkal
 
-Figyelni kell, és változás esetén az appot frissíteni:
+| Elem az appban | Érték vagy viselkedés | Dokumentumsor | Szint |
+|---|---|---|---|
+| Kedvezményes keret | 2 523 kWh/év | 8.14, 10.8 | J3 |
+| A1 rezsivédett ár | 36,4 Ft/kWh bruttó (elosztónként 35,3 és 36,4 között, a felületen jelölve) | 9.1, 9.3 | J3 és H |
+| Lakossági piaci ár, keret felett | 70,1 Ft/kWh bruttó (70,104) | 9.3 | J4 |
+| Vezérelt (B) ár | 23,0 és 60,9 Ft/kWh bruttó | 9.3 | J3, J4 és H |
+| Vezérelt mérő alapdíja | 602 Ft/év bruttó (KIF II 474 Ft/év × 1,27) | 9.2 | H |
+| Kereskedői díj | 13,70 Ft/kWh nettó | 10.16 | SZ |
+| Hálózati díj | 23,40 Ft/kWh nettó | 9.2 | H |
+| Áfa | 27% | 9.4 táblázat 9.1 sor | J1 |
+| Fedezeti pont | 31,80 − 13,70 = 18,10 Ft/kWh nettó | 10.2 szakasz, 10.3 | Sz |
+| D képlet | a teljes havi fogyasztás negyedórás árakkal súlyozott tőzsdei átlaga plusz kereskedői díj, a keret feletti mennyiségre | 10.2 szakasz, 10.15 | SZ |
+| D keret | havonta naparányos (2 523 × napok / 365), éves kiegyenlítés nélkül (a szigorúbb olvasat) | 10.8, 10.32 | J3, a havi elszámolás SZ |
+| Rezsivédett és vezérelt keret | éves elszámolásban egyenlítődik ki | 8.15, 8.16, 11.7 | J3, SZ |
+| Vezérelt és D együtt | az MVM feltételei szerint nem választható | 10.22, 16.1 | SZ, jogalapja vitatható |
+| Okosmérő feltétel | csak a Vhr. 14/B. § szerinti okosmérővel (KIF IV) érvényes a számítás; más távlehívható mérőnél (KIF III) évente több százezer forint többlet, erre nem vonatkozik | 5.15 és 5.18 között, 9.2 | J2, J4 és H |
+| Okosmérő igénylése | 4 000 kWh/év felett kötelező csere; egyébként felhasználónként egy helyre, egyszer díjmentesen kérhető, akár egyéves telepítéssel | 5.16, 5.17, 5.18 | J2, J4 |
+| A2 tarifa | előbb A1-re kell váltani | 5.21 | J2 |
+| Indulás | igénylés 2026. szeptember 1-jétől, legkorábban 2027. január 1-jétől | 10.2, 10.25 | J1, SZ |
+| Visszalépés | az MVM feltételei szerint első 12 hónapon belüli kilépés után 12 hónapig nem köthető újra, kivéve díjemelés miatti kilépésnél | 10.26 | SZ |
+| Díjmódosítás | 60 napos előzetes hirdetmény, felmondás vagy visszalépés A1-re | 10.17, 10.19, 10.31 | SZ, felette J1 minimum |
+| Hálózati díj napszakfüggetlen | az időzítés csak az energiaáron keresztül hat | 9.2 | H, J4 |
+| Mikor indítsd? szöveg | rezsivédett fix áron az időzítés a számlán nem látszik, D árszabáson a keret feletti részre hat | 10.33 | Sz |
+| Most kártya | nagykereskedelmi (HUPX) ár, áfa és hálózati díj nélkül, nem a számlán szereplő ár | 10.2 szakasz | T |
+| Kötelező becslési figyelmeztetés | a verdikt alatt: tájékoztató becslés, a havi naparányos kerettől, a tőzsdei áraktól, az MNB árfolyamtól és a szolgáltató feltételeitől függ, csak okosmérővel érvényes, döntés előtt ajánlatot kell kérni | 19.2 | T |
+| Lábléc | függetlenségi nyilatkozat (nem áll kapcsolatban az MVM Next, a MAVIR, a HUPX és a MEKH szervezetével, nem ad befektetési, pénzügyi vagy jogi tanácsot, fizetett megjelenés nincs); adatkezelési sor (beállítás csak a böngészőben, IP-cím rövid ideig a szervernaplóban, EU régió); források időállapottal | 19.2 | T |
+| Betűtípus | saját kiszolgálásból (frontend/static/css/fonts.css), a látogató IP-címe nem jut harmadik félhez | 19.2 | T |
 
-- a kereskedői díj hirdetményeit (negyedéves felülvizsgálat, 60 napos előzetes közzététel);
-- a 2027-es rendszerhasználati díjat (a 2026-os befagyasztás megszűnt);
-- a rezsivédelmi keret és a lakossági piaci ár sorsát 2027. december 31. után;
-- a MEKH éves jelentését a rugalmas árú szerződésekről (VET 159. § (1) 12.);
-- időben differenciált hálózati díj esetleges bevezetését a KIF IV kategóriában.
+### 18.2 Szándékolt egyszerűsítés
 
-## 19. Forrásjegyzék
+A becsült hiba 4 000 kWh/év fogyasztásra vonatkozik, ha másként nem jelöljük (auditor, C fejezet, és az app modellje). Összesítve az app pontbecslése a modellkorlátokon belül kb. 15 000 és 25 000 Ft/év közötti bizonytalanságú; forintos megtakarítást ezért csak sávként közlünk.
+
+| Egyszerűsítés | Mit tesz az app | Becsült hiba | Irány |
+|---|---|---|---|
+| Háztartási profil | saját súlyok (10.3), nem hivatalos terhelési profil | ±10 700 Ft/év (egyenletes profil 45,37, app profil 51,08 Ft/kWh) | mindkét irány |
+| Szezonális fogyasztás | havi szorzó 1 + 0,2218 · cos(2π(m − 1)/12), január és július aránya 1,57, a MEKH 7.2B ábrájának koszinuszos közelítése (3.16; ott a minimum június) | országos alak; elektromos fűtésű háztartásnál a szezonalitás erősebb, a havi keret miatti többlet ekkor nagyobb | a D kedvezőbbnek látszhat |
+| Havi keret éves kiegyenlítés nélkül | a nyáron ki nem használt keret elvész (a szigorúbb olvasat, 10.8) | ha az MVM évente kiegyenlít: 2 400 kWh-nál kb. 9 300, 2 700 kWh-nál kb. 16 500 Ft/év túlbecslés, 4 000 kWh-nál kb. 3 000 Ft/év alatt | a D drágábbnak látszhat |
+| Havi átlagár | napi súlyozott átlagok átlaga a havi fogyasztással súlyozott átlag helyett | 100 és 350 Ft/év között | kicsi |
+| Eltolás | 0, 10, 25 vagy 50% a nap legolcsóbb 16 negyedórájába, utólagos tökéletes tudással; alapértelmezés 10% | 30% helyett 10% kb. 11 800 Ft/év különbség; a legolcsóbb 16 negyedóra nem mindig összefüggő | a megtakarítás felső korlát |
+| 30 napos nézet | egy 30 napos hónap az elmúlt 30 nap áraival, 207 kWh körüli naparányos kerettel, évesítés nélkül (Ft/hó) | évesítve a D többlete hónaptól függően 20 000 és 69 000 Ft/év között szórna (12 havi: 44 200, 30% eltolással), ezért nem évesítünk | csak az adott hónapra érvényes |
+| Árfolyam | EKB referencia-árfolyam az MNB napi hivatalos helyett; hibánál az utolsó ismert EKB érték gyorsítótárból; ha az sincs, 395 Ft/EUR tartalék, figyelmeztetéssel a felületen | EKB és MNB: 0,3% alatt, 250 Ft/év alatt (ellenőrizendő); a 395-ös tartalék a mai kb. 367-hez képest kb. +6 000 Ft/év | tartaléknál a D drágábbnak látszik |
+| Árforrás | Energy-Charts HU másnapi ár a HUPX DAM elszámolóár helyett | 0,02% alatt | elhanyagolható |
+| Havi tőzsdei átlagok | a MONTHS tábla a 2025.09 és 2026.08 közötti adatokból rögzítve | múltbeli adat, csak így mondható: „az elmúlt 12 hónap árain” | nincs előrejelzés |
+| Alapdíjak | KIF I és KIF IV alapdíj (1 836 Ft/év bruttó) kimarad | 0 a különbségre, az abszolút számla 1 836 Ft/év-vel alacsonyabb | csak abszolút |
+| A1 elosztónként | 36,4 (MVM Démász); E.ON és OPUS TITÁSZ területen 35,29 | 0 a D és a rezsivédett különbségére, abszolút kb. 2 800 Ft/év | csak abszolút |
+| Negyedórás kerekítés | nincs két tizedes kerekítés | 10 Ft/év alatt | elhanyagolható |
+| Negatív havi energiadíj | nem modellezi a nullázást | gyakorlatilag kivételes (10.27) | elhanyagolható |
+| Vezérelt kör | külön paraméter: a fogyasztás 0, 25 vagy 50%-a fixen bekötött körön, saját 2 523 kWh kerettel, 602 Ft/év alapdíjjal | a napi 8 órás ellátási korlát (8.12) nincs modellezve; csak fixen bekötött fogyasztóra igaz | a vezérelt előny felső korlát |
+
+### 18.3 Nyitott az appban
+
+- Hivatalos terhelési profil (elosztói vagy MAVIR SLP) a saját súlyok helyett (10.3).
+- A vezérelt kör kiépítésének egyszeri költsége nem szerepel a számításban (a felület ezt kimondja).
+- Havi keret és éves kiegyenlítés: az MVM válasza után a 10.8 és 10.32 sor, valamint a yearModel frissítése.
+- Okosmérős, havonta elszámolt A1 ügyfélre is havi keret vonatkozik-e: ha igen, az összehasonlítás szimmetrikus, és a rezsivédett ág is havi kerettel számolandó (MVM kérdés).
+- Az ENTSO-E és a HUPX adatpolitikája kereskedelmi újraközlés esetén ellenőrizendő; az MVM teljes 12 havi listája nem közölhető újra, csak származtatott átlag.
+
+### 18.4 Figyelendő, változás esetén az appot frissíteni
+
+- a kereskedői díj hirdetményei (negyedéves felülvizsgálat, 60 napos előzetes közzététel, 15.3);
+- a 2027-es rendszerhasználati díj (MEKH határozat; a 2026-os befagyasztás megszűnt), amely a fedezeti pontot is mozgatja (10.3);
+- a rezsivédelmi kijelölés és a lakossági piaci ár sorsa 2027. december 31. után (15.2);
+- a MEKH éves jelentése a rugalmas árú szerződésekről (VET 159. §, 10.13);
+- időben differenciált hálózati díj esetleges bevezetése a KIF IV kategóriában;
+- az MVM válasza a 19.4 kérdéseire.
+
+### 18.5 Nyomonkövetési mátrix
+
+| Kódállandó (app.js, ha másként nem jelölt) | Érték | Dokumentumsor | Forrás |
+|---|---|---|---|
+| T.cap | 2 523 | 8.14, 10.8 | [S4] NFM r. 6. § (1), 7/A. § |
+| T.a1 | 36,4 | 9.1, 9.3 | [S4] 2. melléklet, [S12], [S16] |
+| T.a1Over | 70,1 | 9.3 | [S6] 20/2022. MEKH r. 2. § |
+| T.b | 23,0 | 9.1, 9.3 | [S4], [S12], [S16] |
+| T.bOver | 60,9 | 9.3 | [S6] |
+| T.bBase | 602 | 9.2 | [S12] KIF II alapdíj 474 Ft/év, áfával |
+| T.spread | 13,7 | 10.16 | [S18] hirdetmény |
+| T.grid | 23,4 | 9.2 | [S12] H 2995/2025., kivonatból |
+| T.vat | 1,27 | 9.4 táblázat 9.1 sor | Áfa tv. 82. § (1), [S16] |
+| T.fixEnergy | 31,8 | 9.1 (lakossági piaci ár), 10.2 szakasz | [S23], [S6] |
+| BREAK_EVEN | 18,1 | 10.2 szakasz, 10.3 | Sz |
+| MONTHS | havi [profil, legolcsóbb 4 óra] tőzsdei átlag, 2025.09 és 2026.08 között | 10.29, 10.30, 10.3 | [S22], Energy-Charts, EKB; auditor months.py |
+| MONTH_DAYS, T.cap × napok / 365 | havi naparányos keret | 8.16, 10.8 | [S4] 6. § (4), 7/A. § (2); [S19] 8.1. |
+| SEASON | 1 + 0,2218 · cos(2π(m − 1)/12) | 3.16, 18.2 | [S33] 7.2B ábra |
+| SHIFTS | 0; 0,1; 0,25; 0,5 (alap 0,1) | 3.18, 10.3 | [S53], auditor B13 |
+| VSHARES | 0; 0,25; 0,5 | 8.11, 8.12, 18.2 | [S4], [S5] |
+| profileWeight | 0,5 / 1,2 / 0,8 / 2,0 / 0,9 | 10.3 | feltevés, nem hivatalos |
+| FALLBACK_EUR_HUF (backend/src/data/entso_fetcher.py) | 395, figyelmeztetéssel | 18.2 | feltevés |
+
+## 19. Szakértői értelmezés
+
+A dokumentum 1.0 változatát 2026. szeptember 29-én egy energetikai auditor és egy energetikai szakjogász vizsgálta; az 1.1 változat a javaslataikat vezeti át. Mindkét vélemény belső szakmai értelmezés, nem harmadik félnek szóló jogi vagy pénzügyi tanács.
+
+### 19.1 Auditori vélemény
+
+- **Minősítés:** korlátozott, fenntartásos megbízhatóság. Tarifaszámításhoz és jogi hivatkozáshoz használható, piacméretezéshez és ügyfél felé tett forintos ígérethez csak a javításokkal.
+- **Erős rész:** a jogszabályi és tarifás fejezetek (8. és 11. között) forrásoltak és számszakilag helyesek. A 10.30 sor független újraszámolással reprodukálható.
+- **Gyenge rész:** a statisztikai fejezetek (1., 2., 3. és 6.) vegyes bázisú, részben másodlagos és régi adatot tartalmaznak; a 2 419 kWh-s KSH mutató a saját számokból nem reprodukálható (3.2).
+- **Robusztus üzenet:** az elmúlt 12 hónap árain egy tipikus háztartásnak éves szinten a D árszabás nem éri meg. Ha a teljes fogyasztás a nap legolcsóbb 4 órájába kerülne, a súlyozott átlag (19,7 Ft/kWh) akkor is a 18,10-es fedezeti pont felett lenne. Tavasszal, napközbeni rugalmas fogyasztással egyes hónapokban a D olcsóbb lehet, éves megtakarítást erre ígérni nem szabad.
+- **Érvényesség:** rövid; a 2027-es hálózati díj, a kereskedői díj negyedéves felülvizsgálata és a rezsivédelem 2027 végi sorsa közvetlenül mozgatja a fedezeti pontot.
+
+### 19.2 Jogi értelmezés
+
+- A dokumentum ténybeli és jogszabályhely-szintű pontossága jó. A fő gyengeség az volt, hogy a jogszabály és a szolgáltatói feltétel egy szintre került; ezt a „Szint” jelölés rendezi.
+- Kimaradt kógens VET szabályok, amelyek erősebbek az MVM feltételeinél: 62. § (2), 73. § (2), (4), (6), (7), 141. § (6), (8), 145. § (6), (7), 178. § (1) (10.2, 10.7, 10.31).
+- Vitatható törvényi alapú MVM feltételek: a D-ből kizáró okok a 61/A. § (2)-n túl (10.21, 10.22), a 12 hónapos újrakötési tilalom (10.26), az egyoldalú díjemelés indokkatalógus nélkül (a Ptk. tisztességtelenségi szabályai szerint vélelmezetten tisztességtelen lehet; a Ptk. helyek ellenőrizendők).
+- Az app nem befektetési tanácsadás és nem energiakereskedelem; fizetett megjelenés nélkül az Fttv. közvetlenül nem alkalmazandó. Monetizálás esetén a kereskedelmi kommunikációt el kell különíteni és jelölni kell. A felelősségkizárás, a forrásmegjelölés, az adatkezelési tájékoztató és a saját kiszolgálású betűtípus ettől függetlenül indokolt, az app 1e51a42 ezeket tartalmazza.
+
+### 19.3 Fő kockázatok
+
+| Kockázat | Lényeg | Hatás | Dokumentumsor |
+|---|---|---|---|
+| Havi keret | a D keretét havonta, naparányosan kell alkalmazni; éves kiegyenlítésről a források nem szólnak | a keret közelében (2 400 és 2 700 kWh/év között) évi kb. 8 000 és 16 500 Ft többlet; a „nem változtat semmin” állítás nem tartható | 10.8, 10.32 |
+| 52a. értelmezés | a negyedórás árak csak a havi átlagon és a Q_P/Q_N hányadon keresztül hatnak | a havi átlagolás csökkenti az időzítés értékét; az időzítési tanács a D-n kisebb hatású, mint a negyedórás árkülönbség | 10.33 |
+| 2027 utáni jogi bizonytalanság | a 236/2025. Korm. r. kijelölése 2027. december 31-ig szól; a VET 145. § (4a), (4b) és az NFM r. 7/A. § alanya a kijelölt szolgáltató | új kijelölés vagy módosítás nélkül a D rezsivédett része jogilag bizonytalan | 8.6, 15.2 |
+| KIF III | nem okosmérőnek minősülő távlehívható mérővel KIF III díj jár (72 168 Ft/év alapdíj, 13 248 Ft/kW/év teljesítménydíj, 22,20 Ft/kWh) | 3×16 A-es helyen nagyságrendileg évi 270 000 és 290 000 Ft bruttó többlet, bármely megtakarítást felülír; nem tisztázott, a kb. 600 ezer idősoros hely ma melyik kategóriában fizet | 9.2, 5.13 |
+| Sáv feletti ár és VET 141. § (7) | a lakossági piaci árnál alacsonyabb ár kivétele csak miniszteri rendeletben | jogszerű, de formailag nem tiszta; felhasználói kockázata csekély | 10.34 |
+| Okosmérő kezdőnapja | a (2a) szerint kért mérőre a Vhr. 14/B. § (7) nem mondja meg, mikortól távlehívható a pont | a D kezdése 1 és 2 hónappal csúszhat; 2026 őszén benyújtott igény nem garantálja a 2027. januári kezdést | 5.20 |
+
+### 19.4 Hivatalos állásfoglalást igénylő kérdések
+
+**MEKH felé:**
+
+1. A VET 61/A. § (1) ajánlattételi kötelezettség mellett jogszerű-e a D-ből kizárni a B vezérelt vagy H mérős, a tartozásos, az ideiglenes csatlakozású és a C tarifás helyet (ÁSZF 16.1. d), f), g), i), j); jogász B8).
+2. Mikortól minősül távlehívható mérős elszámolási pontnak a Vhr. 14/B. § (2a) szerint kért okosmérő, tekintettel a (7) bekezdés hiányára (B12).
+3. A D sáv feletti rugalmas ára összhangban van-e a VET 141. § (7) bekezdésével, amikor a kivételt csak az NFM r. 7/A. § (2) mondja ki (C1).
+4. A 12 hónapos újrakötési tilalom (M.2.2 9.1.) összeegyeztethető-e a VET 61/A. § (1) bekezdésével (C3).
+5. Kiváltja-e az üzletszabályzat MEKH jóváhagyása a kereskedői díj egyes módosításaihoz a VET 73. § (2) szerinti előzetes hozzájárulást, szemben az ÁSZF 16.4. és az M.2.2 9.3. „jóváhagyás nem szükséges” mondatával (C4).
+
+**MVM Next felé:**
+
+1. Van-e a D havi naparányos keretére éves (rezsiéves, augusztus 1. és július 31. közötti) utólagos kiegyenlítés (B4).
+2. Az okosmérős, havonta elszámolt A1 ügyfélre is havi keret vonatkozik-e.
+3. A D árszabás oldal „változatlanul működnek tovább” mondata és az ÁSZF 16.1. f), g) kizárása közül melyik érvényes, és a mondat a fizikai áramkörre vonatkozik-e (C2, 16.1).
+4. A 12 hónapos visszalépési ablak kezdőpontja a szerződés létrejötte vagy a rugalmas ár kezdete (M.2.2 9.1., 5.4.2.; C3).
+5. A szerződés az aláírás napján lép hatályba (ÁSZF 16.2.) vagy a kézhezvétellel jön létre (M.2.2 5.2.3.) (16.18).
+6. A kereskedői díj emelésénél az MVM ad-e a VET 62. § (2) szerinti írásbeli egyéni értesítést és a 73. § (6) szerinti 45 napos felmondási jogot (10.31).
+7. Mikor javítja az ajánlatminta szerkesztési hibáit (NFM r. dátuma, „XY rendelet”, „29a. vagy 29/b.”; 16.17).
+
+## 20. Forrásjegyzék
 
 Megtekintve: 2026. szeptember 23. és 29. között.
 
@@ -584,3 +754,10 @@ Megtekintve: 2026. szeptember 23. és 29. között.
 - [S77] Telex, 2025. szeptember 15.: MVM kompenzáció. https://telex.hu/gazdasag/2025/09/15/rezsicsokkentes-500-milliard-magyar-allam-mvm
 - [S78] Index, 2024. október 22.: MEKH bírság. https://index.hu/gazdasag/2024/10/22/villamos-energia-foldgaz-szolgaltato-szolgaltatas-birsag-figyelmeztetes-fogyasztovedelmi-vizsgalat/
 - [S79] Villanylap, 2026. szeptember: dinamikus áramtarifa. https://www.villanylap.hu/hirek/7074-jon-a-dinamikus-aramtarifa-de-a-legtobben-nem-allnak-ra-keszen
+
+## 21. Változásnapló
+
+| Verzió | Dátum | Változás |
+|---|---|---|
+| 1.0 | 2026. szeptember 29. | Első változat: 19 fejezet, 79 forrás, tényellenőrzéssel. |
+| 1.1 | 2026. szeptember 29. | Energetikai auditor és energetikai szakjogász véleményének átvezetése. Új: jogforrási szint jelölés; havi naparányos keret és következménye (10.8, 10.32); kógens VET szabályok a díjmódosításra (10.31); a 12 hónapos tilalom kivétele és kezdőpontja (10.26); számítási feltevések és érzékenység (10.3 szakasz); 2027 utáni jogi kockázat (15.2); új ellentmondások (16. fejezet); a 18. fejezet bontása egyező elemekre és szándékolt egyszerűsítésekre, nyomonkövetési mátrixszal; 19. fejezet a szakértői értelmezéssel és az állásfoglalást igénylő kérdésekkel. Javítva: a KSH fajlagos fogyasztás reprodukálhatósága, a bázisok jelölése, az évszakok meghatározása a 10.30 sorban. Az app állapota: commit 1e51a42. |
