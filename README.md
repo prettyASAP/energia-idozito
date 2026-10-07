@@ -1,5 +1,7 @@
 # Energia Időzítő
 
+[![tests](https://github.com/prettyASAP/energia-idozito/actions/workflows/tests.yml/badge.svg)](https://github.com/prettyASAP/energia-idozito/actions/workflows/tests.yml)
+
 Webes alkalmazás magyar háztartásoknak: megmutatja, hogy a nap mely negyedóráiban olcsó az áram a HUPX másnapi piacán, mikor érdemes nagy fogyasztót (mosógép, mosogatógép, bojler, elektromosautó-töltő) indítani, és hogy egy adott fogyasztási mintával megéri-e a dinamikus (D) árszabásra váltani a rezsivédett ár helyett.
 
 ## Nézetek
@@ -46,6 +48,8 @@ Stack: Python 3, FastAPI, pandas; a kliens keretrendszer nélküli JavaScript. T
 ```
 
 A script létrehozza a virtuális környezetet, telepíti a függőségeket, és ha nincs `.env`, demo módban indul (szimulált árak, API kulcs nélkül). Valós adatokhoz ENTSO-E API kulcs kell (`ENTSO_E_API_KEY`) a `backend/.env` fájlba (lásd `backend/.env.example`). Az alkalmazás a `http://localhost:8000` címen érhető el.
+
+Tesztek (hálózat nélkül futnak): `pip install pytest && pytest tests`
 
 ## Korlátok
 
